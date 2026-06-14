@@ -1,0 +1,6 @@
+{
+  "name": "LaserBench",
+  "description": "Generate repeatable laser-material calibration tests and SVG toolpath pre-visualizations for laser engravers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
