@@ -130,19 +130,19 @@ export default function MaterialDatabase({
   };
 
   return (
-    <div id="material-database-card" className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm text-slate-100 flex flex-col h-full">
+    <div id="material-database-card" className="bg-[#0E0E0E] border border-white/10 rounded-lg p-5 shadow-sm text-[#E0E0E0] flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <FolderHeart className="text-emerald-400 w-5 h-5 text-emerald-400" />
-          <h2 className="text-sm font-semibold tracking-wide uppercase text-emerald-300">Material Calibration Database</h2>
+          <FolderHeart className="text-red-500 w-5 h-5" />
+          <h2 className="text-sm font-semibold tracking-wide uppercase text-white font-sans">Material Calibration Database</h2>
         </div>
         <button
           id="toggle-edit-material-btn"
           onClick={() => setIsEditing(!isEditing)}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition ${
+          className={`px-3 py-1.5 text-xs font-bold rounded transition-all duration-200 cursor-pointer ${
             isEditing
-              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              ? 'bg-red-600 text-black hover:bg-red-500 accent-glow'
+              : 'bg-[#222] text-[#AAA] hover:bg-[#333]'
           }`}
         >
           {isEditing ? 'Save Details' : 'Edit Material'}
@@ -150,7 +150,7 @@ export default function MaterialDatabase({
       </div>
 
       {/* Category Tabs */}
-      <div className="flex flex-wrap gap-1 mb-4 border-b border-slate-800 pb-2">
+      <div className="flex flex-wrap gap-1 mb-4 border-b border-white/8 pb-2">
         {categories.map((cat) => (
           <button
             key={cat}
@@ -162,10 +162,10 @@ export default function MaterialDatabase({
                 onSelectMaterial(linkedMat.id);
               }
             }}
-            className={`px-2 py-1 text-[11px] font-medium rounded transition ${
+            className={`px-2 py-1.5 text-[11px] font-bold rounded transition-all duration-200 cursor-pointer ${
               activeCategory === cat
-                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-red-950/40 text-red-400 border border-red-900/40'
+                : 'text-[#888] hover:text-[#E0E0E0] hover:bg-[#1A1A1A]'
             }`}
           >
             {cat}
@@ -175,27 +175,27 @@ export default function MaterialDatabase({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
         {/* Materials List under Active Category */}
-        <div className="md:col-span-1 border-r border-slate-800 pr-4 space-y-2 flex flex-col justify-between max-h-[280px] md:max-h-none overflow-y-auto">
+        <div className="md:col-span-1 border-r border-white/8 pr-4 space-y-2 flex flex-col justify-between max-h-[280px] md:max-h-none overflow-y-auto">
           <div className="space-y-1">
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500 block mb-1">
+            <span className="block mb-1 label-caps">
               Select {activeCategory}
             </span>
             {categoryMaterials.length === 0 ? (
-              <p className="text-slate-500 text-xs italic py-2">No material sheets added yet.</p>
+              <p className="text-neutral-500 text-xs italic py-2">No material sheets added yet.</p>
             ) : (
               categoryMaterials.map((mat) => (
                 <button
                   key={mat.id}
                   id={`material-select-${mat.id}`}
                   onClick={() => onSelectMaterial(mat.id)}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition flex justify-between items-center ${
+                  className={`w-full text-left px-2.5 py-1.5 rounded text-xs transition flex justify-between items-center cursor-pointer ${
                     selectedMaterialId === mat.id
-                      ? 'bg-emerald-900/30 text-emerald-200 font-medium border-l-2 border-emerald-500'
-                      : 'text-slate-300 hover:bg-slate-800'
+                      ? 'bg-[#1E1414] text-red-400 font-bold border-l-2 border-red-600'
+                      : 'text-neutral-400 hover:bg-[#151515] hover:text-white'
                   }`}
                 >
                   <span className="truncate">{mat.name}</span>
-                  <span className="text-[10px] text-slate-500 shrink-0 font-mono italic">
+                  <span className="text-[10px] text-neutral-500 shrink-0 font-mono italic">
                     {mat.thickness}mm
                   </span>
                 </button>
@@ -206,7 +206,7 @@ export default function MaterialDatabase({
           <button
             id="add-new-material-btn"
             onClick={handleCreateNewMaterial}
-            className="w-full mt-4 flex items-center justify-center gap-1 bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-slate-300 text-xs py-1.5 rounded-lg transition"
+            className="w-full mt-4 flex items-center justify-center gap-1 bg-[#222] border border-white/10 hover:bg-[#333] hover:border-white/15 text-[#E0E0E0] text-xs py-1.5 rounded transition cursor-pointer font-bold"
           >
             <Plus className="w-3.5 h-3.5" />
             Add {activeCategory}
@@ -218,60 +218,60 @@ export default function MaterialDatabase({
           {activeMaterial ? (
             <>
               {/* Profile Config */}
-              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800/80">
+              <div className="bg-[#151515] p-3.5 rounded border border-white/10">
                 {isEditing ? (
                   <div className="space-y-3 text-xs">
                     <div>
-                      <label className="block text-slate-400 mb-1">Sheet Name</label>
+                      <label className="block mb-1 label-caps">Sheet Name</label>
                       <input
                         id="edit-material-name"
                         type="text"
                         value={activeMaterial.name}
                         onChange={(e) => handleUpdateField('name', null, e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-slate-100 focus:outline-none"
+                        className="w-full elegant-input rounded-md px-2 py-1"
                       />
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="block text-slate-400 mb-0.5">Thickness (mm)</label>
+                        <label className="block mb-0.5 label-caps">Thickness (mm)</label>
                         <input
                           id="edit-material-thickness"
                           type="number"
                           step="0.1"
                           value={activeMaterial.thickness}
                           onChange={(e) => handleUpdateField('thickness', null, parseFloat(e.target.value) || 0)}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-slate-100 focus:outline-none"
+                          className="w-full elegant-input rounded-md px-2 py-1"
                         />
                       </div>
                       <div>
-                        <label className="block text-slate-400 mb-0.5">Laser Rating</label>
+                        <label className="block mb-0.5 label-caps">Laser Rating</label>
                         <input
                           id="edit-material-laser"
                           type="text"
                           value={activeMaterial.laser}
                           onChange={(e) => handleUpdateField('laser', null, e.target.value)}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-slate-100 focus:outline-none"
+                          className="w-full elegant-input rounded-md px-2 py-1"
                         />
                       </div>
                       <div>
-                        <label className="block text-slate-400 mb-0.5">Optimal Z (mm)</label>
+                        <label className="block mb-0.5 label-caps">Optimal Z (mm)</label>
                         <input
                           id="edit-material-focusz"
                           type="number"
                           step="0.5"
                           value={activeMaterial.focusZ}
                           onChange={(e) => handleUpdateField('focusZ', null, parseFloat(e.target.value) || 0)}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-slate-100 focus:outline-none"
+                          className="w-full elegant-input rounded-md px-2 py-1"
                         />
                       </div>
                     </div>
 
-                    <div className="border-t border-slate-800 pt-2 grid grid-cols-2 gap-3">
+                    <div className="border-t border-white/8 pt-2 grid grid-cols-2 gap-3">
                       <div>
-                        <span className="text-[10px] font-bold text-amber-400 block mb-1">ENGRAVING DEFAULT</span>
+                        <span className="text-[10px] font-bold text-red-400 block mb-1">ENGRAVING DEFAULT</span>
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
-                            <label className="text-[10px] text-slate-400">Power</label>
+                            <label className="text-[9px] label-caps block">Power</label>
                             <input
                               id="edit-material-engrave-power"
                               type="number"
@@ -279,27 +279,27 @@ export default function MaterialDatabase({
                               max={pwmMax}
                               value={activeMaterial.engrave.power}
                               onChange={(e) => handleUpdateField('engrave', 'power', parseInt(e.target.value) || 0)}
-                              className="w-full bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-slate-100 text-xs"
+                              className="w-full elegant-input rounded px-1.5 py-0.5 text-xs"
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-slate-400">Speed (mm/m)</label>
+                            <label className="text-[9px] label-caps block">Speed (m/m)</label>
                             <input
                               id="edit-material-engrave-speed"
                               type="number"
                               min="0"
                               value={activeMaterial.engrave.speed}
                               onChange={(e) => handleUpdateField('engrave', 'speed', parseInt(e.target.value) || 0)}
-                              className="w-full bg-slate-800 border border-slate-700 px-1.5 py-0.5 text-slate-100 text-xs"
+                              className="w-full elegant-input px-1.5 py-0.5 text-xs"
                             />
                           </div>
                         </div>
                       </div>
                       <div>
-                        <span className="text-[10px] font-bold text-red-400 block mb-1">CUTTING DEFAULT</span>
+                        <span className="text-[10px] font-bold text-red-500 block mb-1">CUTTING DEFAULT</span>
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
-                            <label className="text-[10px] text-slate-400">Power</label>
+                            <label className="text-[9px] label-caps block">Power</label>
                             <input
                               id="edit-material-cut-power"
                               type="number"
@@ -307,25 +307,25 @@ export default function MaterialDatabase({
                               max={pwmMax}
                               value={activeMaterial.cut.power}
                               onChange={(e) => handleUpdateField('cut', 'power', parseInt(e.target.value) || 0)}
-                              className="w-full bg-slate-800 border border-slate-700 px-1.5 py-0.5 text-slate-100 text-xs"
+                              className="w-full elegant-input rounded px-1.5 py-0.5 text-xs"
                             />
                           </div>
                           <div>
-                            <label className="text-[10px] text-slate-400">Speed (mm/m)</label>
+                            <label className="text-[9px] label-caps block">Speed (m/m)</label>
                             <input
                               id="edit-material-cut-speed"
                               type="number"
                               min="0"
                               value={activeMaterial.cut.speed}
                               onChange={(e) => handleUpdateField('cut', 'speed', parseInt(e.target.value) || 0)}
-                              className="w-full bg-slate-800 border border-slate-700 px-1.5 py-0.5 text-slate-100 text-xs"
+                              className="w-full elegant-input px-1.5 py-0.5 text-xs"
                             />
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center border-t border-slate-800 pt-2">
+                    <div className="flex justify-between items-center border-t border-white/8 pt-2">
                       <button
                         id="delete-material-btn"
                         type="button"
@@ -336,7 +336,7 @@ export default function MaterialDatabase({
                             setIsEditing(false);
                           }
                         }}
-                        className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1 transition"
+                        className="text-red-500 hover:text-red-400 text-xs flex items-center gap-1 transition"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         Delete Material
@@ -346,7 +346,7 @@ export default function MaterialDatabase({
                         id="save-material-btn"
                         type="button"
                         onClick={() => setIsEditing(false)}
-                        className="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1 rounded font-semibold text-xs flex items-center gap-1 transition shadow"
+                        className="bg-red-600 hover:bg-red-500 text-black px-3 py-1 rounded font-bold text-xs flex items-center gap-1 transition cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
                         Done Saved
@@ -357,30 +357,30 @@ export default function MaterialDatabase({
                   <div className="space-y-2 text-xs">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 id="display-material-name" className="text-sm font-semibold text-slate-100">{activeMaterial.name}</h3>
-                        <p className="text-[11px] text-slate-400">
+                        <h3 id="display-material-name" className="text-sm font-semibold text-white">{activeMaterial.name}</h3>
+                        <p className="text-[11px] text-neutral-400">
                           {activeMaterial.thickness}mm thickness | Laser: {activeMaterial.laser}
                         </p>
                       </div>
-                      <div className="bg-slate-800/80 rounded px-2.5 py-1 text-center font-mono text-[11px] border border-slate-700">
-                        <span className="text-slate-400 text-[9px] uppercase block tracking-wider leading-none">Focus Z</span>
-                        <span className="font-bold text-emerald-400 leading-normal">{activeMaterial.focusZ} mm</span>
+                      <div className="bg-[#222] rounded px-2.5 py-1 text-center mono text-[11px] border border-white/10">
+                        <span className="text-[#64748b] text-[9px] uppercase block tracking-wider leading-none font-sans font-bold">Focus Z</span>
+                        <span className="font-bold text-red-500 leading-normal">{activeMaterial.focusZ} mm</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 border-t border-slate-900 pt-2 mt-2">
-                      <div className="bg-amber-950/20 border border-amber-900/30 rounded p-2 text-slate-300">
-                        <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest block mb-0.5">Engrave Settings</span>
-                        <div className="flex justify-between font-mono text-xs">
-                          <span>Power: <strong className="text-slate-100">{activeMaterial.engrave.power}</strong></span>
-                          <span>Speed: <strong className="text-slate-100">{activeMaterial.engrave.speed} mm/m</strong></span>
+                    <div className="grid grid-cols-2 gap-4 border-t border-white/8 pt-2 mt-2">
+                      <div className="bg-[#1E1414] border border-red-900/30 rounded p-2 text-neutral-300">
+                        <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest block mb-0.5">Engrave Settings</span>
+                        <div className="flex justify-between mono text-[11px]">
+                          <span>Power: <strong className="text-white">{activeMaterial.engrave.power}</strong></span>
+                          <span>Speed: <strong className="text-white">{activeMaterial.engrave.speed} mm/m</strong></span>
                         </div>
                       </div>
-                      <div className="bg-rose-950/20 border border-rose-900/30 rounded p-2 text-slate-300">
-                        <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest block mb-0.5">Cut Settings</span>
-                        <div className="flex justify-between font-mono text-xs">
-                          <span>Power: <strong className="text-slate-100">{activeMaterial.cut.power}</strong></span>
-                          <span>Speed: <strong className="text-slate-100">{activeMaterial.cut.speed} mm/m</strong></span>
+                      <div className="bg-[#221010] border border-red-900/40 rounded p-2 text-neutral-300">
+                        <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest block mb-0.5">Cut Settings</span>
+                        <div className="flex justify-between mono text-[11px]">
+                          <span>Power: <strong className="text-white">{activeMaterial.cut.power}</strong></span>
+                          <span>Speed: <strong className="text-white">{activeMaterial.cut.speed} mm/m</strong></span>
                         </div>
                       </div>
                     </div>
@@ -388,10 +388,10 @@ export default function MaterialDatabase({
                 )}
               </div>
 
-              {/* Calibration Logs History (Knowledge base) */}
+              {/* Calibration Logs History */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Calibration Logs</h4>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-[#666]">Calibration Logs</h4>
                   {!showLogForm && (
                     <button
                       id="log-calibration-test-btn"
@@ -401,7 +401,7 @@ export default function MaterialDatabase({
                         setLogOptZ(activeMaterial.focusZ);
                         setShowLogForm(true);
                       }}
-                      className="bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded text-[10px] uppercase font-semibold transition"
+                      className="bg-red-950/45 hover:bg-red-900/40 text-red-400 border border-red-900/40 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-tight transition cursor-pointer"
                     >
                       + Log Test Result
                     </button>
@@ -409,40 +409,40 @@ export default function MaterialDatabase({
                 </div>
 
                 {showLogForm && (
-                  <form onSubmit={handleAddLog} id="calibration-log-form" className="bg-slate-950 border border-emerald-900/40 rounded-lg p-3 space-y-2.5 text-xs text-slate-300">
-                    <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Log Test Result</span>
+                  <form onSubmit={handleAddLog} id="calibration-log-form" className="bg-[#151515] border border-red-900/40 rounded p-3 space-y-2.5 text-xs text-neutral-300">
+                    <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Log Test Result</span>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-slate-400 block text-[10px] mb-0.5">Pattern Run</label>
+                        <label className="block mb-0.5 label-caps">Pattern Run</label>
                         <select
                           id="log-pattern"
                           value={logPattern}
                           onChange={(e) => setLogPattern(e.target.value)}
-                          className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                          className="w-full elegant-input rounded px-2 py-1"
                         >
-                          <option value="matrix">Power-Speed Matrix</option>
-                          <option value="power_ramp">Power Ramp</option>
-                          <option value="speed_ramp">Speed Ramp</option>
-                          <option value="focus_ladder">Focus Ladder</option>
-                          <option value="kerf_test">Kerf Clearence</option>
+                          <option value="matrix" className="bg-[#151515]">Power-Speed Matrix</option>
+                          <option value="power_ramp" className="bg-[#151515]">Power Ramp</option>
+                          <option value="speed_ramp" className="bg-[#151515]">Speed Ramp</option>
+                          <option value="focus_ladder" className="bg-[#151515]">Focus Ladder</option>
+                          <option value="kerf_test" className="bg-[#151515]">Kerf Clearance</option>
                         </select>
                       </div>
                       <div>
-                        <label className="text-slate-400 block text-[10px] mb-0.5">Optimal Focus Z (mm)</label>
+                        <label className="block mb-0.5 label-caps">Optimal Focus Z (mm)</label>
                         <input
                           id="log-focusz"
                           type="number"
                           step="0.5"
                           value={logOptZ}
                           onChange={(e) => setLogOptZ(parseFloat(e.target.value) || 0)}
-                          className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                          className="w-full elegant-input rounded px-2 py-1"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-slate-400 block text-[10px] mb-0.5">Optimal Power (S)</label>
+                        <label className="block mb-0.5 label-caps">Optimal Power (S)</label>
                         <input
                           id="log-power"
                           type="number"
@@ -450,47 +450,47 @@ export default function MaterialDatabase({
                           max={pwmMax}
                           value={logOptPower}
                           onChange={(e) => setLogOptPower(parseInt(e.target.value) || 120)}
-                          className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                          className="w-full elegant-input rounded px-2 py-1"
                         />
                       </div>
                       <div>
-                        <label className="text-slate-400 block text-[10px] mb-0.5">Optimal Speed (mm/m)</label>
+                        <label className="block mb-0.5 label-caps">Optimal Speed (mm/m)</label>
                         <input
                           id="log-speed"
                           type="number"
                           min="1"
                           value={logOptSpeed}
                           onChange={(e) => setLogOptSpeed(parseInt(e.target.value) || 1200)}
-                          className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                          className="w-full elegant-input rounded px-2 py-1"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-slate-400 block text-[10px] mb-0.5">Observations / Material Behavior</label>
+                      <label className="block mb-0.5 label-caps">Observations / Material Behavior</label>
                       <textarea
                         id="log-notes"
                         rows={2}
                         value={logNotes}
                         onChange={(e) => setLogNotes(e.target.value)}
                         placeholder="e.g. S150 was perfect dark brown, speed 1000 had lowest ash residue..."
-                        className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        className="w-full elegant-input rounded px-2 py-1 text-slate-100 placeholder:text-neutral-700"
                       />
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-1 border-t border-slate-900">
+                    <div className="flex justify-end gap-2 pt-1 border-t border-white/8">
                       <button
                         id="cancel-log-btn"
                         type="button"
                         onClick={() => setShowLogForm(false)}
-                        className="text-slate-400 hover:text-slate-200"
+                        className="text-[#888] hover:text-white cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         id="save-log-btn"
                         type="submit"
-                        className="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded font-semibold"
+                        className="bg-red-600 hover:bg-red-500 text-black px-2.5 py-1 rounded font-bold cursor-pointer"
                       >
                         Save to history
                       </button>
@@ -501,37 +501,37 @@ export default function MaterialDatabase({
                 {/* Log history list */}
                 <div className="space-y-2 max-h-[160px] overflow-y-auto mt-2 pr-1">
                   {activeMaterial.history.length === 0 ? (
-                    <p className="text-slate-500 text-xs italic py-2">No calibration logs saved yet for this sheet. Generate a matrix test to find optimal settings!</p>
+                    <p className="text-neutral-500 text-xs italic py-2">No calibration logs saved yet for this sheet. Generate a matrix test to find optimal settings!</p>
                   ) : (
                     activeMaterial.history.map((log) => (
-                      <div key={log.id} className="bg-slate-950 border border-slate-800/60 rounded-lg p-2.5 text-[11px] relative hover:border-slate-750 transition group">
+                      <div key={log.id} className="bg-[#151515] border border-white/8 rounded p-2.5 text-[11px] relative hover:border-white/12 transition-all duration-200 group">
                         <button
                           onClick={() => handleDeleteLog(log.id)}
-                          className="absolute right-2 top-2 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
+                          className="absolute right-2 top-2 text-[#666] hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
                           title="Delete calibration entry"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
-                        <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[10px] mb-1">
-                          <Calendar className="w-3 w-3 text-slate-500 shrink-0" />
+                        <div className="flex items-center gap-1.5 text-neutral-400 font-mono text-[10px] mb-1">
+                          <Calendar className="w-3 h-3 text-[#666] shrink-0" />
                           <span>{log.date}</span>
                           <span className="mx-1">•</span>
-                          <span className="text-amber-500 bg-amber-950/50 px-1 py-0.5 rounded capitalize">
+                          <span className="text-red-400 bg-red-950/20 px-1 py-0.5 rounded capitalize">
                             {log.patternType.replace('_', ' ')}
                           </span>
                         </div>
-                        <div className="grid grid-cols-3 gap-1 font-mono text-[10px] bg-slate-900/60 p-1.5 rounded mb-1 text-slate-300">
+                        <div className="grid grid-cols-3 gap-1 font-mono text-[10px] bg-[#0E0E0E] p-1.5 rounded mb-1 text-neutral-300">
                           {log.optimalPower !== undefined && (
-                            <span>Power: <strong className="text-emerald-400">{log.optimalPower}</strong></span>
+                            <span>Power: <strong className="text-red-400">{log.optimalPower}</strong></span>
                           )}
                           {log.optimalSpeed !== undefined && (
-                            <span>Speed: <strong className="text-emerald-400">{log.optimalSpeed}</strong></span>
+                            <span>Speed: <strong className="text-red-400">{log.optimalSpeed}</strong></span>
                           )}
                           {log.optimalFocusZ !== undefined && (
-                            <span>Z: <strong className="text-emerald-400">{log.optimalFocusZ}mm</strong></span>
+                            <span>Z: <strong className="text-red-400">{log.optimalFocusZ}mm</strong></span>
                           )}
                         </div>
-                        <p className="text-slate-400 leading-relaxed italic">{log.notes}</p>
+                        <p className="text-neutral-400 leading-relaxed italic">{log.notes}</p>
                       </div>
                     ))
                   )}
@@ -539,7 +539,7 @@ export default function MaterialDatabase({
               </div>
             </>
           ) : (
-            <p className="text-slate-400 text-xs text-center py-6">Select a category and material to configure.</p>
+            <p className="text-neutral-500 text-xs text-center py-6">Select a category and material to configure.</p>
           )}
         </div>
       </div>

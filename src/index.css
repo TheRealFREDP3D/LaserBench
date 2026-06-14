@@ -9,9 +9,57 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #020617;
-  color: #f8fafc;
+  background-color: #0A0A0A;
+  color: #E0E0E0;
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom design definitions from Elegant Dark */
+.elegant-bg {
+  background-color: #0A0A0A;
+}
+
+.elegant-panel {
+  background-color: #0E0E0E;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.elegant-border {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.elegant-input {
+  background-color: #151515;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #E0E0E0;
+  transition: all 0.2s ease-in-out;
+}
+
+.elegant-input:focus {
+  border-color: #DC2626;
+  box-shadow: 0 0 10px rgba(255, 62, 62, 0.2);
+}
+
+.accent-glow {
+  box-shadow: 0 0 15px rgba(255, 62, 62, 0.3);
+}
+
+.grid-bg {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.label-caps {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #737373;
 }
 
 /* Custom scrollbars for code boxes and panels to keep clean aesthetic */
@@ -21,14 +69,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #020617; 
+  background: #0A0A0A; 
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b; 
+  background: rgb(30, 30, 30); 
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155; 
+  background: rgb(50, 50, 50); 
 }

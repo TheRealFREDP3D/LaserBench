@@ -47,6 +47,7 @@ export default function App() {
 
   // Active generation results
   const [generatedResults, setGeneratedResults] = useState<GeneratedData | null>(null);
+  const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
 
   // 3. Database Initializer
   useEffect(() => {
@@ -164,34 +165,47 @@ export default function App() {
     }
   };
 
-  return (
-    <div id="laserbench-root" className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
-      {/* Premium Dark Tech Header */}
-      <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur sticky top-0 z-50 px-6 py-4 shadow-sm shrink-0">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-tr from-amber-500 to-red-600 p-2.5 rounded-xl shadow-lg border border-amber-400/25">
-              <Flame className="w-6 h-6 text-slate-950 fill-slate-950" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-white font-sans">LaserBench</h1>
-                <span className="bg-emerald-950 border border-emerald-800 text-emerald-300 text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase">
-                  v1.2 Prod-Calibrator
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Generate repeatable laser-material calibration G-code tests and SVG toolpath pre-visualizations.
-              </p>
-            </div>
-          </div>
+  const handleDownloadGCode = () => {
+    if (!generatedResults) return;
+    const blob = new Blob([generatedResults.gcode], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const safeMatName = activeMaterial ? activeMaterial.name.toLowerCase().replace(/[^a-z0-9]/g, '_') : 'material';
+    link.download = `laserbench_${selectedPattern}_${safeMatName}.gcode`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
-          <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
-            <div className="hidden lg:flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-850">
-              <Compass className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Laser Characterization Workflow Suite</span>
-            </div>
+  return (
+    <div id="laserbench-root" className="min-h-screen bg-[#0A0A0A] text-[#E0E0E0] flex flex-col antialiased">
+      {/* Top Navigation conforming to Elegant Dark styles */}
+      <header className="h-16 flex items-center justify-between px-6 border-b border-white/10 bg-[#0E0E0E] sticky top-0 z-50 shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 bg-red-600 flex items-center justify-center rounded-sm font-bold text-black font-sans select-none">LB</div>
+          <h1 className="text-base font-medium tracking-tight text-white flex items-center gap-1.5">
+            LaserBench 
+            <span className="text-[#666] font-normal italic text-xs">v1.2-beta</span>
+          </h1>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="hidden sm:flex flex-col items-end leading-tight">
+            <span className="label-caps !text-[9px]">Connected Machine</span>
+            <span className="text-xs text-green-400 flex items-center gap-1.5 font-medium">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+              {activeMachine ? activeMachine.name : 'FLSUN Kossel'} ({activeMachine?.firmware.toUpperCase()})
+            </span>
           </div>
+          {generatedResults && (
+            <button
+              onClick={handleDownloadGCode}
+              className="bg-red-600 hover:bg-red-500 text-black px-4 py-1.5 rounded font-bold text-xs tracking-tight transition-all duration-200 cursor-pointer accent-glow"
+            >
+              GENERATE G-CODE
+            </button>
+          )}
         </div>
       </header>
 
@@ -309,22 +323,88 @@ export default function App() {
         </div>
       </main>
 
-      {/* Footer copyright info */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-4 text-center text-slate-500 text-xs shrink-0 font-mono flex items-center justify-center gap-1.5">
-        <span>© 2026 LaserBench calibration suite. Open-source workspace.</span>
-        <span>•</span>
-        <button
-          onClick={() => {
-            alert(
-              "LaserBench Characterizer Guide:\n\n1. Select your target Machine Profile (Marlin Delta or GRBL Rectangular).\n2. Load or Add a wood/acrylic sheet inside the Database.\n3. Choose your calibration pattern (e.g. Power-Speed Matrix).\n4. Customize power ranges, speed ranges or kerf thicknesses.\n5. Click 'Download' or Copy G-code to burn physical tests. Use optical safety goggles!"
-            );
-          }}
-          className="text-indigo-400 hover:text-indigo-300 font-semibold underline flex items-center gap-0.5 whitespace-nowrap"
-        >
-          <Info className="w-3 w-3 inline" />
-          Troubleshoot instructions
-        </button>
+      {/* Footer Status Bar conforming to Elegant Dark */}
+      <footer className="h-10 bg-[#0E0E0E] border-t border-white/10 flex items-center px-6 justify-between text-[11px] text-[#888] shrink-0 select-none">
+        <div className="flex gap-4 font-mono text-[10px]">
+          <span>BUFFER: READY</span>
+          <span>Z-FOCUS: {activeMaterial ? `${activeMaterial.focusZ}mm` : '-40.00mm'}</span>
+          <span>LASER: {activeMaterial ? activeMaterial.laser.toUpperCase() : 'DIODE 5W'}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="text-red-500 hover:text-red-400 font-semibold underline flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition"
+          >
+            <Info className="w-3.5 h-3.5 inline" />
+            Troubleshoot instructions
+          </button>
+        </div>
       </footer>
+
+      {/* Help Modal Overlay conforming to Elegant Dark */}
+      {showHelpModal && (
+        <div 
+          className="fixed inset-0 bg-black/85 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowHelpModal(false)}
+        >
+          <div 
+            className="bg-[#0E0E0E] border border-red-900/60 rounded p-6 max-w-lg w-full text-[#E0E0E0] shadow-2xl relative space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 border-b border-white/8 pb-3">
+              <Info className="text-red-500 w-5 h-5 shrink-0" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">LaserBench Calibration Guide</h3>
+            </div>
+            
+            <div className="space-y-3.5 text-xs leading-relaxed text-neutral-300">
+              <div className="flex gap-2.5">
+                <span className="font-mono text-xs text-red-400 font-bold bg-red-950/45 px-2 py-0.5 rounded h-fit">01</span>
+                <div>
+                  <h4 className="font-bold text-white mb-0.5">Config Machine Profile</h4>
+                  <p>Select your machine (Marlin Delta or GRBL Rectangular). Configure physical coordinate bounds, focal elevations, and feed rates.</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-2.5">
+                <span className="font-mono text-xs text-red-400 font-bold bg-red-950/45 px-2 py-0.5 rounded h-fit">02</span>
+                <div>
+                  <h4 className="font-bold text-white mb-0.5">Load Material Database</h4>
+                  <p>Load timber wood or cast acrylic sheets. Record completed burns directly into the localized log history database.</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-2.5">
+                <span className="font-mono text-xs text-red-400 font-bold bg-red-950/45 px-2 py-0.5 rounded h-fit">03</span>
+                <div>
+                  <h4 className="font-bold text-white mb-0.5">Customize Patterns</h4>
+                  <p>Select Matrix grids, power blocks, speed ramps, Z focus ladders, or clearance kerf combs to isolate properties.</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-2.5">
+                <span className="font-mono text-xs text-red-400 font-bold bg-red-950/45 px-2 py-0.5 rounded h-fit">04</span>
+                <div>
+                  <h4 className="font-bold text-white mb-0.5">Run & Save Optimal Log</h4>
+                  <p>Burn G-code physically, evaluate visual result, key in optimum values, and build your benchmark library.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-red-950/15 border border-red-900/30 p-2.5 rounded text-[10px] text-red-300/80 leading-normal font-sans">
+              <strong>⚠️ Laser Ignition & Optical Safety:</strong> Always operate inside a fire-resistant enclosure. Wear laser safety glasses calibrated for your diode wavelength (e.g., OD5+ protection).
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="bg-red-650 hover:bg-red-600 text-white px-4 py-1.5 rounded font-bold text-xs tracking-tight transition cursor-pointer"
+              >
+                DISMISS GUIDE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

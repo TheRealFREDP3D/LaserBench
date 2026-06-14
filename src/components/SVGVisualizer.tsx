@@ -181,17 +181,17 @@ export default function SVGVisualizer({
   const finalTransform = `translate(${panX}, ${panY}) scale(${zoom}) scale(1, -1)`;
 
   return (
-    <div id="svg-visualizer-container" className="bg-slate-950 border border-slate-900 rounded-xl p-5 shadow-sm text-slate-100 flex flex-col h-full select-none">
+    <div id="svg-visualizer-container" className="bg-[#0E0E0E] border border-white/10 rounded-lg p-5 shadow-sm text-[#E0E0E0] flex flex-col h-full select-none">
       <div className="flex items-center justify-between mb-3 shrink-0">
         <div className="flex items-center gap-2">
-          <Eye className="text-emerald-400 w-5 h-5" />
-          <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-300">Toolpath Preview Engine</h2>
+          <Eye className="text-red-500 w-5 h-5" />
+          <h2 className="text-sm font-semibold tracking-wide uppercase text-white font-sans">Toolpath Preview Engine</h2>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1.5">
           <button
             id="zoom-in-btn"
             onClick={handleZoomIn}
-            className="p-1.5 bg-slate-900 border border-slate-800 hover:bg-slate-850 rounded text-slate-400 hover:text-slate-200 transition"
+            className="p-2 bg-[#222] border border-white/10 hover:bg-[#333] rounded text-[#AAA] hover:text-white transition duration-200 cursor-pointer"
             title="Zoom In"
           >
             <ZoomIn className="w-4 h-4" />
@@ -199,7 +199,7 @@ export default function SVGVisualizer({
           <button
             id="zoom-out-btn"
             onClick={handleZoomOut}
-            className="p-1.5 bg-slate-900 border border-slate-800 hover:bg-slate-850 rounded text-slate-400 hover:text-slate-200 transition"
+            className="p-2 bg-[#222] border border-white/10 hover:bg-[#333] rounded text-[#AAA] hover:text-white transition duration-200 cursor-pointer"
             title="Zoom Out"
           >
             <ZoomOut className="w-4 h-4" />
@@ -207,7 +207,7 @@ export default function SVGVisualizer({
           <button
             id="fit-view-btn"
             onClick={handleFit}
-            className="p-1.5 bg-slate-900 border border-slate-800 hover:bg-slate-850 rounded text-slate-400 hover:text-slate-200 transition"
+            className="p-2 bg-[#222] border border-white/10 hover:bg-[#333] rounded text-[#AAA] hover:text-white transition duration-200 cursor-pointer"
             title="Reset View"
           >
             <Maximize className="w-4 h-4" />
@@ -216,7 +216,7 @@ export default function SVGVisualizer({
       </div>
 
       {/* SVG Canvas Area */}
-      <div className="relative border border-slate-900 bg-[#020617] rounded-lg overflow-hidden flex-1 min-h-[340px] flex items-center justify-center cursor-move">
+      <div className="relative border border-white/8 bg-[#050505] rounded overflow-hidden flex-1 min-h-[340px] flex items-center justify-center cursor-move">
         <svg
           ref={svgRef}
           id="laser-canvas"
@@ -236,7 +236,7 @@ export default function SVGVisualizer({
                 cy="0"
                 r={machine.bedWidth}
                 fill="black"
-                stroke="#334155"
+                stroke="#333"
                 strokeWidth="0.8"
                 strokeDasharray="4,4"
               />
@@ -247,16 +247,16 @@ export default function SVGVisualizer({
                 width={machine.bedWidth}
                 height={machine.bedHeight}
                 fill="black"
-                stroke="#334155"
+                stroke="#333"
                 strokeWidth="0.8"
               />
             )}
 
             {/* Origin Crosshair Marker */}
             <g opacity="0.4">
-              <line x1={minX} y1="0" x2={minX + width} y2="0" stroke="#475569" strokeWidth="0.2" />
-              <line x1="0" y1={minY} x2="0" y2={minY + height} stroke="#475569" strokeWidth="0.2" />
-              <circle cx="0" cy="0" r="2" fill="none" stroke="#64748b" strokeWidth="0.3" />
+              <line x1={minX} y1="0" x2={minX + width} y2="0" stroke="#444" strokeWidth="0.25" />
+              <line x1="0" y1={minY} x2="0" y2={minY + height} stroke="#444" strokeWidth="0.25" />
+              <circle cx="0" cy="0" r="2" fill="none" stroke="#555" strokeWidth="0.3" />
             </g>
 
             {/* Background Grid Lines */}
@@ -269,52 +269,52 @@ export default function SVGVisualizer({
 
         {/* Floating coordinate and parameter label inspector */}
         {hoverPos && (
-          <div className="absolute bottom-3 left-3 bg-slate-900/95 border border-slate-800 rounded-lg p-2.5 shadow-lg backdrop-blur text-[10px] space-y-1 font-mono text-slate-300">
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <Crosshair className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="absolute bottom-3 left-3 bg-[#151515]/95 border border-white/10 rounded p-2.5 shadow-lg backdrop-blur text-[10px] space-y-1 font-mono text-neutral-300 pointer-events-none select-none">
+            <div className="flex items-center gap-1.5 text-neutral-400">
+              <Crosshair className="w-3.5 h-3.5 text-red-500 font-bold" />
               <span>Position: {hoverPos.x}mm, {hoverPos.y}mm</span>
             </div>
             {closestPath ? (
-              <div className="border-t border-slate-850 pt-1 mt-1 space-y-0.5 text-indigo-300">
-                <div>Command: <strong className="text-emerald-400">G1 Cut</strong></div>
-                <div>Power: <strong className="text-amber-400">{closestPath.power}</strong> ({Math.round(closestPath.power / machine.pwmMax*100)}%)</div>
-                <div>Speed: <strong className="text-sky-400">{closestPath.speed} mm/min</strong></div>
-                <div>Z Height: <strong className="text-purple-400">{closestPath.z} mm</strong></div>
+              <div className="border-t border-white/8 pt-1 mt-1 space-y-0.5 text-red-400">
+                <div>Command: <strong className="text-white">G1 Cut</strong></div>
+                <div>Power: <strong className="text-red-400 font-bold">{closestPath.power}</strong> ({Math.round(closestPath.power / machine.pwmMax*100)}%)</div>
+                <div>Speed: <strong className="text-white">{closestPath.speed} mm/min</strong></div>
+                <div>Z Height: <strong className="text-white">{closestPath.z} mm</strong></div>
               </div>
             ) : (
-              <div className="text-[9px] text-slate-500 italic">Hover near toolpaths to inspect properties</div>
+              <div className="text-[9px] text-[#666] italic">Hover near toolpaths to inspect properties</div>
             )}
           </div>
         )}
 
         {/* Circular Coordinate Safeguard */}
         {isCircular && (
-          <div className="absolute top-3 left-3 flex items-center gap-1 text-[10px] bg-indigo-950/60 border border-indigo-900/50 rounded px-2 py-0.5 font-sans font-medium text-indigo-300">
+          <div className="absolute top-3 left-3 flex items-center gap-1 text-[10px] bg-red-950/40 border border-red-900/40 rounded px-2 py-0.5 font-sans font-medium text-red-400 font-bold">
             <span>Bed Center (0,0) Origin</span>
           </div>
         )}
       </div>
 
       {/* Visualizer Legend */}
-      <div id="visualizer-legend" className="mt-3 grid grid-cols-2 lg:grid-cols-5 gap-2 text-[10px] shrink-0 border-t border-slate-900 pt-3">
-        <div className="flex items-center gap-1.5 text-slate-400">
+      <div id="visualizer-legend" className="mt-3 grid grid-cols-2 lg:grid-cols-5 gap-2 text-[10px] shrink-0 border-t border-white/8 pt-3">
+        <div className="flex items-center gap-1.5 text-neutral-400">
           <span className="w-2.5 h-0.5 bg-[#93c5fd] inline-block rounded"></span>
           <span>Low Power (&lt;30%)</span>
         </div>
-        <div className="flex items-center gap-1.5 text-slate-400">
+        <div className="flex items-center gap-1.5 text-neutral-400">
           <span className="w-2.5 h-0.5 bg-[#3b82f6] inline-block rounded"></span>
           <span>Medium (30-60%)</span>
         </div>
-        <div className="flex items-center gap-1.5 text-slate-400">
+        <div className="flex items-center gap-1.5 text-[#AAA]">
           <span className="w-2.5 h-0.5 bg-[#f59e0b] inline-block rounded"></span>
           <span>High (60-85%)</span>
         </div>
-        <div className="flex items-center gap-1.5 text-slate-400">
+        <div className="flex items-center gap-1.5 text-red-400">
           <span className="w-2.5 h-0.5 bg-[#ef4444] inline-block rounded"></span>
           <span>Max S (&gt;85%)</span>
         </div>
-        <div className="flex items-center gap-1.5 text-slate-400">
-          <span className="w-2.5 h-0.5 border-t border-dashed border-slate-600 inline-block w-4"></span>
+        <div className="flex items-center gap-1.5 text-neutral-500">
+          <span className="w-2.5 h-0.5 border-t border-dashed border-neutral-600 inline-block w-4"></span>
           <span>Travel move (G0)</span>
         </div>
       </div>
