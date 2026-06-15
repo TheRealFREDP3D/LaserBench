@@ -21,16 +21,22 @@ export interface GeneratedData {
  * Centering helper
  */
 function getCenterOffset(machine: MachineProfile, patternWidth: number, patternHeight: number): { x: number; y: number } {
+  const oX = machine.originX ?? 0;
+  const oY = machine.originY ?? 0;
+
   if (machine.bedShape === 'circular') {
     // origin is (0,0) at center of circular bed
+    // Custom originX/originY shift the target center coordinate on circular bed
     return {
-      x: -patternWidth / 2,
-      y: -patternHeight / 2,
+      x: oX - patternWidth / 2,
+      y: oY - patternHeight / 2,
     };
   } else {
-    // origin is (0,0) at bottom-left of rectangular bed
-    const centerX = machine.bedWidth / 2;
-    const centerY = machine.bedHeight / 2;
+    // origin is (0,0) at bottom-left of rectangular bed by default
+    // If coordinate origin is placed at (oX, oY) relative to bottom-left,
+    // then bed center coordinate = (bedWidth / 2 - oX, bedHeight / 2 - oY).
+    const centerX = machine.bedWidth / 2 - oX;
+    const centerY = machine.bedHeight / 2 - oY;
     return {
       x: centerX - patternWidth / 2,
       y: centerY - patternHeight / 2,
@@ -109,6 +115,7 @@ export function generatePatternPaths(
     powerMax?: number;
     speedMin?: number;
     speedMax?: number;
+    blockSize?: number;
     // kerf options
     nominalThickness?: number;
     kerfValues?: number[]; // e.g. [0.10, 0.15, 0.20, 0.25]
@@ -125,6 +132,7 @@ export function generatePatternPaths(
   const speedMax = config.speedMax ?? 3000;
   const powerSteps = config.powerSteps ?? 5;
   const speedSteps = config.speedSteps ?? 5;
+  const blockSize = config.blockSize ?? 12;
   
   const zMin = config.zMin ?? (machine.workZ - 3);
   const zMax = config.zMax ?? (machine.workZ + 3);
@@ -162,9 +170,9 @@ export function generatePatternPaths(
     // Power Ramp: 
     // Draw a horizontal row of rectangular hatched swatches or stripes with increasing power.
     // Labeled beneath e.g. "P50", "P100", ...
-    const swatchW = 12;
-    const swatchH = 12;
-    const spacing = 6;
+    const swatchW = blockSize;
+    const swatchH = blockSize;
+    const spacing = Math.round(blockSize * 0.5);
     const steps = powerSteps;
     
     patternWidth = steps * swatchW + (steps - 1) * spacing;
@@ -175,7 +183,7 @@ export function generatePatternPaths(
 
     // Calculate levels
     for (let i = 0; i < steps; i++) {
-      const powerVal = steps > 1 
+       const powerVal = steps > 1 
         ? Math.round(powerMin + (i * (powerMax - powerMin)) / (steps - 1)) 
         : powerMax;
       
@@ -209,9 +217,9 @@ export function generatePatternPaths(
     // A vertical stacked series of horizontal segments.
     // Each line segment drawn at a different speed with a constant power level.
     // Labeled beside e.g. "F400", "F800", "F1600"
-    const lineW = 50;
+    const lineW = blockSize * 4;
     const steps = speedSteps;
-    const lineSpacing = 12;
+    const lineSpacing = blockSize;
     
     patternWidth = lineW + 35; // extra space for label text on right
     patternHeight = steps * lineSpacing + 20;
@@ -254,10 +262,10 @@ export function generatePatternPaths(
     const pSteps = powerSteps;
     const sSteps = speedSteps;
     
-    const cellW = 12;
-    const cellH = 12;
-    const spacingW = 8;
-    const spacingH = 8;
+    const cellW = blockSize;
+    const cellH = blockSize;
+    const spacingW = Math.max(4, Math.round(blockSize * 0.65));
+    const spacingH = Math.max(4, Math.round(blockSize * 0.65));
     
     // Label offsets: speed labels on the left (25mm), power labels at the top (15mm)
     const labelColumnW = 28;
@@ -334,8 +342,8 @@ export function generatePatternPaths(
     // Each vertical line drawn at a DIFFERENT Z coordinate!
     // Labeled beneath with Z height.
     const steps = zSteps;
-    const lineH = 30;
-    const spacing = 14;
+    const lineH = Math.round(blockSize * 2.5);
+    const spacing = Math.round(blockSize * 1.15);
 
     patternWidth = steps * 2 + (steps - 1) * spacing + 15;
     patternHeight = lineH + 20;
@@ -393,8 +401,8 @@ export function generatePatternPaths(
     // Each cut has width = nominal + offset (or nominal - offset).
     // Let's draw 4 slots, formatted nicely with slots side-by-side.
     // Plates size 60mm x 25mm.
-    const plateW = 75;
-    const plateH = 25;
+    const plateW = Math.round(blockSize * 6.25);
+    const plateH = Math.round(blockSize * 2.1);
     const numSlots = offsets.length;
     
     patternWidth = plateW + 10;
@@ -496,14 +504,14 @@ export function generatePatternPaths(
       zMoveCmd = ` Z${currentZ}`;
     }
 
-    gcodeLines.push(`G0 F${machine.travelSpeed} X${p0[0].toFixed(3)} Y${p0[1].toFixed(3)}${zMoveCmd} ; Rapid move to path start`);
+    gcodeLines.push(`G0 F${machine.travelSpeed} X${p0[0].toFixed(3)} Y${p0[1].toFixed(3)}${zMoveCmd} ; Rapid move to path start ; path:${index}`);
     
     currentX = p0[0];
     currentY = p0[1];
 
     // 2. Turn Laser On
     const laserCmd = machine.laserOn.replace('{power}', group.power.toString());
-    gcodeLines.push(`${laserCmd} ; Enable laser (S=${group.power})`);
+    gcodeLines.push(`${laserCmd} ; Enable laser (S=${group.power}) ; path:${index}`);
     isLaserOnState = true;
 
     // 3. Draw lines in path
@@ -514,7 +522,7 @@ export function generatePatternPaths(
         currentFeedrate = group.speed;
         fCmd = ` F${currentFeedrate}`;
       }
-      gcodeLines.push(`G1${fCmd} X${p[0].toFixed(3)} Y${p[1].toFixed(3)} ; Scribing path`);
+      gcodeLines.push(`G1${fCmd} X${p[0].toFixed(3)} Y${p[1].toFixed(3)} ; Scribing path ; path:${index}`);
       currentX = p[0];
       currentY = p[1];
     }

@@ -10,6 +10,7 @@ interface MaterialDatabaseProps {
   onUpdateMaterial: (material: MaterialProfile) => void;
   onCreateMaterial: (material: MaterialProfile) => void;
   onDeleteMaterial: (id: string) => void;
+  theme?: 'dark' | 'light';
 }
 
 export default function MaterialDatabase({
@@ -20,7 +21,9 @@ export default function MaterialDatabase({
   onUpdateMaterial,
   onCreateMaterial,
   onDeleteMaterial,
+  theme = 'dark',
 }: MaterialDatabaseProps) {
+  const isLight = theme === 'light';
   const [activeCategory, setActiveCategory] = useState<MaterialCategory>('Wood');
   const [isEditing, setIsEditing] = useState(false);
   const [showLogForm, setShowLogForm] = useState(false);
@@ -130,19 +133,27 @@ export default function MaterialDatabase({
   };
 
   return (
-    <div id="material-database-card" className="bg-[#0E0E0E] border border-white/10 rounded-lg p-5 shadow-sm text-[#E0E0E0] flex flex-col h-full">
+    <div id="material-database-card" className={`border rounded-lg p-5 shadow-sm flex flex-col h-full transition-all duration-200 ${
+      isLight 
+        ? 'bg-white border-zinc-200 text-zinc-800' 
+        : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
+    }`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <FolderHeart className="text-red-500 w-5 h-5" />
-          <h2 className="text-sm font-semibold tracking-wide uppercase text-white font-sans">Material Calibration Database</h2>
+          <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>Material Calibration Database</h2>
         </div>
         <button
           id="toggle-edit-material-btn"
           onClick={() => setIsEditing(!isEditing)}
           className={`px-3 py-1.5 text-xs font-bold rounded transition-all duration-200 cursor-pointer ${
             isEditing
-              ? 'bg-red-600 text-black hover:bg-red-500 accent-glow'
-              : 'bg-[#222] text-[#AAA] hover:bg-[#333]'
+              ? isLight
+                ? 'bg-red-600 text-white hover:bg-red-500 shadow-sm'
+                : 'bg-red-600 text-black hover:bg-red-500 accent-glow'
+              : isLight
+                ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200'
+                : 'bg-[#222] text-[#AAA] hover:bg-[#333]'
           }`}
         >
           {isEditing ? 'Save Details' : 'Edit Material'}
@@ -150,7 +161,7 @@ export default function MaterialDatabase({
       </div>
 
       {/* Category Tabs */}
-      <div className="flex flex-wrap gap-1 mb-4 border-b border-white/8 pb-2">
+      <div className={`flex flex-wrap gap-1 mb-4 border-b pb-2 ${isLight ? 'border-zinc-250' : 'border-white/8'}`}>
         {categories.map((cat) => (
           <button
             key={cat}
@@ -164,8 +175,12 @@ export default function MaterialDatabase({
             }}
             className={`px-2 py-1.5 text-[11px] font-bold rounded transition-all duration-200 cursor-pointer ${
               activeCategory === cat
-                ? 'bg-red-950/40 text-red-400 border border-red-900/40'
-                : 'text-[#888] hover:text-[#E0E0E0] hover:bg-[#1A1A1A]'
+                ? isLight
+                  ? 'bg-red-50 text-red-500 border border-red-200 shadow-xs'
+                  : 'bg-red-950/40 text-red-400 border border-red-900/40'
+                : isLight
+                  ? 'text-zinc-550 hover:text-black hover:bg-zinc-150 border border-transparent'
+                  : 'text-[#888] hover:text-[#E0E0E0] hover:bg-[#1A1A1A] border border-transparent'
             }`}
           >
             {cat}
@@ -175,9 +190,11 @@ export default function MaterialDatabase({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
         {/* Materials List under Active Category */}
-        <div className="md:col-span-1 border-r border-white/8 pr-4 space-y-2 flex flex-col justify-between max-h-[280px] md:max-h-none overflow-y-auto">
+        <div className={`md:col-span-1 border-r pr-4 space-y-2 flex flex-col justify-between max-h-[280px] md:max-h-none overflow-y-auto ${
+          isLight ? 'border-zinc-200' : 'border-white/8'
+        }`}>
           <div className="space-y-1">
-            <span className="block mb-1 label-caps">
+            <span className={`block mb-1 label-caps ${isLight ? 'text-zinc-500' : ''}`}>
               Select {activeCategory}
             </span>
             {categoryMaterials.length === 0 ? (
@@ -190,12 +207,16 @@ export default function MaterialDatabase({
                   onClick={() => onSelectMaterial(mat.id)}
                   className={`w-full text-left px-2.5 py-1.5 rounded text-xs transition flex justify-between items-center cursor-pointer ${
                     selectedMaterialId === mat.id
-                      ? 'bg-[#1E1414] text-red-400 font-bold border-l-2 border-red-600'
-                      : 'text-neutral-400 hover:bg-[#151515] hover:text-white'
+                      ? isLight
+                        ? 'bg-red-50 text-red-650 font-bold border-l-2 border-red-600'
+                        : 'bg-[#1E1414] text-red-400 font-bold border-l-2 border-red-600'
+                      : isLight
+                        ? 'text-zinc-600 hover:bg-zinc-100 hover:text-black'
+                        : 'text-neutral-400 hover:bg-[#151515] hover:text-white'
                   }`}
                 >
                   <span className="truncate">{mat.name}</span>
-                  <span className="text-[10px] text-neutral-500 shrink-0 font-mono italic">
+                  <span className={`text-[10px] shrink-0 font-mono italic ${isLight ? 'text-zinc-400' : 'text-neutral-500'}`}>
                     {mat.thickness}mm
                   </span>
                 </button>
@@ -206,7 +227,11 @@ export default function MaterialDatabase({
           <button
             id="add-new-material-btn"
             onClick={handleCreateNewMaterial}
-            className="w-full mt-4 flex items-center justify-center gap-1 bg-[#222] border border-white/10 hover:bg-[#333] hover:border-white/15 text-[#E0E0E0] text-xs py-1.5 rounded transition cursor-pointer font-bold"
+            className={`w-full mt-4 flex items-center justify-center gap-1 border text-xs py-1.5 rounded transition cursor-pointer font-bold ${
+              isLight
+                ? 'bg-zinc-100 text-zinc-700 border-zinc-300 hover:bg-zinc-200'
+                : 'bg-[#222] border-white/10 hover:bg-[#333] hover:border-white/15 text-[#E0E0E0]'
+            }`}
           >
             <Plus className="w-3.5 h-3.5" />
             Add {activeCategory}
@@ -218,7 +243,11 @@ export default function MaterialDatabase({
           {activeMaterial ? (
             <>
               {/* Profile Config */}
-              <div className="bg-[#151515] p-3.5 rounded border border-white/10">
+              <div className={`p-3.5 rounded border transition-all duration-200 ${
+                isLight 
+                  ? 'bg-zinc-50 border-zinc-200 text-zinc-800' 
+                  : 'bg-[#151515] border-white/10'
+              }`}>
                 {isEditing ? (
                   <div className="space-y-3 text-xs">
                     <div>
@@ -266,9 +295,9 @@ export default function MaterialDatabase({
                       </div>
                     </div>
 
-                    <div className="border-t border-white/8 pt-2 grid grid-cols-2 gap-3">
+                    <div className={`border-t pt-2 grid grid-cols-2 gap-3 ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
                       <div>
-                        <span className="text-[10px] font-bold text-red-400 block mb-1">ENGRAVING DEFAULT</span>
+                        <span className="text-[10px] font-bold text-red-500 block mb-1">ENGRAVING DEFAULT</span>
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
                             <label className="text-[9px] label-caps block">Power</label>
@@ -296,7 +325,7 @@ export default function MaterialDatabase({
                         </div>
                       </div>
                       <div>
-                        <span className="text-[10px] font-bold text-red-500 block mb-1">CUTTING DEFAULT</span>
+                        <span className="text-[10px] font-bold text-red-650 block mb-1">CUTTING DEFAULT</span>
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
                             <label className="text-[9px] label-caps block">Power</label>
@@ -325,7 +354,7 @@ export default function MaterialDatabase({
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center border-t border-white/8 pt-2">
+                    <div className={`flex justify-between items-center border-t pt-2 ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
                       <button
                         id="delete-material-btn"
                         type="button"
@@ -336,7 +365,7 @@ export default function MaterialDatabase({
                             setIsEditing(false);
                           }
                         }}
-                        className="text-red-500 hover:text-red-400 text-xs flex items-center gap-1 transition"
+                        className="text-red-500 hover:text-red-400 text-xs flex items-center gap-1 transition cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         Delete Material
@@ -346,7 +375,11 @@ export default function MaterialDatabase({
                         id="save-material-btn"
                         type="button"
                         onClick={() => setIsEditing(false)}
-                        className="bg-red-600 hover:bg-red-500 text-black px-3 py-1 rounded font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+                        className={`px-3 py-1 rounded font-bold text-xs flex items-center gap-1 transition cursor-pointer ${
+                          isLight 
+                            ? 'bg-red-600 text-white hover:bg-red-500 shadow-xs' 
+                            : 'bg-red-600 text-black hover:bg-red-500'
+                        }`}
                       >
                         <Check className="w-3.5 h-3.5" />
                         Done Saved
@@ -357,30 +390,42 @@ export default function MaterialDatabase({
                   <div className="space-y-2 text-xs">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 id="display-material-name" className="text-sm font-semibold text-white">{activeMaterial.name}</h3>
-                        <p className="text-[11px] text-neutral-400">
+                        <h3 id="display-material-name" className={`text-sm font-semibold ${isLight ? 'text-zinc-800' : 'text-white'}`}>{activeMaterial.name}</h3>
+                        <p className={`text-[11px] ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>
                           {activeMaterial.thickness}mm thickness | Laser: {activeMaterial.laser}
                         </p>
                       </div>
-                      <div className="bg-[#222] rounded px-2.5 py-1 text-center mono text-[11px] border border-white/10">
-                        <span className="text-[#64748b] text-[9px] uppercase block tracking-wider leading-none font-sans font-bold">Focus Z</span>
+                      <div className={`rounded px-2.5 py-1 text-center mono text-[11px] border ${
+                        isLight 
+                          ? 'bg-zinc-100 border-zinc-200' 
+                          : 'bg-[#222] border-white/10'
+                      }`}>
+                        <span className={`text-[9px] uppercase block tracking-wider leading-none font-sans font-bold ${isLight ? 'text-zinc-500' : 'text-[#64748b]'}`}>Focus Z</span>
                         <span className="font-bold text-red-500 leading-normal">{activeMaterial.focusZ} mm</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 border-t border-white/8 pt-2 mt-2">
-                      <div className="bg-[#1E1414] border border-red-900/30 rounded p-2 text-neutral-300">
+                    <div className={`grid grid-cols-2 gap-4 border-t pt-2 mt-2 ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
+                      <div className={`border rounded p-2 ${
+                        isLight 
+                          ? 'bg-red-50/50 border-red-100 text-red-950' 
+                          : 'bg-[#1E1414] border-red-900/30 text-neutral-300'
+                      }`}>
                         <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest block mb-0.5">Engrave Settings</span>
                         <div className="flex justify-between mono text-[11px]">
-                          <span>Power: <strong className="text-white">{activeMaterial.engrave.power}</strong></span>
-                          <span>Speed: <strong className="text-white">{activeMaterial.engrave.speed} mm/m</strong></span>
+                          <span>Power: <strong className={isLight ? 'text-zinc-950 font-bold' : 'text-white'}>{activeMaterial.engrave.power}</strong></span>
+                          <span>Speed: <strong className={isLight ? 'text-zinc-950 font-bold' : 'text-white'}>{activeMaterial.engrave.speed} mm/m</strong></span>
                         </div>
                       </div>
-                      <div className="bg-[#221010] border border-red-900/40 rounded p-2 text-neutral-300">
+                      <div className={`border rounded p-2 ${
+                        isLight 
+                          ? 'bg-rose-50/50 border-rose-100 text-rose-950' 
+                          : 'bg-[#221010] border-red-900/40 text-neutral-300'
+                      }`}>
                         <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest block mb-0.5">Cut Settings</span>
                         <div className="flex justify-between mono text-[11px]">
-                          <span>Power: <strong className="text-white">{activeMaterial.cut.power}</strong></span>
-                          <span>Speed: <strong className="text-white">{activeMaterial.cut.speed} mm/m</strong></span>
+                          <span>Power: <strong className={isLight ? 'text-zinc-950 font-bold' : 'text-white'}>{activeMaterial.cut.power}</strong></span>
+                          <span>Speed: <strong className={isLight ? 'text-zinc-950 font-bold' : 'text-white'}>{activeMaterial.cut.speed} mm/m</strong></span>
                         </div>
                       </div>
                     </div>
@@ -391,7 +436,7 @@ export default function MaterialDatabase({
               {/* Calibration Logs History */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-[#666]">Calibration Logs</h4>
+                  <h4 className={`text-xs font-semibold uppercase tracking-wider ${isLight ? 'text-zinc-500' : 'text-[#666]'}`}>Calibration Logs</h4>
                   {!showLogForm && (
                     <button
                       id="log-calibration-test-btn"
@@ -401,7 +446,11 @@ export default function MaterialDatabase({
                         setLogOptZ(activeMaterial.focusZ);
                         setShowLogForm(true);
                       }}
-                      className="bg-red-950/45 hover:bg-red-900/40 text-red-400 border border-red-900/40 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-tight transition cursor-pointer"
+                      className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-tight transition cursor-pointer border ${
+                        isLight 
+                          ? 'bg-red-50 border-red-200 text-red-650 hover:bg-red-100' 
+                          : 'bg-red-950/45 border-red-900/40 text-red-400 hover:bg-red-900/40'
+                      }`}
                     >
                       + Log Test Result
                     </button>
@@ -409,7 +458,11 @@ export default function MaterialDatabase({
                 </div>
 
                 {showLogForm && (
-                  <form onSubmit={handleAddLog} id="calibration-log-form" className="bg-[#151515] border border-red-900/40 rounded p-3 space-y-2.5 text-xs text-neutral-300">
+                  <form onSubmit={handleAddLog} id="calibration-log-form" className={`border rounded p-3 space-y-2.5 text-xs ${
+                    isLight 
+                      ? 'bg-zinc-50 border-red-200 text-zinc-800' 
+                      : 'bg-[#151515] border-red-900/40 text-neutral-300'
+                  }`}>
                     <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Log Test Result</span>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -420,11 +473,11 @@ export default function MaterialDatabase({
                           onChange={(e) => setLogPattern(e.target.value)}
                           className="w-full elegant-input rounded px-2 py-1"
                         >
-                          <option value="matrix" className="bg-[#151515]">Power-Speed Matrix</option>
-                          <option value="power_ramp" className="bg-[#151515]">Power Ramp</option>
-                          <option value="speed_ramp" className="bg-[#151515]">Speed Ramp</option>
-                          <option value="focus_ladder" className="bg-[#151515]">Focus Ladder</option>
-                          <option value="kerf_test" className="bg-[#151515]">Kerf Clearance</option>
+                          <option value="matrix" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Power-Speed Matrix</option>
+                          <option value="power_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Power Ramp</option>
+                          <option value="speed_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Speed Ramp</option>
+                          <option value="focus_ladder" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Focus Ladder</option>
+                          <option value="kerf_test" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Kerf Clearance</option>
                         </select>
                       </div>
                       <div>
@@ -474,23 +527,27 @@ export default function MaterialDatabase({
                         value={logNotes}
                         onChange={(e) => setLogNotes(e.target.value)}
                         placeholder="e.g. S150 was perfect dark brown, speed 1000 had lowest ash residue..."
-                        className="w-full elegant-input rounded px-2 py-1 text-slate-100 placeholder:text-neutral-700"
+                        className="w-full elegant-input rounded px-2 py-1 placeholder:text-neutral-500"
                       />
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-1 border-t border-white/8">
+                    <div className={`flex justify-end gap-2 pt-1 border-t ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
                       <button
                         id="cancel-log-btn"
                         type="button"
                         onClick={() => setShowLogForm(false)}
-                        className="text-[#888] hover:text-white cursor-pointer"
+                        className={`cursor-pointer ${isLight ? 'text-zinc-500 hover:text-black font-semibold' : 'text-[#888] hover:text-white'}`}
                       >
                         Cancel
                       </button>
                       <button
                         id="save-log-btn"
                         type="submit"
-                        className="bg-red-600 hover:bg-red-500 text-black px-2.5 py-1 rounded font-bold cursor-pointer"
+                        className={`px-2.5 py-1 rounded font-bold cursor-pointer ${
+                          isLight 
+                            ? 'bg-red-650 text-white hover:bg-red-700' 
+                            : 'bg-red-600 text-black hover:bg-red-500'
+                        }`}
                       >
                         Save to history
                       </button>
@@ -504,34 +561,48 @@ export default function MaterialDatabase({
                     <p className="text-neutral-500 text-xs italic py-2">No calibration logs saved yet for this sheet. Generate a matrix test to find optimal settings!</p>
                   ) : (
                     activeMaterial.history.map((log) => (
-                      <div key={log.id} className="bg-[#151515] border border-white/8 rounded p-2.5 text-[11px] relative hover:border-white/12 transition-all duration-200 group">
+                      <div key={log.id} className={`border rounded p-2.5 text-[11px] relative transition-all duration-200 group ${
+                        isLight 
+                          ? 'bg-zinc-50 border-zinc-200 hover:border-zinc-350 text-zinc-700' 
+                          : 'bg-[#151515] border-white/8 hover:border-white/12 text-neutral-300'
+                      }`}>
                         <button
                           onClick={() => handleDeleteLog(log.id)}
-                          className="absolute right-2 top-2 text-[#666] hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                          className={`absolute right-2 top-2 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer ${
+                            isLight ? 'text-zinc-400' : 'text-[#666]'
+                          }`}
                           title="Delete calibration entry"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
-                        <div className="flex items-center gap-1.5 text-neutral-400 font-mono text-[10px] mb-1">
-                          <Calendar className="w-3 h-3 text-[#666] shrink-0" />
+                        <div className={`flex items-center gap-1.5 font-mono text-[10px] mb-1 ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>
+                          <Calendar className={`w-3 h-3 shrink-0 ${isLight ? 'text-zinc-400' : 'text-[#666]'}`} />
                           <span>{log.date}</span>
                           <span className="mx-1">•</span>
-                          <span className="text-red-400 bg-red-950/20 px-1 py-0.5 rounded capitalize">
+                          <span className={`px-1 py-0.5 rounded capitalize ${
+                            isLight 
+                              ? 'text-red-650 bg-red-50 font-semibold' 
+                              : 'text-red-400 bg-red-950/20'
+                          }`}>
                             {log.patternType.replace('_', ' ')}
                           </span>
                         </div>
-                        <div className="grid grid-cols-3 gap-1 font-mono text-[10px] bg-[#0E0E0E] p-1.5 rounded mb-1 text-neutral-300">
+                        <div className={`grid grid-cols-3 gap-1 font-mono text-[10px] p-1.5 rounded mb-1 ${
+                          isLight 
+                            ? 'bg-zinc-200/50 text-zinc-800' 
+                            : 'bg-[#0E0E0E] text-neutral-300'
+                        }`}>
                           {log.optimalPower !== undefined && (
-                            <span>Power: <strong className="text-red-400">{log.optimalPower}</strong></span>
+                            <span>Power: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalPower}</strong></span>
                           )}
                           {log.optimalSpeed !== undefined && (
-                            <span>Speed: <strong className="text-red-400">{log.optimalSpeed}</strong></span>
+                            <span>Speed: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalSpeed}</strong></span>
                           )}
                           {log.optimalFocusZ !== undefined && (
-                            <span>Z: <strong className="text-red-400">{log.optimalFocusZ}mm</strong></span>
+                            <span>Z: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalFocusZ}mm</strong></span>
                           )}
                         </div>
-                        <p className="text-neutral-400 leading-relaxed italic">{log.notes}</p>
+                        <p className={isLight ? 'text-zinc-600 leading-relaxed italic' : 'text-[#AAA] leading-relaxed italic'}>{log.notes}</p>
                       </div>
                     ))
                   )}

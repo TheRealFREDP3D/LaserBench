@@ -12,6 +12,7 @@ interface PatternConfiguratorProps {
   speedMax: number;
   powerSteps: number;
   speedSteps: number;
+  blockSize: number;
   // kerf
   nominalThickness: number;
   kerfValues: number[];
@@ -33,6 +34,8 @@ interface PatternConfiguratorProps {
   onSetZMin: (v: number) => void;
   onSetZMax: (v: number) => void;
   onSetZSteps: (v: number) => void;
+  onSetBlockSize: (v: number) => void;
+  theme?: 'dark' | 'light';
 }
 
 export default function PatternConfigurator({
@@ -44,6 +47,7 @@ export default function PatternConfigurator({
   speedMax,
   powerSteps,
   speedSteps,
+  blockSize,
   nominalThickness,
   kerfValues,
   zMin,
@@ -61,7 +65,10 @@ export default function PatternConfigurator({
   onSetZMin,
   onSetZMax,
   onSetZSteps,
+  onSetBlockSize,
+  theme = 'dark',
 }: PatternConfiguratorProps) {
+  const isLight = theme === 'light';
   const patterns: { type: PatternType; name: string; desc: string; icon: any; colorClass: string }[] = [
     {
       type: 'matrix',
@@ -105,10 +112,14 @@ export default function PatternConfigurator({
   };
 
   return (
-    <div id="pattern-configurator-card" className="bg-[#0E0E0E] border border-white/10 rounded-lg p-5 shadow-sm text-[#E0E0E0] space-y-5">
+    <div id="pattern-configurator-card" className={`border rounded-lg p-5 shadow-sm space-y-5 transition-all duration-200 ${
+      isLight 
+        ? 'bg-white border-zinc-200 text-zinc-800' 
+        : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
+    }`}>
       <div className="flex items-center gap-2">
         <Sliders className="text-red-500 w-5 h-5" />
-        <h2 className="text-sm font-semibold tracking-wide uppercase text-white font-sans">Calibration Patterns</h2>
+        <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>Calibration Patterns</h2>
       </div>
 
       {/* Pattern Selector Cards */}
@@ -117,9 +128,15 @@ export default function PatternConfigurator({
           const Icon = pat.icon;
           const isSelected = selectedPattern === pat.type;
           
-          let tailoredColorClass = "text-neutral-400 bg-[#151515] border-white/8";
+          let tailoredColorClass = "";
           if (isSelected) {
-            tailoredColorClass = "text-red-400 bg-red-950/25 border-red-900/50";
+            tailoredColorClass = isLight 
+              ? "text-red-600 bg-red-50 border-red-200" 
+              : "text-red-400 bg-red-950/25 border-red-900/50";
+          } else {
+            tailoredColorClass = isLight
+              ? "text-zinc-500 bg-zinc-100 border-zinc-200"
+              : "text-neutral-400 bg-[#151515] border-white/8";
           }
 
           return (
@@ -129,8 +146,12 @@ export default function PatternConfigurator({
               onClick={() => onSelectPattern(pat.type)}
               className={`w-full text-left p-3 rounded border transition-all duration-200 flex items-start gap-3 cursor-pointer ${
                 isSelected
-                  ? 'bg-[#151515] border-red-600/80 ring-1 ring-red-600/20 shadow-md'
-                  : 'bg-[#0A0A0A] border-white/8 hover:border-white/12'
+                  ? isLight
+                    ? 'bg-red-50/40 border-red-500 ring-1 ring-red-200 shadow-sm text-zinc-900'
+                    : 'bg-[#151515] border-red-600/80 ring-1 ring-red-600/20 shadow-md text-[#E0E0E0]'
+                  : isLight
+                    ? 'bg-zinc-50 border-zinc-200 text-zinc-800 hover:bg-zinc-100 hover:border-zinc-300'
+                    : 'bg-[#0A0A0A] border-white/8 hover:border-white/12 text-[#E0E0E0]'
               }`}
             >
               <div className={`p-2 rounded ${tailoredColorClass} border shrink-0`}>
@@ -138,14 +159,18 @@ export default function PatternConfigurator({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-[#E0E0E0]">{pat.name}</h3>
+                  <h3 className={`text-xs font-bold ${isLight ? 'text-zinc-850' : 'text-[#E0E0E0]'}`}>{pat.name}</h3>
                   {isSelected && (
-                    <span className="bg-red-950/60 border border-red-800 text-red-400 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase font-bold tracking-wider float-right select-none animate-pulse">
+                    <span className={`border text-[9px] px-1.5 py-0.5 rounded font-mono uppercase font-bold tracking-wider float-right select-none animate-pulse ${
+                      isLight 
+                        ? 'bg-red-100 border-red-300 text-red-600' 
+                        : 'bg-red-950/60 border border-red-800 text-red-400'
+                    }`}>
                       ACTIVE
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">{pat.desc}</p>
+                <p className={`text-[11px] mt-1 leading-relaxed ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>{pat.desc}</p>
               </div>
             </button>
           );
@@ -153,26 +178,60 @@ export default function PatternConfigurator({
       </div>
 
       {/* Dynamic parameters depending on the selected pattern */}
-      <div id="pattern-parameters-form" className="bg-[#151515] p-4 rounded border border-white/8 space-y-4">
-        <h3 className="text-xs font-semibold text-white border-b border-white/8 pb-1.5 flex justify-between items-center">
+      <div id="pattern-parameters-form" className={`p-4 rounded border space-y-4 transition-all duration-200 ${
+        isLight ? 'bg-zinc-50/55 border-zinc-200' : 'bg-[#151515] border-white/8'
+      }`}>
+        <h3 className={`text-xs font-semibold border-b pb-1.5 flex justify-between items-center ${
+          isLight ? 'text-zinc-800 border-zinc-200' : 'text-white border-white/8'
+        }`}>
           <span>Pattern Settings</span>
-          <span className="text-[10px] text-neutral-500 uppercase tracking-widest font-mono">Configure Grid Parameters</span>
+          <span className={`text-[10px] uppercase tracking-widest font-mono ${isLight ? 'text-zinc-400' : 'text-neutral-500'}`}>Configure Grid Parameters</span>
         </h3>
+
+        {/* Universal Block Size Setting */}
+        <div id="general-block-size-setting" className={`space-y-1.5 pb-3 border-b ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
+          <div className="flex items-center justify-between text-xs">
+            <span className={`font-bold ${isLight ? 'text-zinc-700' : 'text-neutral-300'}`}>Geometric Block Size</span>
+            <span id="pattern-blocksize-label" className="font-mono text-red-500 font-bold">
+              {blockSize} mm
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              id="pattern-blocksize-slider"
+              type="range"
+              min="5"
+              max="30"
+              step="1"
+              value={blockSize}
+              onChange={(e) => onSetBlockSize(parseInt(e.target.value) || 12)}
+              className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
+            />
+            <span id="block-size-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[32px] text-center ${
+              isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+            }`}>
+              {blockSize}
+            </span>
+          </div>
+          <p className={`text-[10px] leading-snug italic ${isLight ? 'text-zinc-500' : 'text-neutral-500'}`}>
+            Defines the individual cell size or line scaling dimensions of the calibration pattern.
+          </p>
+        </div>
 
         {(selectedPattern === 'matrix' || selectedPattern === 'power_ramp' || selectedPattern === 'speed_ramp') && (
           <div className="space-y-4">
             {/* Power Range */}
             {(selectedPattern === 'matrix' || selectedPattern === 'power_ramp') && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-neutral-400">
-                  <span className="font-bold text-neutral-300">Power Output Range (PWM)</span>
-                  <span id="power-range-label" className="font-mono text-red-400 font-bold">
+                <div className="flex items-center justify-between text-xs">
+                  <span className={`font-bold ${isLight ? 'text-zinc-700' : 'text-neutral-300'}`}>Power Output Range (PWM)</span>
+                  <span id="power-range-label" className="font-mono text-red-500 font-bold">
                     S{powerMin} ({pctString(powerMin)}) - S{powerMax} ({pctString(powerMax)})
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-[#888] block mb-0.5 label-caps">Min Power S</label>
+                    <label className={`text-[10px] block mb-0.5 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Min Power S</label>
                     <input
                       id="pattern-powermin-slider"
                       type="range"
@@ -180,11 +239,11 @@ export default function PatternConfigurator({
                       max={powerMax - 1}
                       value={powerMin}
                       onChange={(e) => onSetPowerMin(parseInt(e.target.value) || 10)}
-                      className="w-full h-1 bg-[#222] rounded-md appearance-none accent-red-650 cursor-pointer"
+                      className={`w-full h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-[#888] block mb-0.5 label-caps">Max Power S</label>
+                    <label className={`text-[10px] block mb-0.5 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Max Power S</label>
                     <input
                       id="pattern-powermax-slider"
                       type="range"
@@ -192,14 +251,14 @@ export default function PatternConfigurator({
                       max={pwmMax}
                       value={powerMax}
                       onChange={(e) => onSetPowerMax(parseInt(e.target.value) || 255)}
-                      className="w-full h-1 bg-[#222] rounded-md appearance-none accent-red-650 cursor-pointer"
+                      className={`w-full h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                     />
                   </div>
                 </div>
 
                 {selectedPattern === 'matrix' && (
                   <div>
-                    <label className="text-[10px] text-[#888] block mb-1 label-caps">Power Grid Columns</label>
+                    <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Power Grid Columns</label>
                     <div className="flex items-center gap-2">
                       <input
                         id="pattern-powersteps-slider"
@@ -208,9 +267,11 @@ export default function PatternConfigurator({
                         max="8"
                         value={powerSteps}
                         onChange={(e) => onSetPowerSteps(parseInt(e.target.value) || 2)}
-                        className="flex-1 h-1 bg-[#222] rounded-md appearance-none accent-red-650 cursor-pointer"
+                        className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
-                      <span id="power-steps-val" className="bg-[#0A0A0A] border border-white/10 px-2 py-0.5 rounded font-mono text-xs text-neutral-300 min-w-[28px] text-center">
+                      <span id="power-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
+                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                      }`}>
                         {powerSteps}
                       </span>
                     </div>
@@ -218,7 +279,7 @@ export default function PatternConfigurator({
                 )}
                 {selectedPattern === 'power_ramp' && (
                   <div>
-                    <label className="text-[10px] text-[#888] block mb-1 label-caps">Calibration Blocks (Steps)</label>
+                    <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Calibration Blocks (Steps)</label>
                     <div className="flex items-center gap-2">
                       <input
                         id="power-ramp-steps-slider"
@@ -227,9 +288,11 @@ export default function PatternConfigurator({
                         max="10"
                         value={powerSteps}
                         onChange={(e) => onSetPowerSteps(parseInt(e.target.value) || 3)}
-                        className="flex-1 h-1 bg-[#222] rounded-md appearance-none accent-red-650 cursor-pointer"
+                        className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
-                      <span id="power-ramp-steps-val" className="bg-[#0A0A0A] border border-white/10 px-2 py-0.5 rounded font-mono text-xs text-neutral-300 min-w-[28px] text-center">
+                      <span id="power-ramp-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
+                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                      }`}>
                         {powerSteps}
                       </span>
                     </div>
@@ -240,16 +303,16 @@ export default function PatternConfigurator({
 
             {/* Speed Range */}
             {(selectedPattern === 'matrix' || selectedPattern === 'speed_ramp') && (
-              <div className="space-y-2 border-t border-white/8 pt-3">
-                <div className="flex items-center justify-between text-xs text-neutral-400">
-                  <span className="font-bold text-neutral-300">Feedrate Range (mm/min)</span>
-                  <span id="speed-range-label" className="font-mono text-red-400 font-bold">
+              <div className={`space-y-2 border-t pt-3 ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
+                <div className="flex items-center justify-between text-xs">
+                  <span className={`font-bold ${isLight ? 'text-zinc-700' : 'text-neutral-300'}`}>Feedrate Range (mm/min)</span>
+                  <span id="speed-range-label" className="font-mono text-red-500 font-bold">
                     F{speedMin} - F{speedMax} mm/m
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-[#888] block mb-0.5 label-caps">Min Speed (F)</label>
+                    <label className={`text-[10px] block mb-0.5 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Min Speed (F)</label>
                     <input
                       id="pattern-speedmin-input"
                       type="number"
@@ -258,11 +321,13 @@ export default function PatternConfigurator({
                       max={speedMax - 1}
                       value={speedMin}
                       onChange={(e) => onSetSpeedMin(parseInt(e.target.value) || 50)}
-                      className="w-full elegant-input px-2 py-1 outline-none text-xs rounded"
+                      className={`w-full elegant-input px-2 py-1 outline-none text-xs rounded border ${
+                        isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
+                      }`}
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-[#888] block mb-0.5 label-caps">Max Speed (F)</label>
+                    <label className={`text-[10px] block mb-0.5 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Max Speed (F)</label>
                     <input
                       id="pattern-speedmax-input"
                       type="number"
@@ -270,14 +335,16 @@ export default function PatternConfigurator({
                       min={speedMin + 1}
                       value={speedMax}
                       onChange={(e) => onSetSpeedMax(parseInt(e.target.value) || 2000)}
-                      className="w-full elegant-input px-2 py-1 outline-none text-xs rounded"
+                      className={`w-full elegant-input px-2 py-1 outline-none text-xs rounded border ${
+                        isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
+                      }`}
                     />
                   </div>
                 </div>
 
                 {selectedPattern === 'matrix' && (
                   <div>
-                    <label className="text-[10px] text-[#888] block mb-1 label-caps">Speed Grid Rows</label>
+                    <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Speed Grid Rows</label>
                     <div className="flex items-center gap-2">
                       <input
                         id="pattern-speedsteps-slider"
@@ -286,9 +353,11 @@ export default function PatternConfigurator({
                         max="8"
                         value={speedSteps}
                         onChange={(e) => onSetSpeedSteps(parseInt(e.target.value) || 2)}
-                        className="flex-1 h-1 bg-[#222] rounded-md appearance-none accent-red-650 cursor-pointer"
+                        className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
-                      <span id="speed-steps-val" className="bg-[#0A0A0A] border border-white/10 px-2 py-0.5 rounded font-mono text-xs text-neutral-300 min-w-[28px] text-center">
+                      <span id="speed-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
+                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                      }`}>
                         {speedSteps}
                       </span>
                     </div>
@@ -296,7 +365,7 @@ export default function PatternConfigurator({
                 )}
                 {selectedPattern === 'speed_ramp' && (
                   <div>
-                    <label className="text-[10px] text-[#888] block mb-1 label-caps">Calibration Lines (Steps)</label>
+                    <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Calibration Lines (Steps)</label>
                     <div className="flex items-center gap-2">
                       <input
                         id="speed-ramp-steps-slider"
@@ -305,9 +374,11 @@ export default function PatternConfigurator({
                         max="10"
                         value={speedSteps}
                         onChange={(e) => onSetSpeedSteps(parseInt(e.target.value) || 3)}
-                        className="flex-1 h-1 bg-[#222] rounded-md appearance-none accent-red-650 cursor-pointer"
+                        className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
-                      <span id="speed-ramp-steps-val" className="bg-[#0A0A0A] border border-white/10 px-2 py-0.5 rounded font-mono text-xs text-neutral-300 min-w-[28px] text-center">
+                      <span id="speed-ramp-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
+                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                      }`}>
                         {speedSteps}
                       </span>
                     </div>
@@ -320,37 +391,41 @@ export default function PatternConfigurator({
 
         {/* Focus Ladder Params */}
         {selectedPattern === 'focus_ladder' && (
-          <div className="space-y-4 text-xs">
-            <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Ladder Z-Bounds</span>
+          <div className="space-y-4 text-xs font-sans">
+            <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">Ladder Z-Bounds</span>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-[#888] block mb-0.5 label-caps">Start Z (mm)</label>
+                <label className={`text-[10px] block mb-0.5 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Start Z (mm)</label>
                 <input
                   id="pattern-zmin-input"
                   type="number"
                   step="0.5"
                   value={zMin}
                   onChange={(e) => onSetZMin(parseFloat(e.target.value) || -43)}
-                  className="w-full elegant-input px-2 py-1 text-xs rounded"
+                  className={`w-full elegant-input px-2 py-1 text-xs rounded border ${
+                    isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
+                  }`}
                 />
-                <span className="text-[9px] text-[#666] block">Lowest nozzle clearance</span>
+                <span className={`text-[9px] block ${isLight ? 'text-zinc-400' : 'text-[#666]'}`}>Lowest nozzle clearance</span>
               </div>
               <div>
-                <label className="text-[10px] text-[#888] block mb-0.5 label-caps">End Z (mm)</label>
+                <label className={`text-[10px] block mb-0.5 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>End Z (mm)</label>
                 <input
                   id="pattern-zmax-input"
                   type="number"
                   step="0.5"
                   value={zMax}
                   onChange={(e) => onSetZMax(parseFloat(e.target.value) || -37)}
-                  className="w-full elegant-input px-2 py-1 text-xs rounded"
+                  className={`w-full elegant-input px-2 py-1 text-xs rounded border ${
+                    isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
+                  }`}
                 />
-                <span className="text-[9px] text-[#666] block">Highest nozzle clearance</span>
+                <span className={`text-[9px] block ${isLight ? 'text-zinc-400' : 'text-[#666]'}`}>Highest nozzle clearance</span>
               </div>
             </div>
 
             <div>
-              <label className="text-[10px] text-[#888] block mb-1 label-caps">Z Increments (Test Lines)</label>
+              <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Z Increments (Test Lines)</label>
               <div className="flex items-center gap-2">
                 <input
                   id="pattern-zsteps-slider"
@@ -359,9 +434,11 @@ export default function PatternConfigurator({
                   max="10"
                   value={zSteps}
                   onChange={(e) => onSetZSteps(parseInt(e.target.value) || 3)}
-                  className="flex-1 h-1 bg-[#222] rounded-md appearance-none accent-red-650 cursor-pointer"
+                  className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                 />
-                <span id="z-steps-val" className="bg-[#0A0A0A] border border-white/10 px-2 py-0.5 rounded font-mono text-xs text-neutral-300 min-w-[28px] text-center">
+                <span id="z-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
+                  isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                }`}>
                   {zSteps}
                 </span>
               </div>
@@ -374,11 +451,11 @@ export default function PatternConfigurator({
 
         {/* Kerf Test Comb Params */}
         {selectedPattern === 'kerf_test' && (
-          <div className="space-y-4 text-xs">
-            <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Kerf Dimensions</span>
+          <div className="space-y-4 text-xs font-sans">
+            <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">Kerf Dimensions</span>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-[#888] block mb-0.5 label-caps">Nominal Thickness (mm)</label>
+                <label className={`text-[10px] block mb-0.5 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Nominal Thickness (mm)</label>
                 <input
                   id="pattern-nominal-thickness-input"
                   type="number"
@@ -386,12 +463,14 @@ export default function PatternConfigurator({
                   min="0.1"
                   value={nominalThickness}
                   onChange={(e) => onSetNominalThickness(parseFloat(e.target.value) || 3.0)}
-                  className="w-full elegant-input px-2 py-1 text-xs rounded"
+                  className={`w-full elegant-input px-2 py-1 text-xs rounded border ${
+                    isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
+                  }`}
                 />
-                <span className="text-[9px] text-[#666] block">Matches typical sheet material thickness</span>
+                <span className={`text-[9px] block ${isLight ? 'text-zinc-400' : 'text-[#666]'}`}>Matches typical sheet material thickness</span>
               </div>
               <div>
-                <label className="text-[10px] text-[#888] block mb-0.5 label-caps font-sans tracking-normal leading-normal">Clearance Spacings (Comma separated)</label>
+                <label className={`text-[10px] block mb-0.5 label-caps font-sans tracking-normal leading-normal ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Clearance Spacings (Comma separated)</label>
                 <input
                   id="pattern-kerf-values-input"
                   type="text"
@@ -405,9 +484,11 @@ export default function PatternConfigurator({
                       onSetKerfValues(parsed);
                     }
                   }}
-                  className="w-full elegant-input px-2 py-1 font-mono text-xs rounded"
+                  className={`w-full elegant-input px-2 py-1 font-mono text-xs rounded border ${
+                    isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
+                  }`}
                 />
-                <span className="text-[9px] text-[#666] block">Slots nominal width +- these offsets</span>
+                <span className={`text-[9px] block ${isLight ? 'text-zinc-400' : 'text-[#666]'}`}>Slots nominal width +- these offsets</span>
               </div>
             </div>
 

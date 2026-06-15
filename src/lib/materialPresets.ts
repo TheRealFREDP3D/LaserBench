@@ -13,7 +13,9 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     travelSpeed: 6000,
     bedShape: 'circular',
     bedWidth: 90, // Radius is 90
-    bedHeight: 0
+    bedHeight: 0,
+    originX: 0,
+    originY: 0
   },
   {
     id: 'grbl_generic',
@@ -27,7 +29,9 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     travelSpeed: 4000,
     bedShape: 'rectangular',
     bedWidth: 300,
-    bedHeight: 180
+    bedHeight: 180,
+    originX: 0,
+    originY: 0
   },
   {
     id: 'xtool_d1_pro',
@@ -41,7 +45,9 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     travelSpeed: 8000,
     bedShape: 'rectangular',
     bedWidth: 430,
-    bedHeight: 400
+    bedHeight: 400,
+    originX: 0,
+    originY: 0
   },
   {
     id: 'marlin_custom',
@@ -55,7 +61,9 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     travelSpeed: 5000,
     bedShape: 'rectangular',
     bedWidth: 220,
-    bedHeight: 220
+    bedHeight: 220,
+    originX: 0,
+    originY: 0
   }
 ];
 

@@ -9,6 +9,7 @@ interface MachineSelectorProps {
   onUpdateMachine: (machine: MachineProfile) => void;
   onCreateMachine: (machine: MachineProfile) => void;
   onDeleteMachine: (id: string) => void;
+  theme?: 'dark' | 'light';
 }
 
 export default function MachineSelector({
@@ -18,7 +19,9 @@ export default function MachineSelector({
   onUpdateMachine,
   onCreateMachine,
   onDeleteMachine,
+  theme = 'dark',
 }: MachineSelectorProps) {
+  const isLight = theme === 'light';
   const [isEditing, setIsEditing] = useState(false);
   const activeMachine = machines.find((m) => m.id === selectedMachineId) || machines[0];
 
@@ -45,6 +48,8 @@ export default function MachineSelector({
       bedShape: 'rectangular',
       bedWidth: 300,
       bedHeight: 300,
+      originX: 0,
+      originY: 0,
     };
     onCreateMachine(newMachine);
     onSelectMachine(newId);
@@ -52,19 +57,27 @@ export default function MachineSelector({
   };
 
   return (
-    <div id="machine-selector-card" className="bg-[#0E0E0E] border border-white/10 rounded-lg p-5 shadow-md text-[#E0E0E0]">
+    <div id="machine-selector-card" className={`border rounded-lg p-5 shadow-md transition-all duration-200 ${
+      isLight 
+        ? 'bg-white border-zinc-200 text-zinc-800' 
+        : 'bg-[#0E0E0E] text-[#E0E0E0] border-white/10'
+    }`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Cpu className="text-red-500 w-5 h-5" />
-          <h2 className="text-sm font-semibold tracking-wide uppercase text-white font-sans">Machine Profile</h2>
+          <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>Machine Profile</h2>
         </div>
         <button
           id="toggle-edit-machine-btn"
           onClick={() => setIsEditing(!isEditing)}
           className={`px-3 py-1.5 text-xs font-bold rounded transition-all duration-200 cursor-pointer ${
             isEditing
-              ? 'bg-red-600 text-black hover:bg-red-500 accent-glow'
-              : 'bg-[#222] text-[#AAA] hover:bg-[#333]'
+              ? isLight
+                ? 'bg-red-650 text-white hover:bg-red-700 shadow-sm'
+                : 'bg-red-600 text-black hover:bg-red-500 accent-glow'
+              : isLight
+                ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200'
+                : 'bg-[#222] text-[#AAA] hover:bg-[#333]'
           }`}
         >
           {isEditing ? 'Done Settings' : 'Edit Settings'}
@@ -74,7 +87,7 @@ export default function MachineSelector({
       <div className="space-y-4">
         {/* Dropdown for selector */}
         <div>
-          <label className="block mb-1 label-caps">Active Machine Profile</label>
+          <label className={`block mb-1 label-caps ${isLight ? 'text-zinc-500' : ''}`}>Active Machine Profile</label>
           <div className="flex gap-2">
             <select
               id="machine-profile-select"
@@ -83,7 +96,7 @@ export default function MachineSelector({
               className="flex-1 elegant-input rounded-md px-3 py-2 text-sm outline-none"
             >
               {machines.map((mac) => (
-                <option key={mac.id} value={mac.id} className="bg-[#151515]">
+                <option key={mac.id} value={mac.id} className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>
                   {mac.name} ({mac.firmware.toUpperCase()})
                 </option>
               ))}
@@ -92,7 +105,11 @@ export default function MachineSelector({
               id="new-machine-btn"
               onClick={handleCreateNew}
               title="Add new machine profile"
-              className="bg-[#222] text-[#E0E0E0] border border-white/10 hover:bg-[#333] px-3.5 py-2 rounded-md text-sm flex items-center justify-center transition cursor-pointer"
+              className={`px-3.5 py-2 rounded-md text-sm flex items-center justify-center transition cursor-pointer border ${
+                isLight 
+                  ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200' 
+                  : 'bg-[#222] text-[#E0E0E0] border-white/10 hover:bg-[#333]'
+              }`}
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -101,7 +118,9 @@ export default function MachineSelector({
 
         {/* Machine Config Editor */}
         {isEditing && activeMachine && (
-          <div id="machine-config-editor-form" className="border-t border-white/8 pt-3 mt-3 space-y-3 text-slate-300 text-xs">
+          <div id="machine-config-editor-form" className={`border-t pt-3 mt-3 space-y-3 text-xs ${
+            isLight ? 'border-zinc-200 text-zinc-800' : 'border-white/8 text-slate-300'
+          }`}>
             {/* Machine Name */}
             <div>
               <label className="block mb-1 label-caps">Rename Profile</label>
@@ -136,8 +155,8 @@ export default function MachineSelector({
                   }}
                   className="w-full elegant-input rounded-md px-2 py-1.5"
                 >
-                  <option value="grbl" className="bg-[#151515]">GRBL ($32 mode)</option>
-                  <option value="marlin" className="bg-[#151515]">Marlin Fan PWM</option>
+                  <option value="grbl" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>GRBL ($32 mode)</option>
+                  <option value="marlin" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Marlin Fan PWM</option>
                 </select>
               </div>
 
@@ -230,8 +249,8 @@ export default function MachineSelector({
                   onChange={(e) => handleFieldChange('bedShape', e.target.value)}
                   className="w-full elegant-input rounded-md px-2 py-1.5"
                 >
-                  <option value="rectangular" className="bg-[#151515]">Rect (X/Y)</option>
-                  <option value="circular" className="bg-[#151515]">Delta (Circ)</option>
+                  <option value="rectangular" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Rect (X/Y)</option>
+                  <option value="circular" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Delta (Circ)</option>
                 </select>
               </div>
               {activeMachine.bedShape === 'circular' ? (
@@ -274,6 +293,35 @@ export default function MachineSelector({
               )}
             </div>
 
+            {/* Origin coordinates setup */}
+            <div className={`grid grid-cols-2 gap-2 border-t pt-3 mt-1 ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
+              <div>
+                <label className="block mb-1 label-caps">Origin X Coord (mm)</label>
+                <input
+                  id="machine-originx-input"
+                  type="number"
+                  placeholder="0"
+                  value={activeMachine.originX ?? 0}
+                  onChange={(e) => handleFieldChange('originX', parseInt(e.target.value) || 0)}
+                  className="w-full elegant-input rounded-md px-2 py-1.5"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 label-caps">Origin Y Coord (mm)</label>
+                <input
+                  id="machine-originy-input"
+                  type="number"
+                  placeholder="0"
+                  value={activeMachine.originY ?? 0}
+                  onChange={(e) => handleFieldChange('originY', parseInt(e.target.value) || 0)}
+                  className="w-full elegant-input rounded-md px-2 py-1.5"
+                />
+              </div>
+              <p className={`col-span-2 text-[10px] leading-snug italic pt-1 ${isLight ? 'text-zinc-500' : 'text-neutral-500'}`}>
+                Offsets layout center on physical bed. Set to half of bed size (e.g., 100, 100 on a 200&times;200 bed) for machines with centered center/delta 0,0 points.
+              </p>
+            </div>
+
             {/* Remove Profile for custom profiles */}
             {machines.length > 1 && (
               <div className="flex justify-end pt-2">
@@ -281,13 +329,13 @@ export default function MachineSelector({
                   id="delete-machine-btn"
                   type="button"
                   onClick={() => {
-                    const confirm = window.confirm("Are you sure you want to delete this profile?");
-                    if (confirm) {
+                    const confirmSelection = window.confirm("Are you sure you want to delete this profile?");
+                    if (confirmSelection) {
                       onDeleteMachine(activeMachine.id);
                       setIsEditing(false);
                     }
                   }}
-                  className="text-red-500 hover:text-red-400 text-xs flex items-center gap-1 transition"
+                  className="text-red-500 hover:text-red-400 text-xs flex items-center gap-1 transition cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete Custom Profile

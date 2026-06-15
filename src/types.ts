@@ -13,6 +13,8 @@ export interface MachineProfile {
   bedShape: 'circular' | 'rectangular';
   bedWidth: number;   // e.g. 200 for rectangular, radius for circular
   bedHeight: number;  // e.g. 200 for rectangular
+  originX?: number;   // default 0 (origin X placement relative to bottom-left)
+  originY?: number;   // default 0 (origin Y placement relative to bottom-left)
 }
 
 export type MaterialCategory = 'Wood' | 'Plastics' | 'Leather' | 'Stone' | 'Metals' | 'Paper/Cardboard' | 'Other';
@@ -59,6 +61,26 @@ export interface PathElement {
 }
 
 export type PatternType = 'power_ramp' | 'speed_ramp' | 'matrix' | 'focus_ladder' | 'kerf_test';
+
+export interface GeneratorPreset {
+  id: string;
+  name: string;
+  patternType: PatternType;
+  description?: string;
+  isCustom?: boolean; // true if custom user-saved, false if built-in
+  powerMin: number;
+  powerMax: number;
+  speedMin: number;
+  speedMax: number;
+  powerSteps: number;
+  speedSteps: number;
+  blockSize: number;
+  nominalThickness: number;
+  kerfValues: number[];
+  zMin: number;
+  zMax: number;
+  zSteps: number;
+}
 
 export interface Pattern {
   type: PatternType;

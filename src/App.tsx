@@ -15,10 +15,12 @@ import { generatePatternPaths, GeneratedData } from './lib/gcodeGenerator';
 import MachineSelector from './components/MachineSelector';
 import MaterialDatabase from './components/MaterialDatabase';
 import PatternConfigurator from './components/PatternConfigurator';
+import PresetManager from './components/PresetManager';
 import SVGVisualizer from './components/SVGVisualizer';
 import GCodeOutput from './components/GCodeOutput';
+import GCodeDictionary from './components/GCodeDictionary';
 
-import { Flame, Compass, Info, Github, HelpCircle, Layers } from 'lucide-react';
+import { Flame, Compass, Info, Github, HelpCircle, Layers, Sun, Moon, BookOpen } from 'lucide-react';
 
 export default function App() {
   // 1. Core States
@@ -27,6 +29,24 @@ export default function App() {
   const [selectedMachineId, setSelectedMachineId] = useState<string>('');
   const [selectedMaterialId, setSelectedMaterialId] = useState<string>('');
   const [selectedPattern, setSelectedPattern] = useState<PatternType>('matrix');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const stored = localStorage.getItem('laserbench_theme');
+      return stored === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    try {
+      localStorage.setItem('laserbench_theme', nextTheme);
+    } catch (e) {
+      console.warn('Failed to save theme setting', e);
+    }
+  };
 
   // 2. Pattern Range configuration parameters
   const [powerMin, setPowerMin] = useState<number>(50);
@@ -35,6 +55,7 @@ export default function App() {
   const [speedMax, setSpeedMax] = useState<number>(2500);
   const [powerSteps, setPowerSteps] = useState<number>(5);
   const [speedSteps, setSpeedSteps] = useState<number>(5);
+  const [blockSize, setBlockSize] = useState<number>(12);
 
   // Kerf test dimensions
   const [nominalThickness, setNominalThickness] = useState<number>(3.0);
@@ -47,7 +68,9 @@ export default function App() {
 
   // Active generation results
   const [generatedResults, setGeneratedResults] = useState<GeneratedData | null>(null);
+  const [hoveredPathIndex, setHoveredPathIndex] = useState<number | null>(null);
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
+  const [showDictionary, setShowDictionary] = useState<boolean>(false);
 
   // 3. Database Initializer
   useEffect(() => {
@@ -96,6 +119,7 @@ export default function App() {
       speedMax,
       powerSteps,
       speedSteps,
+      blockSize,
       nominalThickness,
       kerfValues,
       zMin,
@@ -113,6 +137,7 @@ export default function App() {
     speedMax,
     powerSteps,
     speedSteps,
+    blockSize,
     nominalThickness,
     kerfValues,
     zMin,
@@ -180,7 +205,7 @@ export default function App() {
   };
 
   return (
-    <div id="laserbench-root" className="min-h-screen bg-[#0A0A0A] text-[#E0E0E0] flex flex-col antialiased">
+    <div id="laserbench-root" className={`min-h-screen bg-[#0A0A0A] text-[#E0E0E0] flex flex-col antialiased ${theme === 'light' ? 'theme-light' : ''}`}>
       {/* Top Navigation conforming to Elegant Dark styles */}
       <header className="h-16 flex items-center justify-between px-6 border-b border-white/10 bg-[#0E0E0E] sticky top-0 z-50 shrink-0">
         <div className="flex items-center gap-4">
@@ -191,6 +216,36 @@ export default function App() {
           </h1>
         </div>
         <div className="flex items-center gap-6">
+          <button
+            onClick={() => setShowDictionary(true)}
+            id="gcode-dict-header-btn"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#222] border border-white/10 hover:bg-[#333] rounded text-[#AAA] hover:text-white transition-all duration-200 cursor-pointer text-xs font-semibold uppercase tracking-wider select-none outline-none"
+            title="Open G-Code and M-Code Dictionary"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span className="hidden sm:inline">G-Code Dict</span>
+          </button>
+
+          {/* Theme Switcher Toggle */}
+          <button
+            onClick={toggleTheme}
+            id="theme-toggle-btn"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#222] border border-white/10 hover:bg-[#333] rounded text-[#AAA] hover:text-white transition-all duration-200 cursor-pointer text-xs font-semibold uppercase tracking-wider select-none outline-none"
+            title={theme === 'dark' ? 'Switch to High Contrast Light Mode' : 'Switch to Elegant Dark Mode'}
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="hidden sm:inline">Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-indigo-550 shrink-0" />
+                <span className="hidden sm:inline">Dark Mode</span>
+              </>
+            )}
+          </button>
+
           <div className="hidden sm:flex flex-col items-end leading-tight">
             <span className="label-caps !text-[9px]">Connected Machine</span>
             <span className="text-xs text-green-400 flex items-center gap-1.5 font-medium">
@@ -226,6 +281,7 @@ export default function App() {
               onUpdateMachine={handleUpdateMachine}
               onCreateMachine={handleCreateMachine}
               onDeleteMachine={handleDeleteMachine}
+              theme={theme}
             />
           </motion.div>
 
@@ -243,12 +299,13 @@ export default function App() {
               onUpdateMaterial={handleUpdateMaterial}
               onCreateMaterial={handleCreateMaterial}
               onDeleteMaterial={handleDeleteMaterial}
+              theme={theme}
             />
           </motion.div>
         </div>
 
-        {/* Middle Column (Colspan = 4): Calibration Pattern Configurator */}
-        <div className="lg:col-span-4 h-full flex flex-col justify-start">
+        {/* Middle Column (Colspan = 4): Calibration Pattern Configurator & Presets */}
+        <div className="lg:col-span-4 h-full flex flex-col justify-start space-y-6">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -263,6 +320,7 @@ export default function App() {
               speedMax={speedMax}
               powerSteps={powerSteps}
               speedSteps={speedSteps}
+              blockSize={blockSize}
               nominalThickness={nominalThickness}
               kerfValues={kerfValues}
               zMin={zMin}
@@ -280,6 +338,48 @@ export default function App() {
               onSetZMin={setZMin}
               onSetZMax={setZMax}
               onSetZSteps={setZSteps}
+              onSetBlockSize={setBlockSize}
+              theme={theme}
+            />
+          </motion.div>
+
+          {/* Generator Presets Module */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.18 }}
+          >
+            <PresetManager
+              currentPattern={selectedPattern}
+              powerMin={powerMin}
+              powerMax={powerMax}
+              speedMin={speedMin}
+              speedMax={speedMax}
+              powerSteps={powerSteps}
+              speedSteps={speedSteps}
+              blockSize={blockSize}
+              nominalThickness={nominalThickness}
+              kerfValues={kerfValues}
+              zMin={zMin}
+              zMax={zMax}
+              zSteps={zSteps}
+              pwmMax={activeMachine ? activeMachine.pwmMax : 255}
+              onLoadPreset={(preset) => {
+                setSelectedPattern(preset.patternType);
+                setPowerMin(preset.powerMin);
+                setPowerMax(preset.powerMax);
+                setSpeedMin(preset.speedMin);
+                setSpeedMax(preset.speedMax);
+                setPowerSteps(preset.powerSteps);
+                setSpeedSteps(preset.speedSteps);
+                setBlockSize(preset.blockSize);
+                setNominalThickness(preset.nominalThickness);
+                setKerfValues(preset.kerfValues);
+                setZMin(preset.zMin);
+                setZMax(preset.zMax);
+                setZSteps(preset.zSteps);
+              }}
+              theme={theme}
             />
           </motion.div>
         </div>
@@ -301,6 +401,9 @@ export default function App() {
                   material={activeMaterial}
                   patternType={selectedPattern}
                   paths={generatedResults.paths}
+                  theme={theme}
+                  hoveredPathIndex={hoveredPathIndex}
+                  onHoverPath={setHoveredPathIndex}
                 />
               </motion.div>
 
@@ -316,6 +419,9 @@ export default function App() {
                   machine={activeMachine}
                   material={activeMaterial}
                   paths={generatedResults.paths}
+                  theme={theme}
+                  hoveredPathIndex={hoveredPathIndex}
+                  onHoverPath={setHoveredPathIndex}
                 />
               </motion.div>
             </>
@@ -330,10 +436,18 @@ export default function App() {
           <span>Z-FOCUS: {activeMaterial ? `${activeMaterial.focusZ}mm` : '-40.00mm'}</span>
           <span>LASER: {activeMaterial ? activeMaterial.laser.toUpperCase() : 'DIODE 5W'}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowDictionary(true)}
+            className="text-indigo-500 hover:text-indigo-400 font-semibold underline flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition select-none"
+          >
+            <BookOpen className="w-3.5 h-3.5 inline" />
+            G-Code Dictionary
+          </button>
+          <span className="text-zinc-700 select-none">|</span>
           <button
             onClick={() => setShowHelpModal(true)}
-            className="text-red-500 hover:text-red-400 font-semibold underline flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition"
+            className="text-red-500 hover:text-red-400 font-semibold underline flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition select-none"
           >
             <Info className="w-3.5 h-3.5 inline" />
             Troubleshoot instructions
@@ -404,6 +518,14 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* G-Code Dictionary Reference Modal */}
+      {showDictionary && (
+        <GCodeDictionary 
+          onClose={() => setShowDictionary(false)} 
+          theme={theme} 
+        />
       )}
     </div>
   );
