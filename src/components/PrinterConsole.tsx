@@ -117,7 +117,7 @@ export const PrinterConsole: React.FC<PrinterConsoleProps> = ({
             className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
-          <p className="text-[10px] mt-1 text-indigo-400 font-mono">PRINTING: ${progress}%</p>
+          <p className="text-[10px] mt-1 text-indigo-400 font-mono">PRINTING: {progress}%</p>
         </div>
       )}
 
