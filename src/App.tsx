@@ -19,11 +19,24 @@ import PatternConfigurator from './components/PatternConfigurator';
 import PresetManager from './components/PresetManager';
 import SVGVisualizer from './components/SVGVisualizer';
 import GCodeOutput from './components/GCodeOutput';
+import { PrinterConsole } from './components/PrinterConsole';
+import { useWebSerial } from './lib/useWebSerial';
 import GCodeDictionary from './components/GCodeDictionary';
 
 import { Flame, Compass, Info, Github, HelpCircle, Layers, Sun, Moon, BookOpen } from 'lucide-react';
 
 export default function App() {
+  const {
+    isConnected,
+    messages,
+    isPrinting,
+    progress,
+    connect,
+    disconnect,
+    send,
+    printGCode,
+    clearMessages
+  } = useWebSerial();
   // 1. Core States
   const [machines, setMachines] = useState<MachineProfile[]>([]);
   const [materials, setMaterials] = useState<MaterialProfile[]>([]);
@@ -430,6 +443,27 @@ export default function App() {
                   theme={theme}
                   hoveredPathIndex={hoveredPathIndex}
                   onHoverPath={setHoveredPathIndex}
+                  onPrint={() => printGCode(generatedResults.gcode)}
+                  isPrinterConnected={isConnected}
+                  isPrinting={isPrinting}
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+              >
+                <PrinterConsole
+                  isConnected={isConnected}
+                  messages={messages}
+                  isPrinting={isPrinting}
+                  progress={progress}
+                  onConnect={() => connect(250000)}
+                  onDisconnect={disconnect}
+                  onSend={send}
+                  onClear={clearMessages}
+                  activeMachine={activeMachine}
+                  theme={theme}
                 />
               </motion.div>
             </>
