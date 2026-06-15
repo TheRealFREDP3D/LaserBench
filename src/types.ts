@@ -15,6 +15,7 @@ export interface MachineProfile {
   bedHeight: number;  // e.g. 200 for rectangular
   originX?: number;   // default 0 (origin X placement relative to bottom-left)
   originY?: number;   // default 0 (origin Y placement relative to bottom-left)
+  acceleration?: number; // Acceleration in mm/s^2 (optional, defaults to 1000)
 }
 
 export type MaterialCategory = 'Wood' | 'Plastics' | 'Leather' | 'Stone' | 'Metals' | 'Paper/Cardboard' | 'Other';

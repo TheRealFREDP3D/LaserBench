@@ -50,6 +50,7 @@ export default function MachineSelector({
       bedHeight: 300,
       originX: 0,
       originY: 0,
+      acceleration: 1000,
     };
     onCreateMachine(newMachine);
     onSelectMachine(newId);
@@ -202,7 +203,7 @@ export default function MachineSelector({
             </div>
 
             {/* Travel Speeds & Z bounds */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <label className="block mb-1 label-caps">Safe Z (mm)</label>
                 <input
@@ -234,6 +235,18 @@ export default function MachineSelector({
                   step="100"
                   value={activeMachine.travelSpeed}
                   onChange={(e) => handleFieldChange('travelSpeed', parseInt(e.target.value) || 3000)}
+                  className="w-full elegant-input rounded-md px-2 py-1.5"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 label-caps font-sans tracking-normal leading-normal">Acc (mm/s²)</label>
+                <input
+                  id="machine-acceleration-input"
+                  type="number"
+                  min="50"
+                  step="50"
+                  value={activeMachine.acceleration ?? 1000}
+                  onChange={(e) => handleFieldChange('acceleration', parseInt(e.target.value) || 1000)}
                   className="w-full elegant-input rounded-md px-2 py-1.5"
                 />
               </div>

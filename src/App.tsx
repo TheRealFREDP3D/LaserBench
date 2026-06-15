@@ -10,6 +10,7 @@ import {
   INITIAL_MACHINES
 } from './lib/materialPresets';
 import { generatePatternPaths, GeneratedData } from './lib/gcodeGenerator';
+import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
 
 // Components
 import MachineSelector from './components/MachineSelector';
@@ -89,6 +90,13 @@ export default function App() {
 
   const activeMachine = machines.find((m) => m.id === selectedMachineId) || machines[0];
   const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0];
+
+  // Dynamic estimated burn time calculation
+  const estimatedTimeStr = React.useMemo(() => {
+    if (!generatedResults || !activeMachine || !generatedResults.paths) return null;
+    const seconds = estimateToolpathTime(generatedResults.paths, activeMachine);
+    return formatEstimatedTime(seconds);
+  }, [generatedResults, activeMachine]);
 
   // Adjust parameters when machine or material selection changes
   useEffect(() => {
@@ -431,10 +439,15 @@ export default function App() {
 
       {/* Footer Status Bar conforming to Elegant Dark */}
       <footer className="h-10 bg-[#0E0E0E] border-t border-white/10 flex items-center px-6 justify-between text-[11px] text-[#888] shrink-0 select-none">
-        <div className="flex gap-4 font-mono text-[10px]">
+        <div className="flex gap-4 font-mono text-[10px] items-center">
           <span>BUFFER: READY</span>
           <span>Z-FOCUS: {activeMaterial ? `${activeMaterial.focusZ}mm` : '-40.00mm'}</span>
           <span>LASER: {activeMaterial ? activeMaterial.laser.toUpperCase() : 'DIODE 5W'}</span>
+          {estimatedTimeStr && (
+            <span className="text-amber-500 font-bold border-l border-white/10 pl-4 flex items-center gap-1">
+              ⏱️ EST. BURN TIME: {estimatedTimeStr}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <button

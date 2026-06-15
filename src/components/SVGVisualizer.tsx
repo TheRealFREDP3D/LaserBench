@@ -37,6 +37,8 @@ export default function SVGVisualizer({
   const [panY, setPanY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+  const [autoFitOnChange, setAutoFitOnChange] = useState(true);
+  const [intensityOverlay, setIntensityOverlay] = useState<'none' | 'power' | 'speed'>('none');
   const [closestPath, setClosestPath] = useState<{
     power: number;
     speed: number;
@@ -46,7 +48,7 @@ export default function SVGVisualizer({
   } | null>(null);
 
   // G-code line-by-line simulation state
-  const [simActive, setSimActive] = useState(false);
+  const [simActive, setSimActive] = useState(true);
   const [simStep, setSimStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playSpeed, setPlaySpeed] = useState(1); // steps to advance per tick
@@ -139,6 +141,13 @@ export default function SVGVisualizer({
     handleFit();
   }, [machine.id]);
 
+  // Reset transforms whenever generated results change, if auto-fit toggle is active
+  useEffect(() => {
+    if (autoFitOnChange) {
+      handleFit();
+    }
+  }, [svgPathData, autoFitOnChange]);
+
   // Simulation playback effect block
   useEffect(() => {
     if (!isPlaying || !simActive || !paths || paths.length === 0) return;
@@ -225,9 +234,115 @@ export default function SVGVisualizer({
     return gridLines;
   };
 
+  // Helper to retrieve gradient interpolation colors
+  const getGradientColor = (val: number, min: number, max: number, isSpeed: boolean) => {
+    const range = max - min;
+    const norm = range > 0 ? (val - min) / range : 0.5;
+
+    if (!isSpeed) {
+      // Power Gradient: Cold Blue (#3b82f6) -> Cyan (#06b6d4) -> Green (#10b981) -> Yellow (#eab308) -> Red (#ef4444)
+      if (norm < 0.25) {
+        const t = norm * 4;
+        const r = Math.round(59 + (6 - 59) * t);
+        const g = Math.round(130 + (182 - 130) * t);
+        const b = Math.round(246 + (212 - 246) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+      } else if (norm < 0.5) {
+        const t = (norm - 0.25) * 4;
+        const r = Math.round(6 + (16 - 6) * t);
+        const g = Math.round(182 + (185 - 182) * t);
+        const b = Math.round(212 + (129 - 212) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+      } else if (norm < 0.75) {
+        const t = (norm - 0.5) * 4;
+        const r = Math.round(16 + (234 - 16) * t);
+        const g = Math.round(185 + (179 - 185) * t);
+        const b = Math.round(129 + (8 - 129) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+      } else {
+        const t = (norm - 0.75) * 4;
+        const r = Math.round(234 + (239 - 234) * t);
+        const g = Math.round(179 + (68 - 179) * t);
+        const b = Math.round(8 + (68 - 8) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+    } else {
+      // Speed Gradient: Slow Purple (#8b5cf6) -> Mid Orange (#f97316) -> Fast Cyan (#06b6d4)
+      if (norm < 0.5) {
+        const t = norm * 2;
+        const r = Math.round(139 + (249 - 139) * t);
+        const g = Math.round(92 + (115 - 92) * t);
+        const b = Math.round(246 + (22 - 246) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+      } else {
+        const t = (norm - 0.5) * 2;
+        const r = Math.round(249 + (6 - 249) * t);
+        const g = Math.round(115 + (182 - 110) * t);
+        const b = Math.round(22 + (212 - 22) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+    }
+  };
+
+  // Render static full paths colored with power/speed intensity gradients
+  const renderOverlayPaths = () => {
+    if (!paths || paths.length === 0) return null;
+
+    const laserPaths = paths.filter(p => p.isLaserOn);
+    const powers = laserPaths.map(p => p.power);
+    const speeds = laserPaths.map(p => p.speed);
+
+    const minP = powers.length > 0 ? Math.min(...powers) : 0;
+    const maxP = powers.length > 0 ? Math.max(...powers) : machine.pwmMax;
+    const minS = speeds.length > 0 ? Math.min(...speeds) : 100;
+    const maxS = speeds.length > 0 ? Math.max(...speeds) : machine.travelSpeed;
+
+    return paths.map((path, idx) => {
+      const d = path.points.map((pt, pIdx) => `${pIdx === 0 ? 'M' : 'L'} ${pt[0]} ${pt[1]}`).join(' ');
+
+      let stroke = '#666';
+      let strokeDasharray = undefined;
+      let strokeWidth = path.isLaserOn ? '0.35' : '0.12';
+      let opacity = 1.0;
+
+      if (path.isLaserOn) {
+        if (intensityOverlay === 'power') {
+          stroke = getGradientColor(path.power, minP, maxP, false);
+        } else if (intensityOverlay === 'speed') {
+          stroke = getGradientColor(path.speed, minS, maxS, true);
+        }
+      } else {
+        stroke = '#475569';
+        strokeDasharray = '0.4,0.4';
+        opacity = 0.22; // Keep transits faint when showing intensity heatmap
+      }
+
+      return (
+        <path
+          key={`overlay-${idx}`}
+          d={d}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          opacity={opacity}
+          fill="none"
+        />
+      );
+    });
+  };
+
   // Render the step simulated paths cleanly
   const renderSimulatedPaths = () => {
     if (!paths || paths.length === 0) return null;
+
+    const laserPaths = paths.filter(p => p.isLaserOn);
+    const powers = laserPaths.map(p => p.power);
+    const speeds = laserPaths.map(p => p.speed);
+
+    const minPower = powers.length > 0 ? Math.min(...powers) : 0;
+    const maxPower = powers.length > 0 ? Math.max(...powers) : machine.pwmMax;
+    const minSpeed = speeds.length > 0 ? Math.min(...speeds) : 100;
+    const maxSpeed = speeds.length > 0 ? Math.max(...speeds) : machine.travelSpeed;
 
     return paths.map((path, idx) => {
       const isPast = idx < simStep;
@@ -263,11 +378,17 @@ export default function SVGVisualizer({
       let opacity = 1.0;
 
       if (path.isLaserOn) {
-        const ratio = path.power / machine.pwmMax;
-        if (ratio < 0.3) stroke = '#93c5fd';
-        else if (ratio < 0.6) stroke = '#3b82f6';
-        else if (ratio < 0.85) stroke = '#f59e0b';
-        else stroke = '#ef4444';
+        if (intensityOverlay === 'power') {
+          stroke = getGradientColor(path.power, minPower, maxPower, false);
+        } else if (intensityOverlay === 'speed') {
+          stroke = getGradientColor(path.speed, minSpeed, maxSpeed, true);
+        } else {
+          const ratio = path.power / machine.pwmMax;
+          if (ratio < 0.3) stroke = '#93c5fd';
+          else if (ratio < 0.6) stroke = '#3b82f6';
+          else if (ratio < 0.85) stroke = '#f59e0b';
+          else stroke = '#ef4444';
+        }
       } else {
         stroke = '#475569';
         strokeDasharray = '0.4,0.4';
@@ -343,48 +464,81 @@ export default function SVGVisualizer({
         ? 'bg-white border-zinc-200 text-zinc-800' 
         : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
     }`}>
-      <div className="flex items-center justify-between mb-3 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 shrink-0">
         <div className="flex items-center gap-2">
           <Eye className="text-red-500 w-5 h-5" />
           <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>Toolpath Preview Engine</h2>
         </div>
-        <div className="flex gap-1.5">
-          <button
-            id="zoom-in-btn"
-            onClick={handleZoomIn}
-            className={`p-2 border rounded transition duration-200 cursor-pointer ${
-              isLight 
-                ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200 hover:text-black' 
-                : 'bg-[#222] border-white/10 hover:bg-[#333] text-[#AAA] hover:text-white'
-            }`}
-            title="Zoom In"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button
-            id="zoom-out-btn"
-            onClick={handleZoomOut}
-            className={`p-2 border rounded transition duration-200 cursor-pointer ${
-              isLight 
-                ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200 hover:text-black' 
-                : 'bg-[#222] border-white/10 hover:bg-[#333] text-[#AAA] hover:text-white'
-            }`}
-            title="Zoom Out"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <button
-            id="fit-view-btn"
-            onClick={handleFit}
-            className={`p-2 border rounded transition duration-200 cursor-pointer ${
-              isLight 
-                ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200 hover:text-black' 
-                : 'bg-[#222] border-white/10 hover:bg-[#333] text-[#AAA] hover:text-white'
-            }`}
-            title="Reset View"
-          >
-            <Maximize className="w-4 h-4" />
-          </button>
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Intensity Overlay Mode */}
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[11px] font-sans font-bold uppercase tracking-wider ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>Overlay Mode:</span>
+            <select
+              id="intensity-overlay-select"
+              value={intensityOverlay}
+              onChange={(e) => setIntensityOverlay(e.target.value as 'none' | 'power' | 'speed')}
+              className={`text-[11px] px-2 py-1 rounded border border-solid outline-none cursor-pointer font-sans font-medium transition duration-150 ${
+                isLight 
+                  ? 'bg-zinc-100 border-zinc-300 text-zinc-800 hover:bg-zinc-200' 
+                  : 'bg-[#222] border-white/10 text-neutral-300 hover:border-white/20'
+              }`}
+            >
+              <option value="none">Normal (Bands)</option>
+              <option value="power">🔥 Power Gradient</option>
+              <option value="speed">⚡ Speed Gradient</option>
+            </select>
+          </div>
+
+          {/* Automatically reset viewport toggle */}
+          <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer select-none">
+            <input
+              id="auto-fit-toggle-input"
+              type="checkbox"
+              checked={autoFitOnChange}
+              onChange={(e) => setAutoFitOnChange(e.target.checked)}
+              className="accent-indigo-600 rounded cursor-pointer w-3.5 h-3.5"
+            />
+            <span className={isLight ? 'text-zinc-500' : 'text-neutral-400'}>Auto-fit Viewport</span>
+          </label>
+
+          <div className="flex gap-1.5">
+            <button
+              id="zoom-in-btn"
+              onClick={handleZoomIn}
+              className={`p-2 border rounded transition duration-200 cursor-pointer ${
+                isLight 
+                  ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200 hover:text-black' 
+                  : 'bg-[#222] border-white/10 hover:bg-[#333] text-[#AAA] hover:text-white'
+              }`}
+              title="Zoom In"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              id="zoom-out-btn"
+              onClick={handleZoomOut}
+              className={`p-2 border rounded transition duration-200 cursor-pointer ${
+                isLight 
+                  ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200 hover:text-black' 
+                  : 'bg-[#222] border-white/10 hover:bg-[#333] text-[#AAA] hover:text-white'
+              }`}
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              id="fit-view-btn"
+              onClick={handleFit}
+              className={`p-2 border rounded transition duration-200 cursor-pointer ${
+                isLight 
+                  ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200 hover:text-black' 
+                  : 'bg-[#222] border-white/10 hover:bg-[#333] text-[#AAA] hover:text-white'
+              }`}
+              title="Reset View"
+            >
+              <Maximize className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -442,6 +596,23 @@ export default function SVGVisualizer({
               <>
                 {renderSimulatedPaths()}
                 {renderLaserHead()}
+                {hoveredPathIndex !== null && paths[hoveredPathIndex] && (
+                  <path
+                    d={paths[hoveredPathIndex].points.map((pt, pIdx) => `${pIdx === 0 ? 'M' : 'L'} ${pt[0]} ${pt[1]}`).join(' ')}
+                    stroke="#fbbf24"
+                    strokeWidth="2.0"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    className="animate-pulse"
+                    opacity="0.95"
+                    filter="drop-shadow(0px 0px 4px rgba(251, 191, 36, 0.6))"
+                  />
+                )}
+              </>
+            ) : intensityOverlay !== 'none' ? (
+              <>
+                {renderOverlayPaths()}
                 {hoveredPathIndex !== null && paths[hoveredPathIndex] && (
                   <path
                     d={paths[hoveredPathIndex].points.map((pt, pIdx) => `${pIdx === 0 ? 'M' : 'L'} ${pt[0]} ${pt[1]}`).join(' ')}
@@ -666,30 +837,62 @@ export default function SVGVisualizer({
       </div>
 
       {/* Visualizer Legend */}
-      <div id="visualizer-legend" className={`mt-3 grid grid-cols-2 lg:grid-cols-5 gap-2 text-[10px] shrink-0 border-t pt-3 ${
-        isLight ? 'border-zinc-200' : 'border-white/8'
-      }`}>
-        <div className="flex items-center gap-1.5 text-neutral-400">
-          <span className="w-2.5 h-0.5 bg-[#93c5fd] inline-block rounded"></span>
-          <span className={isLight ? 'text-zinc-650' : ''}>Low Power (&lt;30%)</span>
+      {intensityOverlay === 'power' ? (
+        <div id="visualizer-legend" className={`mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-[10px] shrink-0 border-t pt-3 ${
+          isLight ? 'border-zinc-200' : 'border-white/8'
+        }`}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-neutral-400 whitespace-nowrap">Calibration Heatmap Calibration:</span>
+            <span className="font-mono text-blue-500 font-bold">Min S{paths.filter(p=>p.isLaserOn).length > 0 ? Math.min(...paths.filter(p=>p.isLaserOn).map(p=>p.power)) : 0}</span>
+            <div className="w-36 h-2 rounded bg-gradient-to-r from-[#3b82f6] via-[#06b6d4] via-[#10b981] via-[#eab308] to-[#ef4444]" />
+            <span className="font-mono text-red-500 font-bold">Max S{paths.filter(p=>p.isLaserOn).length > 0 ? Math.max(...paths.filter(p=>p.isLaserOn).map(p=>p.power)) : machine.pwmMax}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-neutral-500">
+            <span className="w-2.5 h-0.5 border-t border-dashed border-neutral-600 inline-block w-4"></span>
+            <span className={isLight ? 'text-zinc-650' : ''}>Transit / Move (G0)</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 text-neutral-400">
-          <span className="w-2.5 h-0.5 bg-[#3b82f6] inline-block rounded"></span>
-          <span className={isLight ? 'text-zinc-650' : ''}>Medium (30-60%)</span>
+      ) : intensityOverlay === 'speed' ? (
+        <div id="visualizer-legend" className={`mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-[10px] shrink-0 border-t pt-3 ${
+          isLight ? 'border-zinc-200' : 'border-white/8'
+        }`}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-neutral-400 whitespace-nowrap">Calibration Speed Heatmap:</span>
+            <span className="font-mono text-violet-500 font-bold">Slow {paths.filter(p=>p.isLaserOn).length > 0 ? Math.min(...paths.filter(p=>p.isLaserOn).map(p=>p.speed)) : 100} mm/m</span>
+            <div className="w-36 h-2 rounded bg-gradient-to-r from-[#8b5cf6] via-[#f97316] to-[#06b6d4]" />
+            <span className="font-mono text-cyan-500 font-bold">Fast {paths.filter(p=>p.isLaserOn).length > 0 ? Math.max(...paths.filter(p=>p.isLaserOn).map(p=>p.speed)) : machine.travelSpeed} mm/m</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-neutral-500">
+            <span className="w-2.5 h-0.5 border-t border-dashed border-neutral-600 inline-block w-4"></span>
+            <span className={isLight ? 'text-zinc-650' : ''}>Transit / Move (G0)</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 text-[#AAA]">
-          <span className="w-2.5 h-0.5 bg-[#f59e0b] inline-block rounded"></span>
-          <span className={isLight ? 'text-zinc-650' : ''}>High (60-85%)</span>
+      ) : (
+        <div id="visualizer-legend" className={`mt-3 grid grid-cols-2 lg:grid-cols-5 gap-2 text-[10px] shrink-0 border-t pt-3 ${
+          isLight ? 'border-zinc-200' : 'border-white/8'
+        }`}>
+          <div className="flex items-center gap-1.5 text-neutral-400">
+            <span className="w-2.5 h-0.5 bg-[#93c5fd] inline-block rounded"></span>
+            <span className={isLight ? 'text-zinc-650' : ''}>Low Power (&lt;30%)</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-neutral-400">
+            <span className="w-2.5 h-0.5 bg-[#3b82f6] inline-block rounded"></span>
+            <span className={isLight ? 'text-zinc-650' : ''}>Medium (30-60%)</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[#AAA]">
+            <span className="w-2.5 h-0.5 bg-[#f59e0b] inline-block rounded"></span>
+            <span className={isLight ? 'text-zinc-650' : ''}>High (60-85%)</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-red-400">
+            <span className="w-2.5 h-0.5 bg-[#ef4444] inline-block rounded"></span>
+            <span className={isLight ? 'text-zinc-650' : ''}>Max S (&gt;85%)</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-neutral-500">
+            <span className="w-2.5 h-0.5 border-t border-dashed border-neutral-600 inline-block w-4"></span>
+            <span className={isLight ? 'text-zinc-600' : ''}>Travel move (G0)</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 text-red-400">
-          <span className="w-2.5 h-0.5 bg-[#ef4444] inline-block rounded"></span>
-          <span className={isLight ? 'text-zinc-650' : ''}>Max S (&gt;85%)</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-neutral-500">
-          <span className="w-2.5 h-0.5 border-t border-dashed border-neutral-600 inline-block w-4"></span>
-          <span className={isLight ? 'text-zinc-600' : ''}>Travel move (G0)</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
