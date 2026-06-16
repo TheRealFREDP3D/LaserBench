@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Copy, FileDown, Check, FileCode, Clock, Compass, Hash } from 'lucide-react';
+import { Copy, FileDown, Check, FileCode, Clock, Compass, Hash, Play } from 'lucide-react';
 import { MachineProfile, MaterialProfile, PatternType } from '../types';
 
 interface GCodeOutputProps {
@@ -17,6 +17,9 @@ interface GCodeOutputProps {
   theme?: 'dark' | 'light';
   hoveredPathIndex?: number | null;
   onHoverPath?: (index: number | null) => void;
+  onPrint?: () => void;
+  isPrinterConnected?: boolean;
+  isPrinting?: boolean;
 }
 
 export default function GCodeOutput({
@@ -28,6 +31,9 @@ export default function GCodeOutput({
   theme = 'dark',
   hoveredPathIndex = null,
   onHoverPath,
+  onPrint,
+  isPrinterConnected,
+  isPrinting,
 }: GCodeOutputProps) {
   const isLight = theme === 'light';
   const [copied, setCopied] = useState(false);
@@ -166,6 +172,15 @@ export default function GCodeOutput({
           </button>
         </div>
       </div>
+          <button
+            id="print-gcode-btn"
+            onClick={onPrint}
+            disabled={!isPrinterConnected || isPrinting}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-md cursor-pointer shrink-0 whitespace-nowrap animate-fade-in ${!isPrinterConnected || isPrinting ? "bg-zinc-700 text-zinc-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700 text-white"}`}
+          >
+            <Play className="w-3.5 h-3.5 shrink-0" />
+            <span>{isPrinting ? "Printing..." : "Run Job"}</span>
+          </button>
 
       {/* Production stats analysis info panel */}
       <div id="gcode-stats-banner" className={`grid grid-cols-2 rounded-lg border p-3 text-[11px] font-mono divide-x transition-all duration-200 ${
