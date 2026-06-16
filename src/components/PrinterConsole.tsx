@@ -178,7 +178,7 @@ export const PrinterConsole: React.FC<PrinterConsoleProps> = ({
       </div>
 
       {/* Log Terminal */}
-      <div className={`flex-1 min-h-[200px] rounded-lg border overflow-hidden transition-all duration-200 flex flex-col ${
+      <div className={`h-[350px] rounded-lg border overflow-hidden transition-all duration-200 flex flex-col ${
         isLight
           ? 'bg-zinc-50 border-zinc-200 text-zinc-800'
           : 'bg-black border-white/5 text-emerald-400/90'
