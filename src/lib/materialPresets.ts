@@ -12,11 +12,18 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     workZ: -40,
     travelSpeed: 6000,
     bedShape: 'circular',
-    bedWidth: 90, // Radius is 90
+    bedWidth: 90,
     bedHeight: 0,
     originX: 0,
     originY: 0,
-    acceleration: 1200
+    acceleration: 1200,
+    // Delta kinematics — FLSun Kossel Mini defaults
+    isDelta: true,
+    deltaRadius: 105.6,
+    deltaArmLength: 217.0,
+    deltaRodLength: 217.0,
+    deltaTowerAngleOffset: 0,
+    deltaPrintRadius: 85,
   },
   {
     id: 'grbl_generic',
@@ -33,7 +40,8 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     bedHeight: 180,
     originX: 0,
     originY: 0,
-    acceleration: 1000
+    acceleration: 1000,
+    isDelta: false,
   },
   {
     id: 'xtool_d1_pro',
@@ -50,7 +58,8 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     bedHeight: 400,
     originX: 0,
     originY: 0,
-    acceleration: 2000
+    acceleration: 2000,
+    isDelta: false,
   },
   {
     id: 'marlin_custom',
@@ -66,7 +75,8 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     bedWidth: 220,
     bedHeight: 220,
     originX: 0,
-    originY: 0
+    originY: 0,
+    isDelta: false,
   }
 ];
 
@@ -78,14 +88,8 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     thickness: 3.0,
     laser: '5W Diode',
     focusZ: -40,
-    engrave: {
-      power: 140,
-      speed: 1800
-    },
-    cut: {
-      power: 255,
-      speed: 150
-    },
+    engrave: { power: 140, speed: 1800 },
+    cut: { power: 255, speed: 150 },
     history: [
       {
         id: 'h1',
@@ -104,14 +108,8 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     thickness: 6.0,
     laser: '10W Diode',
     focusZ: -41.5,
-    engrave: {
-      power: 180,
-      speed: 1500
-    },
-    cut: {
-      power: 255,
-      speed: 80
-    },
+    engrave: { power: 180, speed: 1500 },
+    cut: { power: 255, speed: 80 },
     history: []
   },
   {
@@ -121,14 +119,8 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     thickness: 4.0,
     laser: '5W Diode',
     focusZ: -40,
-    engrave: {
-      power: 110,
-      speed: 2000
-    },
-    cut: {
-      power: 255,
-      speed: 120
-    },
+    engrave: { power: 110, speed: 2000 },
+    cut: { power: 255, speed: 120 },
     history: []
   },
   {
@@ -138,14 +130,8 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     thickness: 3.0,
     laser: '5W Diode',
     focusZ: -40,
-    engrave: {
-      power: 160,
-      speed: 1400
-    },
-    cut: {
-      power: 255,
-      speed: 100
-    },
+    engrave: { power: 160, speed: 1400 },
+    cut: { power: 255, speed: 100 },
     history: []
   },
   {
@@ -155,14 +141,8 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     thickness: 3.0,
     laser: '5W Diode',
     focusZ: -40,
-    engrave: {
-      power: 100,
-      speed: 2400
-    },
-    cut: {
-      power: 255,
-      speed: 140
-    },
+    engrave: { power: 100, speed: 2400 },
+    cut: { power: 255, speed: 140 },
     history: [
       {
         id: 'h2',
@@ -181,14 +161,8 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     thickness: 2.0,
     laser: '5W Diode',
     focusZ: -40,
-    engrave: {
-      power: 60,
-      speed: 2500
-    },
-    cut: {
-      power: 180,
-      speed: 400
-    },
+    engrave: { power: 60, speed: 2500 },
+    cut: { power: 180, speed: 400 },
     history: []
   },
   {
@@ -198,14 +172,8 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     thickness: 4.0,
     laser: '5W Diode',
     focusZ: -38,
-    engrave: {
-      power: 50,
-      speed: 3000
-    },
-    cut: {
-      power: 150,
-      speed: 500
-    },
+    engrave: { power: 50, speed: 3000 },
+    cut: { power: 150, speed: 500 },
     history: []
   },
   {
@@ -215,14 +183,8 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     thickness: 5.0,
     laser: '5W Diode',
     focusZ: -42,
-    engrave: {
-      power: 200,
-      speed: 1200
-    },
-    cut: {
-      power: 255,
-      speed: 0 // Cannot be cut with diode laser
-    },
+    engrave: { power: 200, speed: 1200 },
+    cut: { power: 255, speed: 0 },
     history: [
       {
         id: 'h3',
