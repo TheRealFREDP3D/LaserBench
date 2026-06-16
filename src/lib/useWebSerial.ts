@@ -25,6 +25,8 @@ export function useWebSerial() {
     });
   }, []);
 
+  const clearMessages = useCallback(() => setMessages([]), []);
+
   const readLoop = async () => {
     const textDecoder = new TextDecoderStream();
     const readableStreamClosed = portRef.current.readable.pipeTo(textDecoder.writable);
@@ -109,12 +111,13 @@ export function useWebSerial() {
     }
   };
 
-  const send = async (command: string, silent = false) => {
-    if (writerRef.current && isConnected) {
-      await writerRef.current.write(command + '\n');
-      if (!silent) {
-        addMessage('sent', command);
-      }
+  const send = async (command: string, silent = false): Promise<void> => {
+    if (!writerRef.current || !isConnected) {
+      throw new Error('Not connected to printer');
+    }
+    await writerRef.current.write(command + '\n');
+    if (!silent) {
+      addMessage('sent', command);
     }
   };
 
@@ -171,5 +174,5 @@ export function useWebSerial() {
     }
   };
 
-  return { isConnected, messages, isPrinting, progress, connect, disconnect, send, printGCode, clearMessages: () => setMessages([]) };
+  return { isConnected, messages, isPrinting, progress, connect, disconnect, send, printGCode, clearMessages };
 }
