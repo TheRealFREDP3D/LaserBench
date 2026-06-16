@@ -1,7 +1,8 @@
 {
-  "name": "react-example",
+  "name": "laserbench",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Web-based laser cutter control interface with G-code generation and serial communication",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",

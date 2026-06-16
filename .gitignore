@@ -13,3 +13,4 @@ coverage/
 .github/instructions/codacy.instructions.md
 pnpm-lock.yaml
 pnpm-workspace.yaml
+/_DEV_
