@@ -75,6 +75,8 @@ export const PrinterConsole: React.FC<PrinterConsoleProps> = ({
     onSend(`G90`); // Back to absolute
   };
 
+  const isControlDisabled = !isConnected || isPrinting;
+
   return (
     <div className={`border rounded-xl p-5 shadow-sm flex flex-col h-full space-y-4 transition-all duration-200 ${
       isLight
@@ -127,13 +129,13 @@ export const PrinterConsole: React.FC<PrinterConsoleProps> = ({
         <div className="flex flex-col items-center gap-1">
           <div className="grid grid-cols-3 gap-1">
             <div />
-            <button onClick={() => jog('Y', 10)} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition"><ArrowUp className="w-4 h-4" /></button>
+            <button onClick={() => jog('Y', 10)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowUp className="w-4 h-4" /></button>
             <div />
-            <button onClick={() => jog('X', -10)} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition"><ArrowLeft className="w-4 h-4" /></button>
-            <button onClick={() => onSend('G28')} className="p-2 bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition"><Home className="w-4 h-4" /></button>
-            <button onClick={() => jog('X', 10)} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition"><ArrowRight className="w-4 h-4" /></button>
+            <button onClick={() => jog('X', -10)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowLeft className="w-4 h-4" /></button>
+            <button onClick={() => onSend('G28')} disabled={isControlDisabled} className="p-2 bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"><Home className="w-4 h-4" /></button>
+            <button onClick={() => jog('X', 10)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowRight className="w-4 h-4" /></button>
             <div />
-            <button onClick={() => jog('Y', -10)} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition"><ArrowDown className="w-4 h-4" /></button>
+            <button onClick={() => jog('Y', -10)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowDown className="w-4 h-4" /></button>
             <div />
           </div>
           <span className="text-[10px] text-zinc-500 font-mono">JOG XY (10mm)</span>
@@ -142,10 +144,10 @@ export const PrinterConsole: React.FC<PrinterConsoleProps> = ({
         {/* Z Controls */}
         <div className="flex flex-col items-center justify-center gap-2">
           <div className="flex flex-col gap-1">
-            <button onClick={() => jog('Z', 5)} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition flex items-center gap-2 text-[10px]">
+            <button onClick={() => jog('Z', 5)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition flex items-center gap-2 text-[10px] disabled:opacity-50 disabled:cursor-not-allowed">
               <ArrowUp className="w-3 h-3" /> Z+
             </button>
-            <button onClick={() => jog('Z', -5)} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition flex items-center gap-2 text-[10px]">
+            <button onClick={() => jog('Z', -5)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition flex items-center gap-2 text-[10px] disabled:opacity-50 disabled:cursor-not-allowed">
               <ArrowDown className="w-3 h-3" /> Z-
             </button>
           </div>
@@ -158,14 +160,16 @@ export const PrinterConsole: React.FC<PrinterConsoleProps> = ({
             onMouseDown={handleFire}
             onMouseUp={handleStopFire}
             onMouseLeave={handleStopFire}
-            className="flex items-center justify-center gap-2 px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-500 rounded-lg text-xs font-bold transition border border-amber-500/30"
+            disabled={isControlDisabled}
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-500 rounded-lg text-xs font-bold transition border border-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Flame className="w-3.5 h-3.5" />
             FIRE (30%)
           </button>
           <button
             onClick={() => onSend('M112')}
-            className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-500 rounded-lg text-xs font-bold transition border border-red-500/30"
+            disabled={!isConnected}
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-500 rounded-lg text-xs font-bold transition border border-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShieldAlert className="w-3.5 h-3.5" />
             E-STOP
@@ -207,13 +211,13 @@ export const PrinterConsole: React.FC<PrinterConsoleProps> = ({
             type="text"
             value={command}
             onChange={(e) => setCommand(e.target.value.toUpperCase())}
-            placeholder="Send G-Code command..."
+            placeholder={isPrinting ? "Printing in progress..." : "Send G-Code command..."}
             className="flex-1 bg-transparent border-none outline-none text-[11px] font-mono px-2 py-1"
-            disabled={!isConnected}
+            disabled={isControlDisabled}
           />
           <button
             type="submit"
-            disabled={!isConnected || !command.trim()}
+            disabled={isControlDisabled || !command.trim()}
             className="text-indigo-500 disabled:text-zinc-700 transition"
           >
             <Send className="w-4 h-4" />

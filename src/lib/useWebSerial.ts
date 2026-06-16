@@ -16,6 +16,7 @@ export function useWebSerial() {
   const readerRef = useRef<any>(null);
   const writerRef = useRef<any>(null);
   const keepReadingRef = useRef(true);
+  const pendingOkResolversRef = useRef<((value: void) => void)[]>([]);
 
   const addMessage = useCallback((type: 'sent' | 'received', text: string) => {
     setMessages((prev) => {
@@ -40,9 +41,16 @@ export function useWebSerial() {
           buffer = lines.pop() || '';
           for (const line of lines) {
             if (line.trim()) {
-              addMessage('received', line.trim());
-              // Dispatch event for printer response handling (like 'ok' for streaming)
-              window.dispatchEvent(new CustomEvent('printer-response', { detail: line.trim() }));
+              const trimmedLine = line.trim();
+              addMessage('received', trimmedLine);
+              
+              // Strict match for 'ok' to resolve pending resolvers
+              if (trimmedLine.toLowerCase() === 'ok') {
+                const resolver = pendingOkResolversRef.current.shift();
+                if (resolver) {
+                  resolver();
+                }
+              }
             }
           }
         }
@@ -55,6 +63,10 @@ export function useWebSerial() {
   };
 
   const connect = async (baudRate: number = 250000) => {
+    if (!('serial' in navigator)) {
+      addMessage('received', 'Error: Web Serial API is not supported in this browser.');
+      return;
+    }
     try {
       const port = await (navigator as any).serial.requestPort();
       await port.open({ baudRate });
@@ -76,18 +88,25 @@ export function useWebSerial() {
 
   const disconnect = async () => {
     keepReadingRef.current = false;
-    if (readerRef.current) {
-      await readerRef.current.cancel();
+    try {
+      if (readerRef.current) {
+        await readerRef.current.cancel();
+      }
+      if (writerRef.current) {
+        await writerRef.current.close();
+      }
+      // Small delay to allow the read loop to terminate and release the lock
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      if (portRef.current) {
+        await portRef.current.close();
+      }
+    } catch (error) {
+      console.error('Error during disconnect:', error);
+    } finally {
+      portRef.current = null;
+      setIsConnected(false);
+      addMessage('sent', '--- Disconnected ---');
     }
-    if (writerRef.current) {
-      await writerRef.current.close();
-    }
-    if (portRef.current) {
-      await portRef.current.close();
-    }
-    portRef.current = null;
-    setIsConnected(false);
-    addMessage('sent', '--- Disconnected ---');
   };
 
   const send = async (command: string, silent = false) => {
@@ -104,37 +123,52 @@ export function useWebSerial() {
 
     setIsPrinting(true);
     setProgress(0);
-    const lines = gcode.split('\n').filter(line => line.trim() && !line.startsWith(';'));
-    const totalLines = lines.length;
+    try {
+      const lines = gcode.split('\n').filter(line => line.trim() && !line.startsWith(';'));
+      const totalLines = lines.length;
 
-    for (let i = 0; i < totalLines; i++) {
-      if (!keepReadingRef.current) break; // If disconnected during print
+      for (let i = 0; i < totalLines; i++) {
+        if (!keepReadingRef.current) break; // If disconnected during print
 
-      const line = lines[i];
-      await send(line);
-
-      // Simple flow control: wait for 'ok' from printer
-      // Note: In a real implementation, we might want a more robust queue
-      await new Promise<void>((resolve) => {
-        const handler = (e: any) => {
-          if (e.detail.toLowerCase().includes('ok')) {
-            window.removeEventListener('printer-response', handler);
+        const line = lines[i];
+        
+        // Register response handler BEFORE sending to eliminate race condition
+        await new Promise<void>((resolve, reject) => {
+          let timeoutId: any;
+          
+          const resolver = () => {
+            clearTimeout(timeoutId);
             resolve();
-          }
-        };
-        window.addEventListener('printer-response', handler);
-        // Timeout as fallback
-        setTimeout(() => {
-          window.removeEventListener('printer-response', handler);
-          resolve();
-        }, 5000);
-      });
+          };
+          
+          // Add resolver to queue before sending
+          pendingOkResolversRef.current.push(resolver);
+          
+          // Send the line
+          send(line).catch(reject);
+          
+          // Timeout as fallback
+          timeoutId = setTimeout(() => {
+            // Remove resolver from queue if timeout occurs
+            const index = pendingOkResolversRef.current.indexOf(resolver);
+            if (index > -1) {
+              pendingOkResolversRef.current.splice(index, 1);
+            }
+            resolve();
+          }, 5000);
+        });
 
-      setProgress(Math.round(((i + 1) / totalLines) * 100));
+        setProgress(Math.round(((i + 1) / totalLines) * 100));
+      }
+      addMessage('sent', '--- Print Job Finished ---');
+    } catch (error) {
+      console.error('Printing failed:', error);
+      addMessage('received', 'Print error: ' + (error as Error).message);
+    } finally {
+      setIsPrinting(false);
+      // Clear any pending resolvers on error/abort
+      pendingOkResolversRef.current = [];
     }
-
-    setIsPrinting(false);
-    addMessage('sent', '--- Print Job Finished ---');
   };
 
   return { isConnected, messages, isPrinting, progress, connect, disconnect, send, printGCode, clearMessages: () => setMessages([]) };
