@@ -82,6 +82,11 @@ export default function App() {
   const [showDictionary, setShowDictionary] = useState<boolean>(false);
   const [dismissedDeltaWarnings, setDismissedDeltaWarnings] = useState(false);
 
+  const [sidebarTab, setSidebarTab] = useState<'machine' | 'material'>('machine');
+  const [centerTab, setCenterTab] = useState<'pattern' | 'presets'>('pattern');
+  const [outputTab, setOutputTab] = useState<'gcode' | 'console'>('gcode');
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
   useEffect(() => {
     const loadedMachines = getStoredMachines();
     const loadedMaterials = getStoredMaterials();
@@ -363,6 +368,7 @@ export default function App() {
                 setZMin(preset.zMin);
                 setZMax(preset.zMax);
                 setZSteps(preset.zSteps);
+                setCenterTab('pattern');
               }}
               theme={theme}
             />
@@ -395,7 +401,7 @@ export default function App() {
                   theme={theme}
                   hoveredPathIndex={hoveredPathIndex}
                   onHoverPath={setHoveredPathIndex}
-                  onPrint={() => printGCode(generatedResults.gcode)}
+                  onPrint={() => { setOutputTab('console'); printGCode(generatedResults.gcode); }}
                   isPrinterConnected={isConnected}
                   isPrinting={isPrinting}
                 />
