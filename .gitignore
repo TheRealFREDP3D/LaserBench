@@ -12,3 +12,4 @@ coverage/
 pnpm-lock.yaml
 pnpm-workspace.yaml
 /_DEV_
+/.kiro
