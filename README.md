@@ -1,60 +1,68 @@
 # LaserBench
 
-A web-based laser cutter control interface with G-code generation, serial communication, and real-time printer console.
+A web-based laser calibration suite with G-code generation, SVG toolpath pre-visualization, serial communication, and a real-time printer console.
 
 ## Features
 
-- **G-Code Generation**: Generate laser cutting G-code from SVG paths
-- **Serial Communication**: Connect to laser cutters via Web Serial API
-- **Real-time Console**: Live feed of printer communication with manual command input
-- **Manual Controls**: Jog controls for X/Y/Z axes, fire laser, and emergency stop
-- **Material Presets**: Pre-configured settings for different materials
-- **Time Estimation**: Estimate job duration based on G-code
-- **Dark/Light Theme**: Toggle between dark and light interface themes
-- **Machine Profiles**: Support for multiple laser cutter configurations
+- **Calibration Pattern Generator**: Power-Speed Matrix, Power Ramp, Speed Ramp, Focus Ladder, and Kerf Clearance Comb patterns
+- **Delta Kinematics Validation**: Pre-flight reachability checks for delta/SCARA machines — patterns are validated against your configured print radius before G-code is generated
+- **SVG Toolpath Visualizer**: Interactive pan/zoom canvas with G-code simulation playback, power/speed heatmap overlays, and coordinate inspection
+- **G-Code Generator**: Firmware-aware output for GRBL and Marlin with automatic laser on/off and Z-axis management
+- **Serial Communication**: Connect to laser cutters via Web Serial API (Chrome/Edge)
+- **Real-time Printer Console**: Live feed with manual command input, jog controls, fire test, and emergency stop
+- **Material Database**: Per-material calibration history logs with optimal power/speed/Z records
+- **Machine Profiles**: Support for rectangular and circular (delta) beds, GRBL and Marlin firmware
+- **Generator Presets**: Save and recall full parameter snapshots; ships with factory presets for common materials
+- **G-Code Dictionary**: In-app reference for all common G/M codes with syntax, examples, and compatibility notes
+- **Dark / Light Theme**: Toggle between elegant dark and high-contrast light modes
+
+## Delta Kinematics
+
+LaserBench validates Cartesian coordinates against your delta's reachable print radius **before** generating G-code. Firmware (Marlin/GRBL) handles actual inverse kinematics at runtime; LaserBench just warns you when a pattern would fall outside the printable zone so you can adjust block size or step count.
+
+**To enable:**
+1. Open a machine profile → click **Edit Settings**
+2. Check **Enable Delta Kinematics Validation**
+3. Fill in your machine's measured parameters:
+   - **Delta Radius**: horizontal center-to-tower distance (mm)
+   - **Print Radius**: max reachable radius from bed center (mm)
+   - **Arm Length / Rod Length**: diagonal rod dimensions (mm)
+   - **Tower Angle Offset**: rotational correction if towers aren't at standard 210°/330°/90°
+
+The FLSUN Kossel preset ships with delta kinematics enabled and sensible defaults (R=105.6mm, print radius=85mm).
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
-- Modern web browser with Web Serial API support (Chrome, Edge, or Opera)
-- Laser cutter with serial/USB connection
+- Node.js v18 or higher
+- Chrome, Edge, or Opera (Web Serial API required for printer connection)
+- Laser cutter with USB/serial connection
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/TheRealFredP3D/LaserBench.git
-   
-   cd LaserBench
-   ```
+```bash
+git clone https://github.com/TheRealFredP3D/LaserBench.git
+cd LaserBench
+npm install
+npm run dev
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-
-4. Open your browser to `http://localhost:3000`
+Open `http://localhost:3000` in Chrome or Edge.
 
 ## Usage
 
-1. **Connect to Printer**: Click "Connect" in the Printer Console to establish serial connection
-2. **Load SVG**: Upload an SVG file to generate G-code
-3. **Configure Settings**: Adjust power, speed, and other parameters for your material
-4. **Generate G-Code**: Click "Generate G-Code" to create the cutting path
-5. **Preview**: Review the generated G-code in the output panel
-6. **Print**: Send G-code to the printer and monitor progress in the console
+1. **Select Machine Profile** — choose or create a profile matching your laser cutter
+2. **Select Material** — pick a material sheet and review saved calibration logs
+3. **Choose Pattern** — configure a calibration pattern and its parameters
+4. **Preview** — inspect the toolpath in the SVG visualizer; watch for delta warnings
+5. **Generate & Download** — download the `.gcode` file or stream it directly via serial
+6. **Log Results** — after burning, record optimal settings in the material's calibration log
 
-## Manual Controls
+## Manual Controls (Serial Connected)
 
-- **Jog Controls**: Use arrow buttons to move the laser head in X/Y/Z directions
-- **Fire**: Hold to fire laser at 30% power for testing
-- **E-STOP**: Immediately stop all printer operations (sends M112 command)
-- **Manual Commands**: Type G-code commands directly in the console input
+- **Jog XY / Z**: move the laser head in 10mm / 5mm increments
+- **Fire (30%)**: hold to pulse laser at 30% power for focus alignment
+- **E-STOP**: sends `M112` — immediate hardware halt
+- **Manual Command**: type any G/M code and send directly
 
 ## Building for Production
 
@@ -62,21 +70,20 @@ A web-based laser cutter control interface with G-code generation, serial commun
 npm run build
 ```
 
-The built files will be in the `dist/` directory.
-
-## Configuration
-
-Machine profiles can be configured in the application settings. Default profiles include common laser cutter configurations.
+Output goes to `dist/`.
 
 ## Browser Compatibility
 
-This application requires the Web Serial API, which is currently supported in:
-- Google Chrome (v89+)
-- Microsoft Edge (v89+)
-- Opera (v75+)
+Web Serial API is required for printer connection:
 
-Firefox and Safari do not currently support the Web Serial API.
+| Browser | Supported |
+|---------|-----------|
+| Chrome 89+ | ✅ |
+| Edge 89+ | ✅ |
+| Opera 75+ | ✅ |
+| Firefox | ❌ |
+| Safari | ❌ |
 
 ## License
 
-Private project - All rights reserved
+Private project — All rights reserved

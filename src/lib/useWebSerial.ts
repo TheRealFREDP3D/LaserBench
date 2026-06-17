@@ -46,8 +46,8 @@ export function useWebSerial() {
               const trimmedLine = line.trim();
               addMessage('received', trimmedLine);
               
-              // Strict match for 'ok' to resolve pending resolvers
-              if (trimmedLine.toLowerCase() === 'ok') {
+              // Match 'ok' responses — covers bare 'ok' and Marlin V1-style 'ok N3 P15 B3'
+              if (trimmedLine.toLowerCase().startsWith('ok')) {
                 const resolver = pendingOkResolversRef.current.shift();
                 if (resolver) {
                   resolver();
@@ -127,7 +127,19 @@ export function useWebSerial() {
     setIsPrinting(true);
     setProgress(0);
     try {
-      const lines = gcode.split('\n').filter(line => line.trim() && !line.startsWith(';'));
+      const lines = gcode
+        .split('\n')
+        .map(line => {
+          // Strip inline comments (everything from ; onwards), then trim whitespace
+          const stripped = line.split(';')[0].trim();
+          return stripped;
+        })
+        .filter(line => {
+          if (line.length === 0) return false;
+          // M30 (program end) is not supported by Marlin V1 / Sprinter mashup — skip it
+          if (line.toUpperCase().startsWith('M30')) return false;
+          return true;
+        });
       const totalLines = lines.length;
 
       for (let i = 0; i < totalLines; i++) {
@@ -150,7 +162,7 @@ export function useWebSerial() {
           // Send the line
           send(line).catch(reject);
           
-          // Timeout as fallback
+          // Timeout as fallback — 2s is plenty for a local USB serial link
           timeoutId = setTimeout(() => {
             // Remove resolver from queue if timeout occurs
             const index = pendingOkResolversRef.current.indexOf(resolver);
@@ -158,7 +170,7 @@ export function useWebSerial() {
               pendingOkResolversRef.current.splice(index, 1);
             }
             resolve();
-          }, 5000);
+          }, 2000);
         });
 
         setProgress(Math.round(((i + 1) / totalLines) * 100));
