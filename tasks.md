@@ -203,37 +203,37 @@ Stack: React + TypeScript + Vite + Tailwind CSS. Property-based tests use `fast-
     - _Requirements: 2.9_
 
 
-- [ ] 9. Modify `MaterialDatabase` — compact summary row and collapsible calibration log (Requirement 8)
-  - [ ] 9.1 Implement compact summary row in `MaterialDatabase.tsx`
+- [x] 9. Modify `MaterialDatabase` — compact summary row and collapsible calibration log (Requirement 8)
+  - [x] 9.1 Implement compact summary row in `MaterialDatabase.tsx`
     - Replace the existing two-card engrave/cut display in non-edit mode with a single compact row showing all eight fields: material name, thickness, focusZ, laser rating, engrave.power, engrave.speed, cut.power, cut.speed
     - Layout: name + thickness + focusZ + laser rating on line 1; `Engrave: S[power] F[speed]  Cut: S[power] F[speed]` on line 2
     - None of the eight fields may be omitted regardless of value magnitude
     - Apply left-side accent border when `isEditing === true`
     - _Requirements: 8.1, 8.3, 6.7_
 
-  - [ ] 9.2 Wrap Calibration Log section in a collapsible container with default collapsed state
+  - [x] 9.2 Wrap Calibration Log section in a collapsible container with default collapsed state
     - Add `const [logExpanded, setLogExpanded] = useState(false)` to `MaterialDatabase`
     - Render a toggle button labeled "Calibration Log" with a chevron icon (`aria-expanded`, `aria-controls`)
     - Wrap the entire existing log list and log form in `<div className={logExpanded ? 'block' : 'hidden'}>` 
     - _Requirements: 8.2_
 
-  - [ ] 9.3 Update category tabs to show icon + label on `md+` and icon-only on `sm`
+  - [x] 9.3 Update category tabs to show icon + label on `md+` and icon-only on `sm`
     - Add icon imports (use existing lucide-react icons that semantically fit each category)
     - Wrap label text in `<span className="hidden md:inline ml-1">{cat}</span>`
     - Each `<button>` retains `aria-label` with the full category name regardless of breakpoint
     - _Requirements: 8.4, 10.6_
 
-  - [ ] 9.4 Ensure side-by-side material list and summary row on `md+` viewports
+  - [x] 9.4 Ensure side-by-side material list and summary row on `md+` viewports
     - Verify the existing `grid grid-cols-1 md:grid-cols-3` layout works correctly within the new sidebar
     - Summary row and material list must stack on `< 768px` and appear side-by-side on `≥ 768px`
     - _Requirements: 8.5_
 
-  - [ ]* 9.5 Write property test — MaterialDatabase summary row completeness (Property 12)
+  - [x]* 9.5 Write property test — MaterialDatabase summary row completeness (Property 12)
     - **Property 12: MaterialDatabase summary row completeness**
     - **Validates: Requirement 8.1**
     - Use `fc.record({ name: fc.string(), thickness: fc.float(), focusZ: fc.float(), laser: fc.string(), engrave: fc.record({ power: fc.integer(), speed: fc.integer() }), cut: fc.record({ power: fc.integer(), speed: fc.integer() }) })`; render in non-edit mode; assert all eight values present in DOM
 
-  - [ ]* 9.6 Write property test — Material selection updates summary immediately (Property 13)
+  - [x]* 9.6 Write property test — Material selection updates summary immediately (Property 13)
     - **Property 13: Material selection updates summary immediately**
     - **Validates: Requirement 8.3**
     - Render `MaterialDatabase` with multiple materials; select different material IDs; assert summary row reflects the newly selected material's data in the same render

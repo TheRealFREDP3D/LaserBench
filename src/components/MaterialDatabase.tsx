@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent, type FC } from 'react';
 import { MaterialProfile, MaterialCategory, CalibrationHistoryEntry } from '../types';
-import { FolderHeart, Plus, Trash2, Edit2, Calendar, Check, Save } from 'lucide-react';
+import {
+  FolderHeart, Plus, Trash2, Calendar, Check,
+  TreePine, Beaker, Shirt, Mountain, Hammer, FileText, Package,
+  ChevronDown,
+} from 'lucide-react';
 
 interface MaterialDatabaseProps {
   materials: MaterialProfile[];
@@ -12,6 +16,20 @@ interface MaterialDatabaseProps {
   onDeleteMaterial: (id: string) => void;
   theme?: 'dark' | 'light';
 }
+
+const categories: MaterialCategory[] = [
+  'Wood', 'Plastics', 'Leather', 'Stone', 'Metals', 'Paper/Cardboard', 'Other',
+];
+
+const categoryIcons: Record<MaterialCategory, FC<{className?: string}>> = {
+  Wood: TreePine,
+  Plastics: Beaker,
+  Leather: Shirt,
+  Stone: Mountain,
+  Metals: Hammer,
+  'Paper/Cardboard': FileText,
+  Other: Package,
+};
 
 export default function MaterialDatabase({
   materials,
@@ -27,23 +45,13 @@ export default function MaterialDatabase({
   const [activeCategory, setActiveCategory] = useState<MaterialCategory>('Wood');
   const [isEditing, setIsEditing] = useState(false);
   const [showLogForm, setShowLogForm] = useState(false);
+  const [logExpanded, setLogExpanded] = useState(false);
 
-  // New Log form state
   const [logNotes, setLogNotes] = useState('');
   const [logPattern, setLogPattern] = useState('matrix');
   const [logOptPower, setLogOptPower] = useState<number>(150);
   const [logOptSpeed, setLogOptSpeed] = useState<number>(1000);
   const [logOptZ, setLogOptZ] = useState<number>(-40);
-
-  const categories: MaterialCategory[] = [
-    'Wood',
-    'Plastics',
-    'Leather',
-    'Stone',
-    'Metals',
-    'Paper/Cardboard',
-    'Other',
-  ];
 
   const categoryMaterials = materials.filter((m) => m.category === activeCategory);
   const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0];
@@ -90,7 +98,7 @@ export default function MaterialDatabase({
     setIsEditing(true);
   };
 
-  const handleAddLog = (e: React.FormEvent) => {
+  const handleAddLog = (e: FormEvent) => {
     e.preventDefault();
     if (!activeMaterial) return;
 
@@ -104,12 +112,10 @@ export default function MaterialDatabase({
       notes: logNotes || 'Finished calibration test.',
     };
 
-    // Update material with new logs
     const updatedHistory = [newLog, ...activeMaterial.history];
     onUpdateMaterial({
       ...activeMaterial,
       history: updatedHistory,
-      // optionally update the default engraved/cut values with winning settings
       engrave: {
         power: logOptPower,
         speed: logOptSpeed,
@@ -133,15 +139,19 @@ export default function MaterialDatabase({
   };
 
   return (
-    <div id="material-database-card" className={`border rounded-lg p-5 shadow-sm flex flex-col h-full transition-all duration-200 ${
-      isLight 
-        ? 'bg-white border-zinc-200 text-zinc-800' 
-        : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
-    }`}>
+    <div
+      id="material-database-card"
+      className={`border rounded-lg p-5 shadow-sm flex flex-col h-full transition-all duration-200 ${
+        isEditing ? 'border-l-2 border-l-red-600 border-white/8' :
+        isLight ? 'bg-white border-zinc-200 text-zinc-800' : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
+      }`}
+    >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <FolderHeart className="text-red-500 w-5 h-5" />
-          <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>Material Calibration Database</h2>
+          <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>
+            Material Calibration Database
+          </h2>
         </div>
         <button
           id="toggle-edit-material-btn"
@@ -160,36 +170,41 @@ export default function MaterialDatabase({
         </button>
       </div>
 
-      {/* Category Tabs */}
+      {/* Category Tabs — icon+label on md+, icon-only on sm */}
       <div className={`flex flex-wrap gap-1 mb-4 border-b pb-2 ${isLight ? 'border-zinc-250' : 'border-white/8'}`}>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            id={`category-tab-${cat.toLowerCase().replace('/', '-')}`}
-            onClick={() => {
-              setActiveCategory(cat);
-              const linkedMat = materials.find((m) => m.category === cat);
-              if (linkedMat) {
-                onSelectMaterial(linkedMat.id);
-              }
-            }}
-            className={`px-2 py-1.5 text-[11px] font-bold rounded transition-all duration-200 cursor-pointer ${
-              activeCategory === cat
-                ? isLight
-                  ? 'bg-red-50 text-red-500 border border-red-200 shadow-xs'
-                  : 'bg-red-950/40 text-red-400 border border-red-900/40'
-                : isLight
-                  ? 'text-zinc-550 hover:text-black hover:bg-zinc-150 border border-transparent'
-                  : 'text-[#888] hover:text-[#E0E0E0] hover:bg-[#1A1A1A] border border-transparent'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const Icon = categoryIcons[cat];
+          return (
+            <button
+              key={cat}
+              id={`category-tab-${cat.toLowerCase().replace('/', '-')}`}
+              aria-label={cat}
+              onClick={() => {
+                setActiveCategory(cat);
+                const linkedMat = materials.find((m) => m.category === cat);
+                if (linkedMat) {
+                  onSelectMaterial(linkedMat.id);
+                }
+              }}
+              className={`px-2 py-1.5 text-[11px] font-bold rounded transition-all duration-200 cursor-pointer ${
+                activeCategory === cat
+                  ? isLight
+                    ? 'bg-red-50 text-red-500 border border-red-200 shadow-xs'
+                    : 'bg-red-950/40 text-red-400 border border-red-900/40'
+                  : isLight
+                    ? 'text-zinc-550 hover:text-black hover:bg-zinc-150 border border-transparent'
+                    : 'text-[#888] hover:text-[#E0E0E0] hover:bg-[#1A1A1A] border border-transparent'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5 inline" />
+              <span className="hidden md:inline ml-1">{cat}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-        {/* Materials List under Active Category */}
+        {/* Materials List */}
         <div className={`md:col-span-1 border-r pr-4 space-y-2 flex flex-col justify-between max-h-[280px] md:max-h-none overflow-y-auto ${
           isLight ? 'border-zinc-200' : 'border-white/8'
         }`}>
@@ -238,17 +253,18 @@ export default function MaterialDatabase({
           </button>
         </div>
 
-        {/* Selected Material Parameters & Log Book */}
+        {/* Material Detail + Log */}
         <div className="md:col-span-2 space-y-4">
           {activeMaterial ? (
             <>
               {/* Profile Config */}
               <div className={`p-3.5 rounded border transition-all duration-200 ${
-                isLight 
-                  ? 'bg-zinc-50 border-zinc-200 text-zinc-800' 
+                isLight
+                  ? 'bg-zinc-50 border-zinc-200 text-zinc-800'
                   : 'bg-[#151515] border-white/10'
               }`}>
                 {isEditing ? (
+                  /* ── Edit mode (unchanged) ── */
                   <div className="space-y-3 text-xs">
                     <div>
                       <label className="block mb-1 label-caps">Sheet Name</label>
@@ -376,8 +392,8 @@ export default function MaterialDatabase({
                         type="button"
                         onClick={() => setIsEditing(false)}
                         className={`px-3 py-1 rounded font-bold text-xs flex items-center gap-1 transition cursor-pointer ${
-                          isLight 
-                            ? 'bg-red-600 text-white hover:bg-red-500 shadow-xs' 
+                          isLight
+                            ? 'bg-red-600 text-white hover:bg-red-500 shadow-xs'
                             : 'bg-red-600 text-black hover:bg-red-500'
                         }`}
                       >
@@ -387,225 +403,214 @@ export default function MaterialDatabase({
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 id="display-material-name" className={`text-sm font-semibold ${isLight ? 'text-zinc-800' : 'text-white'}`}>{activeMaterial.name}</h3>
-                        <p className={`text-[11px] ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>
-                          {activeMaterial.thickness}mm thickness | Laser: {activeMaterial.laser}
-                        </p>
-                      </div>
-                      <div className={`rounded px-2.5 py-1 text-center mono text-[11px] border ${
-                        isLight 
-                          ? 'bg-zinc-100 border-zinc-200' 
-                          : 'bg-[#222] border-white/10'
-                      }`}>
-                        <span className={`text-[9px] uppercase block tracking-wider leading-none font-sans font-bold ${isLight ? 'text-zinc-500' : 'text-[#64748b]'}`}>Focus Z</span>
-                        <span className="font-bold text-red-500 leading-normal">{activeMaterial.focusZ} mm</span>
-                      </div>
+                  /* ── Compact summary row (non-edit mode) ── */
+                  <div className="space-y-1 text-xs" data-testid="material-summary">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className={`text-sm font-semibold ${isLight ? 'text-zinc-800' : 'text-white'}`}>
+                        {activeMaterial.name}
+                      </span>
+                      <span className={isLight ? 'text-zinc-500' : 'text-neutral-400'}>{activeMaterial.thickness}mm</span>
+                      <span className="text-neutral-500">|</span>
+                      <span className={isLight ? 'text-zinc-500' : 'text-neutral-400'}>Z: {activeMaterial.focusZ}mm</span>
+                      <span className="text-neutral-500">|</span>
+                      <span className={isLight ? 'text-zinc-500' : 'text-neutral-400'}>{activeMaterial.laser}</span>
                     </div>
-
-                    <div className={`grid grid-cols-2 gap-4 border-t pt-2 mt-2 ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
-                      <div className={`border rounded p-2 ${
-                        isLight 
-                          ? 'bg-red-50/50 border-red-100 text-red-950' 
-                          : 'bg-[#1E1414] border-red-900/30 text-neutral-300'
-                      }`}>
-                        <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest block mb-0.5">Engrave Settings</span>
-                        <div className="flex justify-between mono text-[11px]">
-                          <span>Power: <strong className={isLight ? 'text-zinc-950 font-bold' : 'text-white'}>{activeMaterial.engrave.power}</strong></span>
-                          <span>Speed: <strong className={isLight ? 'text-zinc-950 font-bold' : 'text-white'}>{activeMaterial.engrave.speed} mm/m</strong></span>
-                        </div>
-                      </div>
-                      <div className={`border rounded p-2 ${
-                        isLight 
-                          ? 'bg-rose-50/50 border-rose-100 text-rose-950' 
-                          : 'bg-[#221010] border-red-900/40 text-neutral-300'
-                      }`}>
-                        <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest block mb-0.5">Cut Settings</span>
-                        <div className="flex justify-between mono text-[11px]">
-                          <span>Power: <strong className={isLight ? 'text-zinc-950 font-bold' : 'text-white'}>{activeMaterial.cut.power}</strong></span>
-                          <span>Speed: <strong className={isLight ? 'text-zinc-950 font-bold' : 'text-white'}>{activeMaterial.cut.speed} mm/m</strong></span>
-                        </div>
-                      </div>
+                    <div className={`mono text-[11px] ${isLight ? 'text-zinc-600' : 'text-neutral-300'}`}>
+                      Engrave: S{activeMaterial.engrave.power} F{activeMaterial.engrave.speed} &nbsp;&nbsp;
+                      Cut: S{activeMaterial.cut.power} F{activeMaterial.cut.speed}
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Calibration Logs History */}
+              {/* ── Calibration Log (collapsible) ── */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className={`text-xs font-semibold uppercase tracking-wider ${isLight ? 'text-zinc-500' : 'text-[#666]'}`}>Calibration Logs</h4>
-                  {!showLogForm && (
-                    <button
-                      id="log-calibration-test-btn"
-                      onClick={() => {
-                        setLogOptPower(activeMaterial.engrave.power);
-                        setLogOptSpeed(activeMaterial.engrave.speed);
-                        setLogOptZ(activeMaterial.focusZ);
-                        setShowLogForm(true);
-                      }}
-                      className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-tight transition cursor-pointer border ${
-                        isLight 
-                          ? 'bg-red-50 border-red-200 text-red-650 hover:bg-red-100' 
-                          : 'bg-red-950/45 border-red-900/40 text-red-400 hover:bg-red-900/40'
-                      }`}
-                    >
-                      + Log Test Result
-                    </button>
-                  )}
-                </div>
+                <button
+                  aria-expanded={logExpanded}
+                  aria-controls="calibration-log-content"
+                  onClick={() => setLogExpanded(!logExpanded)}
+                  className={`w-full flex items-center justify-between text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
+                    isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#888] hover:text-white'
+                  }`}
+                >
+                  <span>Calibration Log</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${logExpanded ? 'rotate-180' : ''}`} />
+                </button>
 
-                {showLogForm && (
-                  <form onSubmit={handleAddLog} id="calibration-log-form" className={`border rounded p-3 space-y-2.5 text-xs ${
-                    isLight 
-                      ? 'bg-zinc-50 border-red-200 text-zinc-800' 
-                      : 'bg-[#151515] border-red-900/40 text-neutral-300'
-                  }`}>
-                    <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Log Test Result</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block mb-0.5 label-caps">Pattern Run</label>
-                        <select
-                          id="log-pattern"
-                          value={logPattern}
-                          onChange={(e) => setLogPattern(e.target.value)}
-                          className="w-full elegant-input rounded px-2 py-1"
-                        >
-                          <option value="matrix" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Power-Speed Matrix</option>
-                          <option value="power_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Power Ramp</option>
-                          <option value="speed_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Speed Ramp</option>
-                          <option value="focus_ladder" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Focus Ladder</option>
-                          <option value="kerf_test" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Kerf Clearance</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block mb-0.5 label-caps">Optimal Focus Z (mm)</label>
-                        <input
-                          id="log-focusz"
-                          type="number"
-                          step="0.5"
-                          value={logOptZ}
-                          onChange={(e) => setLogOptZ(parseFloat(e.target.value) || 0)}
-                          className="w-full elegant-input rounded px-2 py-1"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block mb-0.5 label-caps">Optimal Power (S)</label>
-                        <input
-                          id="log-power"
-                          type="number"
-                          min="0"
-                          max={pwmMax}
-                          value={logOptPower}
-                          onChange={(e) => setLogOptPower(parseInt(e.target.value) || 120)}
-                          className="w-full elegant-input rounded px-2 py-1"
-                        />
-                      </div>
-                      <div>
-                        <label className="block mb-0.5 label-caps">Optimal Speed (mm/m)</label>
-                        <input
-                          id="log-speed"
-                          type="number"
-                          min="1"
-                          value={logOptSpeed}
-                          onChange={(e) => setLogOptSpeed(parseInt(e.target.value) || 1200)}
-                          className="w-full elegant-input rounded px-2 py-1"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block mb-0.5 label-caps">Observations / Material Behavior</label>
-                      <textarea
-                        id="log-notes"
-                        rows={2}
-                        value={logNotes}
-                        onChange={(e) => setLogNotes(e.target.value)}
-                        placeholder="e.g. S150 was perfect dark brown, speed 1000 had lowest ash residue..."
-                        className="w-full elegant-input rounded px-2 py-1 placeholder:text-neutral-500"
-                      />
-                    </div>
-
-                    <div className={`flex justify-end gap-2 pt-1 border-t ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
+                <div id="calibration-log-content" className={logExpanded ? 'block' : 'hidden'}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className={`text-xs font-semibold uppercase tracking-wider ${isLight ? 'text-zinc-500' : 'text-[#666]'}`}>
+                      History
+                    </h4>
+                    {!showLogForm && (
                       <button
-                        id="cancel-log-btn"
-                        type="button"
-                        onClick={() => setShowLogForm(false)}
-                        className={`cursor-pointer ${isLight ? 'text-zinc-500 hover:text-black font-semibold' : 'text-[#888] hover:text-white'}`}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        id="save-log-btn"
-                        type="submit"
-                        className={`px-2.5 py-1 rounded font-bold cursor-pointer ${
-                          isLight 
-                            ? 'bg-red-650 text-white hover:bg-red-700' 
-                            : 'bg-red-600 text-black hover:bg-red-500'
+                        id="log-calibration-test-btn"
+                        onClick={() => {
+                          setLogOptPower(activeMaterial.engrave.power);
+                          setLogOptSpeed(activeMaterial.engrave.speed);
+                          setLogOptZ(activeMaterial.focusZ);
+                          setShowLogForm(true);
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-tight transition cursor-pointer border ${
+                          isLight
+                            ? 'bg-red-50 border-red-200 text-red-650 hover:bg-red-100'
+                            : 'bg-red-950/45 border-red-900/40 text-red-400 hover:bg-red-900/40'
                         }`}
                       >
-                        Save to history
+                        + Log Test Result
                       </button>
-                    </div>
-                  </form>
-                )}
+                    )}
+                  </div>
 
-                {/* Log history list */}
-                <div className="space-y-2 max-h-[160px] overflow-y-auto mt-2 pr-1">
-                  {activeMaterial.history.length === 0 ? (
-                    <p className="text-neutral-500 text-xs italic py-2">No calibration logs saved yet for this sheet. Generate a matrix test to find optimal settings!</p>
-                  ) : (
-                    activeMaterial.history.map((log) => (
-                      <div key={log.id} className={`border rounded p-2.5 text-[11px] relative transition-all duration-200 group ${
-                        isLight 
-                          ? 'bg-zinc-50 border-zinc-200 hover:border-zinc-350 text-zinc-700' 
-                          : 'bg-[#151515] border-white/8 hover:border-white/12 text-neutral-300'
-                      }`}>
-                        <button
-                          onClick={() => handleDeleteLog(log.id)}
-                          className={`absolute right-2 top-2 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer ${
-                            isLight ? 'text-zinc-400' : 'text-[#666]'
-                          }`}
-                          title="Delete calibration entry"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                        <div className={`flex items-center gap-1.5 font-mono text-[10px] mb-1 ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>
-                          <Calendar className={`w-3 h-3 shrink-0 ${isLight ? 'text-zinc-400' : 'text-[#666]'}`} />
-                          <span>{log.date}</span>
-                          <span className="mx-1">•</span>
-                          <span className={`px-1 py-0.5 rounded capitalize ${
-                            isLight 
-                              ? 'text-red-650 bg-red-50 font-semibold' 
-                              : 'text-red-400 bg-red-950/20'
-                          }`}>
-                            {log.patternType.replace('_', ' ')}
-                          </span>
+                  {showLogForm && (
+                    <form onSubmit={handleAddLog} id="calibration-log-form" className={`border rounded p-3 space-y-2.5 text-xs ${
+                      isLight
+                        ? 'bg-zinc-50 border-red-200 text-zinc-800'
+                        : 'bg-[#151515] border-red-900/40 text-neutral-300'
+                    }`}>
+                      <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Log Test Result</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block mb-0.5 label-caps">Pattern Run</label>
+                          <select
+                            id="log-pattern"
+                            value={logPattern}
+                            onChange={(e) => setLogPattern(e.target.value)}
+                            className="w-full elegant-input rounded px-2 py-1"
+                          >
+                            <option value="matrix" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Power-Speed Matrix</option>
+                            <option value="power_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Power Ramp</option>
+                            <option value="speed_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Speed Ramp</option>
+                            <option value="focus_ladder" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Focus Ladder</option>
+                            <option value="kerf_test" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Kerf Clearance</option>
+                          </select>
                         </div>
-                        <div className={`grid grid-cols-3 gap-1 font-mono text-[10px] p-1.5 rounded mb-1 ${
-                          isLight 
-                            ? 'bg-zinc-200/50 text-zinc-800' 
-                            : 'bg-[#0E0E0E] text-neutral-300'
-                        }`}>
-                          {log.optimalPower !== undefined && (
-                            <span>Power: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalPower}</strong></span>
-                          )}
-                          {log.optimalSpeed !== undefined && (
-                            <span>Speed: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalSpeed}</strong></span>
-                          )}
-                          {log.optimalFocusZ !== undefined && (
-                            <span>Z: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalFocusZ}mm</strong></span>
-                          )}
+                        <div>
+                          <label className="block mb-0.5 label-caps">Optimal Focus Z (mm)</label>
+                          <input
+                            id="log-focusz"
+                            type="number"
+                            step="0.5"
+                            value={logOptZ}
+                            onChange={(e) => setLogOptZ(parseFloat(e.target.value) || 0)}
+                            className="w-full elegant-input rounded px-2 py-1"
+                          />
                         </div>
-                        <p className={isLight ? 'text-zinc-600 leading-relaxed italic' : 'text-[#AAA] leading-relaxed italic'}>{log.notes}</p>
                       </div>
-                    ))
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block mb-0.5 label-caps">Optimal Power (S)</label>
+                          <input
+                            id="log-power"
+                            type="number"
+                            min="0"
+                            max={pwmMax}
+                            value={logOptPower}
+                            onChange={(e) => setLogOptPower(parseInt(e.target.value) || 120)}
+                            className="w-full elegant-input rounded px-2 py-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-0.5 label-caps">Optimal Speed (mm/m)</label>
+                          <input
+                            id="log-speed"
+                            type="number"
+                            min="1"
+                            value={logOptSpeed}
+                            onChange={(e) => setLogOptSpeed(parseInt(e.target.value) || 1200)}
+                            className="w-full elegant-input rounded px-2 py-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block mb-0.5 label-caps">Observations / Material Behavior</label>
+                        <textarea
+                          id="log-notes"
+                          rows={2}
+                          value={logNotes}
+                          onChange={(e) => setLogNotes(e.target.value)}
+                          placeholder="e.g. S150 was perfect dark brown, speed 1000 had lowest ash residue..."
+                          className="w-full elegant-input rounded px-2 py-1 placeholder:text-neutral-500"
+                        />
+                      </div>
+
+                      <div className={`flex justify-end gap-2 pt-1 border-t ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
+                        <button
+                          id="cancel-log-btn"
+                          type="button"
+                          onClick={() => setShowLogForm(false)}
+                          className={`cursor-pointer ${isLight ? 'text-zinc-500 hover:text-black font-semibold' : 'text-[#888] hover:text-white'}`}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          id="save-log-btn"
+                          type="submit"
+                          className={`px-2.5 py-1 rounded font-bold cursor-pointer ${
+                            isLight
+                              ? 'bg-red-650 text-white hover:bg-red-700'
+                              : 'bg-red-600 text-black hover:bg-red-500'
+                          }`}
+                        >
+                          Save to history
+                        </button>
+                      </div>
+                    </form>
                   )}
+
+                  <div className="space-y-2 max-h-[160px] overflow-y-auto mt-2 pr-1">
+                    {activeMaterial.history.length === 0 ? (
+                      <p className="text-neutral-500 text-xs italic py-2">No calibration logs saved yet for this sheet. Generate a matrix test to find optimal settings!</p>
+                    ) : (
+                      activeMaterial.history.map((log) => (
+                        <div key={log.id} className={`border rounded p-2.5 text-[11px] relative transition-all duration-200 group ${
+                          isLight
+                            ? 'bg-zinc-50 border-zinc-200 hover:border-zinc-350 text-zinc-700'
+                            : 'bg-[#151515] border-white/8 hover:border-white/12 text-neutral-300'
+                        }`}>
+                          <button
+                            onClick={() => handleDeleteLog(log.id)}
+                            className={`absolute right-2 top-2 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer ${
+                              isLight ? 'text-zinc-400' : 'text-[#666]'
+                            }`}
+                            title="Delete calibration entry"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                          <div className={`flex items-center gap-1.5 font-mono text-[10px] mb-1 ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>
+                            <Calendar className={`w-3 h-3 shrink-0 ${isLight ? 'text-zinc-400' : 'text-[#666]'}`} />
+                            <span>{log.date}</span>
+                            <span className="mx-1">•</span>
+                            <span className={`px-1 py-0.5 rounded capitalize ${
+                              isLight
+                                ? 'text-red-650 bg-red-50 font-semibold'
+                                : 'text-red-400 bg-red-950/20'
+                            }`}>
+                              {log.patternType.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <div className={`grid grid-cols-3 gap-1 font-mono text-[10px] p-1.5 rounded mb-1 ${
+                            isLight
+                              ? 'bg-zinc-200/50 text-zinc-800'
+                              : 'bg-[#0E0E0E] text-neutral-300'
+                          }`}>
+                            {log.optimalPower !== undefined && (
+                              <span>Power: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalPower}</strong></span>
+                            )}
+                            {log.optimalSpeed !== undefined && (
+                              <span>Speed: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalSpeed}</strong></span>
+                            )}
+                            {log.optimalFocusZ !== undefined && (
+                              <span>Z: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalFocusZ}mm</strong></span>
+                            )}
+                          </div>
+                          <p className={isLight ? 'text-zinc-600 leading-relaxed italic' : 'text-[#AAA] leading-relaxed italic'}>{log.notes}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             </>
