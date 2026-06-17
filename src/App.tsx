@@ -140,6 +140,29 @@ export default function App() {
     machines, materials,
   ]);
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable;
+      if (isEditable) return;
+
+      switch (e.key) {
+        case '1': setSidebarTab('machine'); break;
+        case '2': setSidebarTab('material'); break;
+        case '3': setCenterTab('pattern'); break;
+        case '4': setCenterTab('presets'); break;
+        case '5': setOutputTab('gcode'); break;
+        case '6': setOutputTab('console'); break;
+        case 'Escape':
+          if (showHelpModal) setShowHelpModal(false);
+          if (showDictionary) setShowDictionary(false);
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showHelpModal, showDictionary]);
+
   const handleUpdateMachine = (updated: MachineProfile) => {
     const updatedList = machines.map((m) => (m.id === updated.id ? updated : m));
     setMachines(updatedList);
