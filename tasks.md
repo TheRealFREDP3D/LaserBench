@@ -139,8 +139,8 @@ Stack: React + TypeScript + Vite + Tailwind CSS. Property-based tests use `fast-
     - Use `fc.option(fc.string({ minLength: 1 }))` for `estimatedTimeStr`; assert time label present in DOM ↔ `estimatedTimeStr !== null`
 
 
-- [ ] 6. Create `StatusBar` component (replaces current footer)
-  - [ ] 6.1 Create `src/components/layout/StatusBar.tsx`
+- [x] 6. Create `StatusBar` component (replaces current footer)
+  - [x] 6.1 Create `src/components/layout/StatusBar.tsx`
     - Render `<footer className="h-8 bg-[#0E0E0E] border-t border-white/8 flex items-center px-4 gap-4 text-[10px] font-mono shrink-0 fixed bottom-0 inset-x-0 z-40">` (height must not exceed 40px)
     - Accept `StatusBarProps`: `isConnected`, `connectionState: 'connected' | 'offline' | 'connecting'`, `machineName`, `firmware`, `materialName`, `estimatedTimeStr`, `isDelta`, `deltaPrintRadius`, `isPrinting`, `progress`
     - Render connection indicator: green pulsing dot + "CONNECTED" when `connected`; grey static dot + "OFFLINE" when `offline`; yellow pulsing dot + "CONNECTING" when `connecting`; use `data-testid="connection-label"` on the label element
@@ -149,17 +149,17 @@ Stack: React + TypeScript + Vite + Tailwind CSS. Property-based tests use `fast-
     - Truncate long text with `truncate` utility to prevent horizontal overflow
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9_
 
-  - [ ]* 6.2 Write property test — Status bar completeness (Property 14)
+  - [x]* 6.2 Write property test — Status bar completeness (Property 14)
     - **Property 14: Status bar completeness**
     - **Validates: Requirement 9.1**
     - Use arbitrary combinations of connection state, machine name, material name, `estimatedTimeStr`, `isDelta`; assert all six indicator groups are present in the rendered output
 
-  - [ ]* 6.3 Write property test — Status bar connection display (Property 15)
+  - [x]* 6.3 Write property test — Status bar connection display (Property 15)
     - **Property 15: Status bar connection display**
     - **Validates: Requirements 9.3, 9.4, 9.5**
     - Use `fc.constantFrom('connected', 'offline', 'connecting')`; assert label text and dot class match exactly
 
-  - [ ]* 6.4 Write property test — Status bar print progress display (Property 16)
+  - [x]* 6.4 Write property test — Status bar print progress display (Property 16)
     - **Property 16: Status bar print progress display**
     - **Validates: Requirements 9.7, 9.8, 9.9**
     - Use `fc.boolean()` for `isPrinting` and `fc.integer({ min: 0, max: 100 })` for `progress`; assert progress percentage rendered ↔ `isPrinting && progress > 0 && progress < 100`
@@ -168,8 +168,8 @@ Stack: React + TypeScript + Vite + Tailwind CSS. Property-based tests use `fast-
   - Run `pnpm test` and confirm all tests for Tasks 2–6 pass; resolve any type or import errors before continuing
 
 
-- [ ] 8. Modify `MachineSelector` — collapsible sections (Requirement 2)
-  - [ ] 8.1 Add `collapsedSections` state and `toggleSection` helper to `MachineSelector.tsx`
+- [x] 8. Modify `MachineSelector` — collapsible sections (Requirement 2)
+  - [x] 8.1 Add `collapsedSections` state and `toggleSection` helper to `MachineSelector.tsx`
     - Define `type SectionKey = 'laserCommands' | 'motionZ' | 'bedGeometry' | 'deltaKinematics'`
     - Initialize state: `laserCommands: true`, `motionZ: true`, `bedGeometry: false`, `deltaKinematics: true`
     - Implement `toggleSection(key)` that enforces the "at least one expanded" invariant: if toggling would collapse all sections, return `prev` unchanged
@@ -178,7 +178,7 @@ Stack: React + TypeScript + Vite + Tailwind CSS. Property-based tests use `fast-
     - When edit form opens (`isEditing` becomes true): reset `collapsedSections` to default initial values
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.10_
 
-  - [ ] 8.2 Reorganize the `MachineSelector` edit form into four collapsible section blocks
+  - [x] 8.2 Reorganize the `MachineSelector` edit form into four collapsible section blocks
     - Restructure each section with a `<button aria-expanded={!collapsed} aria-controls={...}>` header containing label text and a `ChevronDown` icon that rotates 180° via `transition-transform` when expanded
     - Section content wrapped in `<div id={...} className={collapsed ? 'hidden' : 'space-y-3 pb-3'}>` 
     - Sections: "Laser Commands" (laserOn, laserOff), "Motion & Z" (safeZ, workZ, travelSpeed, acceleration), "Bed Geometry" (bedShape, bedWidth/Height, originX/Y), "Delta Kinematics" (isDelta checkbox + delta fields)
@@ -186,18 +186,18 @@ Stack: React + TypeScript + Vite + Tailwind CSS. Property-based tests use `fast-
     - Use `py-3 px-0` on section header buttons to ensure ≥ 44px height on mobile
     - _Requirements: 2.1, 2.2, 6.4_
 
-  - [ ] 8.3 Implement always-visible header area in `MachineSelector`
+  - [x] 8.3 Implement always-visible header area in `MachineSelector`
     - Move machine name, firmware badge, PWM max value, machine profile dropdown, and New profile button outside any collapsible section
     - Delete profile button visible in this header area only when `machines.length > 1`
     - Apply left-side accent border (`border-l-2 border-l-red-600`) to the panel card when `isEditing === true`; retain standard `border-white/8` on other three sides
     - _Requirements: 2.9, 6.7_
 
-  - [ ]* 8.4 Write property test — Section collapse invariant (Property 3)
+  - [x]* 8.4 Write property test — Section collapse invariant (Property 3)
     - **Property 3: MachineSelector section collapse invariant**
     - **Validates: Requirement 2.10**
     - Use `fc.array(fc.constantFrom('laserCommands','motionZ','bedGeometry','deltaKinematics'), { minLength: 1, maxLength: 20 })`; apply toggle sequence; assert `Object.values(result).some(v => !v)` always true
 
-  - [ ]* 8.5 Write unit tests for `MachineSelector` always-visible header (Property 4)
+  - [x]* 8.5 Write unit tests for `MachineSelector` always-visible header (Property 4)
     - For any `MachineProfile`, verify machine `name` and `firmware` are rendered in the header regardless of which sections are collapsed
     - Test that isDelta toggle expanding deltaKinematics section works correctly
     - _Requirements: 2.9_
