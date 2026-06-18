@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { useState, useEffect, useMemo } from 'react';
 import { MachineProfile, MaterialProfile, PatternType } from './types';
 import {
   getStoredMachines,
@@ -21,12 +20,19 @@ import GCodeOutput from './components/GCodeOutput';
 import { PrinterConsole } from './components/PrinterConsole';
 import { useWebSerial } from './lib/useWebSerial';
 import GCodeDictionary from './components/GCodeDictionary';
+import Workspace from './components/layout/Workspace';
+import LeftSidebar from './components/layout/LeftSidebar';
+import CenterPanel from './components/layout/CenterPanel';
+import MainCanvas from './components/layout/MainCanvas';
+import GenerateFAB from './components/layout/GenerateFAB';
+import StatusBar from './components/layout/StatusBar';
 
-import { Flame, Info, Sun, Moon, BookOpen, AlertTriangle, X } from 'lucide-react';
+import { Info, Sun, Moon, BookOpen, AlertTriangle, X, Menu } from 'lucide-react';
 
 export default function App() {
   const {
     isConnected,
+    connectionState,
     messages,
     isPrinting,
     progress,
@@ -82,6 +88,11 @@ export default function App() {
   const [showDictionary, setShowDictionary] = useState<boolean>(false);
   const [dismissedDeltaWarnings, setDismissedDeltaWarnings] = useState(false);
 
+  const [sidebarTab, setSidebarTab] = useState<'machine' | 'material'>('machine');
+  const [centerTab, setCenterTab] = useState<'pattern' | 'presets'>('pattern');
+  const [outputTab, setOutputTab] = useState<'gcode' | 'console'>('gcode');
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
   useEffect(() => {
     const loadedMachines = getStoredMachines();
     const loadedMaterials = getStoredMaterials();
@@ -94,7 +105,7 @@ export default function App() {
   const activeMachine = machines.find((m) => m.id === selectedMachineId) || machines[0];
   const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0];
 
-  const estimatedTimeStr = React.useMemo(() => {
+  const estimatedTimeStr = useMemo(() => {
     if (!generatedResults || !activeMachine || !generatedResults.paths) return null;
     const seconds = estimateToolpathTime(generatedResults.paths, activeMachine);
     return formatEstimatedTime(seconds);
@@ -134,6 +145,29 @@ export default function App() {
     zMin, zMax, zSteps,
     machines, materials,
   ]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable;
+      if (isEditable) return;
+
+      switch (e.key) {
+        case '1': setSidebarTab('machine'); break;
+        case '2': setSidebarTab('material'); break;
+        case '3': setCenterTab('pattern'); break;
+        case '4': setCenterTab('presets'); break;
+        case '5': setOutputTab('gcode'); break;
+        case '6': setOutputTab('console'); break;
+        case 'Escape':
+          if (showHelpModal) setShowHelpModal(false);
+          if (showDictionary) setShowDictionary(false);
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showHelpModal, showDictionary]);
 
   const handleUpdateMachine = (updated: MachineProfile) => {
     const updatedList = machines.map((m) => (m.id === updated.id ? updated : m));
@@ -228,22 +262,15 @@ export default function App() {
             )}
           </button>
 
-          <div className="hidden sm:flex flex-col items-end leading-tight">
-            <span className="label-caps !text-[9px]">Connected Machine</span>
-            <span className="text-xs text-green-400 flex items-center gap-1.5 font-medium">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-              {activeMachine ? activeMachine.name : 'FLSUN Kossel'} ({activeMachine?.firmware.toUpperCase()})
-              {activeMachine?.isDelta && <span className="text-purple-400 font-bold">Δ</span>}
-            </span>
-          </div>
-          {generatedResults && (
-            <button
-              onClick={handleDownloadGCode}
-              className="bg-red-600 hover:bg-red-500 text-black px-4 py-1.5 rounded font-bold text-xs tracking-tight transition-all duration-200 cursor-pointer accent-glow"
-            >
-              GENERATE G-CODE
-            </button>
-          )}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            id="sidebar-hamburger-btn"
+            className="lg:hidden flex items-center px-3 py-1.5 bg-[#222] border border-white/10 hover:bg-[#333] rounded text-[#AAA] hover:text-white transition-all duration-200 cursor-pointer text-xs"
+            aria-label="Open sidebar navigation"
+            title="Open sidebar"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
@@ -269,191 +296,163 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start h-full">
-
-        {/* Left: Machine + Material */}
-        <div className="lg:col-span-4 space-y-6 flex flex-col h-full justify-start">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-            <MachineSelector
-              machines={machines}
-              selectedMachineId={selectedMachineId}
-              onSelectMachine={setSelectedMachineId}
-              onUpdateMachine={handleUpdateMachine}
-              onCreateMachine={handleCreateMachine}
-              onDeleteMachine={handleDeleteMachine}
+      {/* Main Layout — Workspace with tabbed panels */}
+      <Workspace>
+        <LeftSidebar activeTab={sidebarTab} onTabChange={setSidebarTab} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}>
+          <MachineSelector
+            machines={machines}
+            selectedMachineId={selectedMachineId}
+            onSelectMachine={setSelectedMachineId}
+            onUpdateMachine={handleUpdateMachine}
+            onCreateMachine={handleCreateMachine}
+            onDeleteMachine={handleDeleteMachine}
+            theme={theme}
+          />
+          <MaterialDatabase
+            materials={materials}
+            selectedMaterialId={selectedMaterialId}
+            pwmMax={activeMachine ? activeMachine.pwmMax : 255}
+            onSelectMaterial={setSelectedMaterialId}
+            onUpdateMaterial={handleUpdateMaterial}
+            onCreateMaterial={handleCreateMaterial}
+            onDeleteMaterial={handleDeleteMaterial}
+            theme={theme}
+          />
+        </LeftSidebar>
+        <CenterPanel activeTab={centerTab} onTabChange={setCenterTab}>
+          <PatternConfigurator
+            selectedPattern={selectedPattern}
+            onSelectPattern={setSelectedPattern}
+            powerMin={powerMin}
+            powerMax={powerMax}
+            speedMin={speedMin}
+            speedMax={speedMax}
+            powerSteps={powerSteps}
+            speedSteps={speedSteps}
+            blockSize={blockSize}
+            nominalThickness={nominalThickness}
+            kerfValues={kerfValues}
+            zMin={zMin}
+            zMax={zMax}
+            zSteps={zSteps}
+            pwmMax={activeMachine ? activeMachine.pwmMax : 255}
+            onSetPowerMin={setPowerMin}
+            onSetPowerMax={setPowerMax}
+            onSetSpeedMin={setSpeedMin}
+            onSetSpeedMax={setSpeedMax}
+            onSetPowerSteps={setPowerSteps}
+            onSetSpeedSteps={setSpeedSteps}
+            onSetNominalThickness={setNominalThickness}
+            onSetKerfValues={setKerfValues}
+            onSetZMin={setZMin}
+            onSetZMax={setZMax}
+            onSetZSteps={setZSteps}
+            onSetBlockSize={setBlockSize}
+            theme={theme}
+          />
+          <PresetManager
+            currentPattern={selectedPattern}
+            powerMin={powerMin}
+            powerMax={powerMax}
+            speedMin={speedMin}
+            speedMax={speedMax}
+            powerSteps={powerSteps}
+            speedSteps={speedSteps}
+            blockSize={blockSize}
+            nominalThickness={nominalThickness}
+            kerfValues={kerfValues}
+            zMin={zMin}
+            zMax={zMax}
+            zSteps={zSteps}
+            pwmMax={activeMachine ? activeMachine.pwmMax : 255}
+            onLoadPreset={(preset) => {
+              setSelectedPattern(preset.patternType);
+              setPowerMin(preset.powerMin);
+              setPowerMax(preset.powerMax);
+              setSpeedMin(preset.speedMin);
+              setSpeedMax(preset.speedMax);
+              setPowerSteps(preset.powerSteps);
+              setSpeedSteps(preset.speedSteps);
+              setBlockSize(preset.blockSize);
+              setNominalThickness(preset.nominalThickness);
+              setKerfValues(preset.kerfValues);
+              setZMin(preset.zMin);
+              setZMax(preset.zMax);
+              setZSteps(preset.zSteps);
+              setCenterTab('pattern');
+            }}
+            theme={theme}
+          />
+        </CenterPanel>
+        <MainCanvas outputTab={outputTab} onOutputTabChange={setOutputTab} isConnected={isConnected}>
+          {generatedResults && activeMachine && activeMaterial ? (
+            <SVGVisualizer
+              svgPathData={generatedResults.svgPathData}
+              machine={activeMachine}
+              material={activeMaterial}
+              patternType={selectedPattern}
+              paths={generatedResults.paths}
               theme={theme}
+              hoveredPathIndex={hoveredPathIndex}
+              onHoverPath={setHoveredPathIndex}
             />
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="flex-1">
-            <MaterialDatabase
-              materials={materials}
-              selectedMaterialId={selectedMaterialId}
-              pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-              onSelectMaterial={setSelectedMaterialId}
-              onUpdateMaterial={handleUpdateMaterial}
-              onCreateMaterial={handleCreateMaterial}
-              onDeleteMaterial={handleDeleteMaterial}
-              theme={theme}
-            />
-          </motion.div>
-        </div>
-
-        {/* Middle: Pattern Configurator + Presets */}
-        <div className="lg:col-span-4 h-full flex flex-col justify-start space-y-6">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }}>
-            <PatternConfigurator
-              selectedPattern={selectedPattern}
-              onSelectPattern={setSelectedPattern}
-              powerMin={powerMin}
-              powerMax={powerMax}
-              speedMin={speedMin}
-              speedMax={speedMax}
-              powerSteps={powerSteps}
-              speedSteps={speedSteps}
-              blockSize={blockSize}
-              nominalThickness={nominalThickness}
-              kerfValues={kerfValues}
-              zMin={zMin}
-              zMax={zMax}
-              zSteps={zSteps}
-              pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-              onSetPowerMin={setPowerMin}
-              onSetPowerMax={setPowerMax}
-              onSetSpeedMin={setSpeedMin}
-              onSetSpeedMax={setSpeedMax}
-              onSetPowerSteps={setPowerSteps}
-              onSetSpeedSteps={setSpeedSteps}
-              onSetNominalThickness={setNominalThickness}
-              onSetKerfValues={setKerfValues}
-              onSetZMin={setZMin}
-              onSetZMax={setZMax}
-              onSetZSteps={setZSteps}
-              onSetBlockSize={setBlockSize}
-              theme={theme}
-            />
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18 }}>
-            <PresetManager
-              currentPattern={selectedPattern}
-              powerMin={powerMin}
-              powerMax={powerMax}
-              speedMin={speedMin}
-              speedMax={speedMax}
-              powerSteps={powerSteps}
-              speedSteps={speedSteps}
-              blockSize={blockSize}
-              nominalThickness={nominalThickness}
-              kerfValues={kerfValues}
-              zMin={zMin}
-              zMax={zMax}
-              zSteps={zSteps}
-              pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-              onLoadPreset={(preset) => {
-                setSelectedPattern(preset.patternType);
-                setPowerMin(preset.powerMin);
-                setPowerMax(preset.powerMax);
-                setSpeedMin(preset.speedMin);
-                setSpeedMax(preset.speedMax);
-                setPowerSteps(preset.powerSteps);
-                setSpeedSteps(preset.speedSteps);
-                setBlockSize(preset.blockSize);
-                setNominalThickness(preset.nominalThickness);
-                setKerfValues(preset.kerfValues);
-                setZMin(preset.zMin);
-                setZMax(preset.zMax);
-                setZSteps(preset.zSteps);
-              }}
-              theme={theme}
-            />
-          </motion.div>
-        </div>
-
-        {/* Right: Visualizer + G-Code + Console */}
-        <div className="lg:col-span-4 space-y-6 h-full flex flex-col justify-start">
-          {generatedResults && activeMachine && activeMaterial && (
-            <>
-              <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: 0.2 }} className="flex-1">
-                <SVGVisualizer
-                  svgPathData={generatedResults.svgPathData}
-                  machine={activeMachine}
-                  material={activeMaterial}
-                  patternType={selectedPattern}
-                  paths={generatedResults.paths}
-                  theme={theme}
-                  hoveredPathIndex={hoveredPathIndex}
-                  onHoverPath={setHoveredPathIndex}
-                />
-              </motion.div>
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.25 }}>
-                <GCodeOutput
-                  gcode={generatedResults.gcode}
-                  patternType={selectedPattern}
-                  machine={activeMachine}
-                  material={activeMaterial}
-                  paths={generatedResults.paths}
-                  theme={theme}
-                  hoveredPathIndex={hoveredPathIndex}
-                  onHoverPath={setHoveredPathIndex}
-                  onPrint={() => printGCode(generatedResults.gcode)}
-                  isPrinterConnected={isConnected}
-                  isPrinting={isPrinting}
-                />
-              </motion.div>
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3 }}>
-                <PrinterConsole
-                  isConnected={isConnected}
-                  messages={messages}
-                  isPrinting={isPrinting}
-                  progress={progress}
-                  onConnect={() => connect(250000)}
-                  onDisconnect={disconnect}
-                  onSend={send}
-                  onClear={clearMessages}
-                  activeMachine={activeMachine}
-                  theme={theme}
-                />
-              </motion.div>
-            </>
+          ) : (
+            <div className="flex-1 min-h-[300px] md:min-h-[400px] flex items-center justify-center text-neutral-500 text-xs">
+              Configure a pattern and material to generate G-Code
+            </div>
           )}
-        </div>
-      </main>
+          {generatedResults ? (
+            <GCodeOutput
+              gcode={generatedResults.gcode}
+              patternType={selectedPattern}
+              machine={activeMachine}
+              material={activeMaterial}
+              paths={generatedResults.paths}
+              theme={theme}
+              hoveredPathIndex={hoveredPathIndex}
+              onHoverPath={setHoveredPathIndex}
+              onPrint={() => { setOutputTab('console'); printGCode(generatedResults.gcode); }}
+              isPrinterConnected={isConnected}
+              isPrinting={isPrinting}
+            />
+          ) : (
+            <div />
+          )}
+          <PrinterConsole
+            isConnected={isConnected}
+            messages={messages}
+            isPrinting={isPrinting}
+            progress={progress}
+            onConnect={() => connect(250000)}
+            onDisconnect={disconnect}
+            onSend={send}
+            onClear={clearMessages}
+            activeMachine={activeMachine}
+            theme={theme}
+          />
+        </MainCanvas>
+      </Workspace>
 
-      {/* Footer */}
-      <footer className="h-10 bg-[#0E0E0E] border-t border-white/10 flex items-center px-6 justify-between text-[11px] text-[#888] shrink-0 select-none">
-        <div className="flex gap-4 font-mono text-[10px] items-center">
-          <span>BUFFER: READY</span>
-          <span>Z-FOCUS: {activeMaterial ? `${activeMaterial.focusZ}mm` : '-40.00mm'}</span>
-          <span>LASER: {activeMaterial ? activeMaterial.laser.toUpperCase() : 'DIODE 5W'}</span>
-          {activeMachine?.isDelta && (
-            <span className="text-purple-400 font-bold border-l border-white/10 pl-4 flex items-center gap-1">
-              Δ DELTA · R={activeMachine.deltaPrintRadius ?? 85}mm
-            </span>
-          )}
-          {estimatedTimeStr && (
-            <span className="text-amber-500 font-bold border-l border-white/10 pl-4 flex items-center gap-1">
-              ⏱️ EST. BURN TIME: {estimatedTimeStr}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setShowDictionary(true)}
-            className="text-indigo-500 hover:text-indigo-400 font-semibold underline flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition select-none"
-          >
-            <BookOpen className="w-3.5 h-3.5 inline" />
-            G-Code Dictionary
-          </button>
-          <span className="text-zinc-700 select-none">|</span>
-          <button
-            onClick={() => setShowHelpModal(true)}
-            className="text-red-500 hover:text-red-400 font-semibold underline flex items-center gap-1.5 whitespace-nowrap cursor-pointer transition select-none"
-          >
-            <Info className="w-3.5 h-3.5 inline" />
-            Troubleshoot instructions
-          </button>
-        </div>
-      </footer>
+      {/* Floating Action Button */}
+      <GenerateFAB
+        disabled={!generatedResults}
+        estimatedTimeStr={estimatedTimeStr}
+        onClick={handleDownloadGCode}
+      />
+
+      {/* Status Bar */}
+      <StatusBar
+        isConnected={isConnected}
+        connectionState={connectionState}
+        machineName={activeMachine?.name ?? ''}
+        firmware={activeMachine?.firmware ?? 'grbl'}
+        materialName={activeMaterial?.name ?? ''}
+        estimatedTimeStr={estimatedTimeStr}
+        isDelta={activeMachine?.isDelta ?? false}
+        deltaPrintRadius={activeMachine?.deltaPrintRadius}
+        isPrinting={isPrinting}
+        progress={progress}
+      />
 
       {/* Help Modal */}
       {showHelpModal && (

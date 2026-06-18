@@ -8,6 +8,7 @@ export interface SerialMessage {
 
 export function useWebSerial() {
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState<'connected' | 'offline' | 'connecting'>('offline');
   const [messages, setMessages] = useState<SerialMessage[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -70,9 +71,11 @@ export function useWebSerial() {
       return;
     }
     try {
+      setConnectionState('connecting');
       const port = await (navigator as any).serial.requestPort();
       await port.open({ baudRate });
       portRef.current = port;
+      setConnectionState('connected');
 
       const encoder = new TextEncoderStream();
       encoder.readable.pipeTo(port.writable);
@@ -85,6 +88,7 @@ export function useWebSerial() {
     } catch (error) {
       console.error('Failed to connect:', error);
       addMessage('received', 'Error: ' + (error as Error).message);
+      setConnectionState('offline');
     }
   };
 
@@ -107,6 +111,7 @@ export function useWebSerial() {
     } finally {
       portRef.current = null;
       setIsConnected(false);
+      setConnectionState('offline');
       addMessage('sent', '--- Disconnected ---');
     }
   };
@@ -186,5 +191,5 @@ export function useWebSerial() {
     }
   };
 
-  return { isConnected, messages, isPrinting, progress, connect, disconnect, send, printGCode, clearMessages };
+  return { isConnected, connectionState, messages, isPrinting, progress, connect, disconnect, send, printGCode, clearMessages };
 }
