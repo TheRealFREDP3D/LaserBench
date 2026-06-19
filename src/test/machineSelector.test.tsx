@@ -1,12 +1,12 @@
 import {useState, useEffect, useRef} from 'react';
 import {describe, expect, it, afterEach} from 'vitest';
-import {render, screen, fireEvent, cleanup} from '@testing-library/react';
+import {render, screen, fireEvent, cleanup, act} from '@testing-library/react';
 import fc from 'fast-check';
 import MachineSelector, {applyToggles, SectionKey} from '@/src/components/MachineSelector';
 import type {MachineProfile} from '@/src/types';
 
 afterEach(() => {
-  document.body.innerHTML = '';
+  cleanup();
 });
 
 const mockMachine: MachineProfile = {
@@ -158,7 +158,7 @@ describe('Property 4: MachineSelector always-visible header', () => {
   });
 
   it('isDelta toggle expands deltaKinematics section', () => {
-    render(
+    const {unmount} = render(
       <MachineSelector
         machines={[mockMachine]}
         selectedMachineId={mockMachine.id}
@@ -169,15 +169,17 @@ describe('Property 4: MachineSelector always-visible header', () => {
     // Enter edit mode
     fireEvent.click(screen.getByRole('button', {name: /edit settings/i}));
 
-    // Delta Kinematics section should be collapsed initially
+    // Delta Kinematics section should be collapsed initially (hidden class present)
     const deltaSection = screen.getByTestId('section-deltaKinematics');
-    expect(deltaSection.className).toContain('hidden');
+    expect(deltaSection.classList.contains('hidden')).toBe(true);
 
     // Click the isDelta checkbox
     fireEvent.click(screen.getByTestId('machine-is-delta-checkbox'));
 
-    // Delta section should now be visible (no longer hidden)
-    expect(deltaSection.className).not.toContain('hidden');
+    // Delta section should now be visible (hidden class removed)
+    expect(deltaSection.classList.contains('hidden')).toBe(false);
+
+    unmount();
   });
 });
 
@@ -263,9 +265,9 @@ describe('Property 2: machine operations do not change sidebar tab', () => {
     expect(tabEl.textContent).toBe('material');
   });
 
-  it('fc.property: sidebarTab unchanged after any sequence of machine operations', () => {
-    fc.assert(
-      fc.property(
+  it('fc.property: sidebarTab unchanged after any sequence of machine operations', async () => {
+    await fc.assert(
+      fc.asyncProperty(
         fc.constantFrom<'machine' | 'material'>('machine', 'material'),
         fc.array(
           fc.record({
@@ -273,8 +275,8 @@ describe('Property 2: machine operations do not change sidebar tab', () => {
           }),
           {minLength: 1, maxLength: 10}
         ),
-        (initialTab, sequence) => {
-          const {container} = render(
+        async (initialTab, sequence) => {
+          const {unmount} = render(
             <TabAwareHarness
               initialTab={initialTab}
               machines={[mockMachine, {...mockMachine, id: 'other', name: 'Other'}]}
@@ -282,34 +284,35 @@ describe('Property 2: machine operations do not change sidebar tab', () => {
             />
           );
 
-          const tabEl = container.querySelector('#p2-tab-tracker')!;
-          const initialText = tabEl.textContent;
+          const tabTracker = screen.getByTestId('p2-tab-tracker');
+          const initialText = tabTracker.textContent;
 
           for (const step of sequence) {
-            if (step.action === 'select') {
-              const select = container.querySelector('#machine-profile-select') as HTMLSelectElement;
-              const currentVal = select.value;
-              const otherVal = currentVal === mockMachine.id ? 'other' : mockMachine.id;
-              fireEvent.change(select, {target: {value: otherVal}});
-            } else {
-              // rename: enter edit mode, type in name field
-              const editBtn = container.querySelector('#toggle-edit-machine-btn') as HTMLButtonElement;
-              if (editBtn.textContent?.includes('Edit')) {
-                fireEvent.click(editBtn);
+            await act(async () => {
+              if (step.action === 'select') {
+                const select = document.querySelector('#machine-profile-select') as HTMLSelectElement;
+                const currentVal = select.value;
+                const otherVal = currentVal === mockMachine.id ? 'other' : mockMachine.id;
+                fireEvent.change(select, {target: {value: otherVal}});
+              } else {
+                const editBtn = document.querySelector('#toggle-edit-machine-btn') as HTMLButtonElement;
+                if (editBtn?.textContent?.includes('Edit')) {
+                  fireEvent.click(editBtn);
+                }
+                const nameInput = document.querySelector('#machine-name-input') as HTMLInputElement;
+                if (nameInput) {
+                  fireEvent.change(nameInput, {target: {value: `Renamed_${Date.now()}`}});
+                }
               }
-              const nameInput = container.querySelector('#machine-name-input') as HTMLInputElement;
-              if (nameInput) {
-                fireEvent.change(nameInput, {target: {value: `Renamed_${Date.now()}`}});
-              }
-            }
+            });
           }
 
-          const finalText = container.querySelector('#p2-tab-tracker')!.textContent;
-          cleanup();
-          document.body.innerHTML = '';
+          const finalText = screen.getByTestId('p2-tab-tracker').textContent;
+          unmount();
           return initialText === finalText;
         }
-      )
+      ),
+      {timeout: 10_000}
     );
   });
 });

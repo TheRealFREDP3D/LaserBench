@@ -1,22 +1,29 @@
 import {describe, expect, it, afterEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, cleanup} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import fc from 'fast-check';
 import {useEffect, useState} from 'react';
+import {CanvasView} from '@/src/components/layout/MainCanvas';
 
-const KEY_TAB_MAP: Record<string, {tab: string; value: string}> = {
-  '1': {tab: 'sidebarTab', value: 'machine'},
-  '2': {tab: 'sidebarTab', value: 'material'},
-  '3': {tab: 'centerTab', value: 'pattern'},
-  '4': {tab: 'centerTab', value: 'presets'},
-  '5': {tab: 'outputTab', value: 'gcode'},
-  '6': {tab: 'outputTab', value: 'console'},
+// New mapping (1-6 + L):
+//   1 → sidebarTab=machine          2 → sidebarTab=material
+//   3 → pattern (close flyout, mark pattern touched)
+//   4 → canvasView=preview          5 → canvasView=code     6 → canvasView=operate
+//   L → toggle Quick Log modal
+const KEY_ACTION_MAP: Record<string, {state: string; value: string}> = {
+  '1': {state: 'sidebarTab', value: 'machine'},
+  '2': {state: 'sidebarTab', value: 'material'},
+  '3': {state: 'lastTouched', value: 'pattern'},
+  '4': {state: 'canvasView', value: 'preview'},
+  '5': {state: 'canvasView', value: 'code'},
+  '6': {state: 'canvasView', value: 'operate'},
 };
 
 function TabTestApp() {
   const [sidebarTab, setSidebarTab] = useState<'machine' | 'material'>('machine');
-  const [centerTab, setCenterTab] = useState<'pattern' | 'presets'>('pattern');
-  const [outputTab, setOutputTab] = useState<'gcode' | 'console'>('gcode');
+  const [canvasView, setCanvasView] = useState<CanvasView>('preview');
+  const [lastTouched, setLastTouched] = useState<string>('machine');
+  const [presetFlyoutOpen, setPresetFlyoutOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -25,12 +32,12 @@ function TabTestApp() {
       if (isEditable) return;
 
       switch (e.key) {
-        case '1': setSidebarTab('machine'); break;
-        case '2': setSidebarTab('material'); break;
-        case '3': setCenterTab('pattern'); break;
-        case '4': setCenterTab('presets'); break;
-        case '5': setOutputTab('gcode'); break;
-        case '6': setOutputTab('console'); break;
+        case '1': setSidebarTab('machine'); setLastTouched('machine'); break;
+        case '2': setSidebarTab('material'); setLastTouched('material'); break;
+        case '3': setPresetFlyoutOpen(false); setLastTouched('pattern'); break;
+        case '4': setCanvasView('preview'); setLastTouched('preview'); break;
+        case '5': setCanvasView('code'); setLastTouched('burn'); break;
+        case '6': setCanvasView('operate'); setLastTouched('burn'); break;
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -40,15 +47,16 @@ function TabTestApp() {
   return (
     <div>
       <span data-testid="sidebarTab">{sidebarTab}</span>
-      <span data-testid="centerTab">{centerTab}</span>
-      <span data-testid="outputTab">{outputTab}</span>
+      <span data-testid="canvasView">{canvasView}</span>
+      <span data-testid="lastTouched">{lastTouched}</span>
+      <span data-testid="presetFlyoutOpen">{String(presetFlyoutOpen)}</span>
     </div>
   );
 }
 
-function ModalTestApp({initialHelp, initialDict}: {initialHelp: boolean; initialDict: boolean}) {
-  const [showHelpModal, setShowHelpModal] = useState(initialHelp);
+function ModalTestApp({initialDict, initialQuickLog}: {initialDict: boolean; initialQuickLog: boolean}) {
   const [showDictionary, setShowDictionary] = useState(initialDict);
+  const [showQuickLogModal, setShowQuickLogModal] = useState(initialQuickLog);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -58,74 +66,99 @@ function ModalTestApp({initialHelp, initialDict}: {initialHelp: boolean; initial
 
       switch (e.key) {
         case 'Escape':
-          if (showHelpModal) setShowHelpModal(false);
           if (showDictionary) setShowDictionary(false);
+          if (showQuickLogModal) setShowQuickLogModal(false);
+          break;
+        case 'l':
+        case 'L':
+          setShowQuickLogModal((v) => !v);
           break;
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showHelpModal, showDictionary]);
+  }, [showDictionary, showQuickLogModal]);
 
   return (
     <div>
-      <span data-testid="helpOpen">{String(showHelpModal)}</span>
       <span data-testid="dictOpen">{String(showDictionary)}</span>
+      <span data-testid="quickLogOpen">{String(showQuickLogModal)}</span>
     </div>
   );
 }
 
 afterEach(() => {
-  document.body.innerHTML = '';
+  cleanup();
 });
 
-describe('Property 17: Keyboard shortcut tab activation', () => {
-  it('pressing a number key activates the correct tab', async () => {
+describe('Property 17: Keyboard shortcut activation (revised)', () => {
+  it('pressing a number key activates the correct view/tab', async () => {
     const user = userEvent.setup();
     render(<TabTestApp />);
 
-    await user.keyboard('3');
-    expect(screen.getByTestId('centerTab')).toHaveTextContent('pattern');
+    await user.keyboard('2');
+    expect(screen.getByTestId('sidebarTab')).toHaveTextContent('material');
 
     await user.keyboard('6');
-    expect(screen.getByTestId('outputTab')).toHaveTextContent('console');
+    expect(screen.getByTestId('canvasView')).toHaveTextContent('operate');
+
+    await user.keyboard('4');
+    expect(screen.getByTestId('canvasView')).toHaveTextContent('preview');
   });
 
-  it('fc.property: for any key 1-6, the corresponding tab is activated', async () => {
+  it('fc.property: for any key 1-6, the corresponding state is activated', async () => {
+    const user = userEvent.setup();
     await fc.assert(
       fc.asyncProperty(
         fc.constantFrom('1', '2', '3', '4', '5', '6'),
         async (key) => {
-          const {unmount} = render(<TabTestApp />);
-          const user = userEvent.setup();
+          render(<TabTestApp />);
           await user.keyboard(key);
 
-          const entry = KEY_TAB_MAP[key];
-          const tabEl = screen.getByTestId(entry.tab);
-          expect(tabEl).toHaveTextContent(entry.value);
-          unmount();
+          const entry = KEY_ACTION_MAP[key];
+          const stateEl = screen.getByTestId(entry.state);
+          expect(stateEl).toHaveTextContent(entry.value);
+          cleanup();
         }
-      )
+      ),
+      {timeout: 10_000}
     );
   });
 });
 
-describe('Property 18: Escape key closes modals', () => {
-  it('pressing Escape closes both modals regardless of initial state', async () => {
+describe('Property 18: Escape key closes modals; L toggles Quick Log', () => {
+  it('fc.property: Escape closes both Dictionary and Quick Log modals regardless of initial state', async () => {
+    const user = userEvent.setup();
     await fc.assert(
       fc.asyncProperty(
         fc.boolean(),
         fc.boolean(),
-        async (helpOpen, dictOpen) => {
-          const {unmount} = render(<ModalTestApp initialHelp={helpOpen} initialDict={dictOpen} />);
-          const user = userEvent.setup();
+        async (dictOpen, quickLogOpen) => {
+          render(<ModalTestApp initialDict={dictOpen} initialQuickLog={quickLogOpen} />);
           await user.keyboard('{Escape}');
 
-          expect(screen.getByTestId('helpOpen')).toHaveTextContent('false');
           expect(screen.getByTestId('dictOpen')).toHaveTextContent('false');
-          unmount();
+          expect(screen.getByTestId('quickLogOpen')).toHaveTextContent('false');
+          cleanup();
         }
-      )
+      ),
+      {timeout: 10_000}
     );
+  });
+
+  it('pressing L toggles the Quick Log modal', async () => {
+    const user = userEvent.setup();
+    render(<ModalTestApp initialDict={false} initialQuickLog={false} />);
+
+    await user.keyboard('l');
+    expect(screen.getByTestId('quickLogOpen')).toHaveTextContent('true');
+
+    await user.keyboard('l');
+    expect(screen.getByTestId('quickLogOpen')).toHaveTextContent('false');
+
+    await user.keyboard('L');
+    expect(screen.getByTestId('quickLogOpen')).toHaveTextContent('true');
+
+    cleanup();
   });
 });
