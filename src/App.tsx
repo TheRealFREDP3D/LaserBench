@@ -22,7 +22,6 @@ import { PrinterConsole } from './components/PrinterConsole';
 import { useWebSerial } from './lib/useWebSerial';
 import GCodeDictionary from './components/GCodeDictionary';
 import QuickLogModal from './components/QuickLogModal';
-import Workspace from './components/layout/Workspace';
 import LeftSidebar from './components/layout/LeftSidebar';
 import CenterPanel from './components/layout/CenterPanel';
 import MainCanvas, { CanvasView } from './components/layout/MainCanvas';
@@ -401,8 +400,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Layout — Workspace with refined 3-pane structure */}
-      <Workspace>
+      {/* Main Layout — refined 3-pane structure */}
+      <div id="main-content" tabIndex={-1} className="flex flex-1 overflow-hidden overflow-x-hidden">
         <LeftSidebar
           activeTab={sidebarTab}
           onTabChange={(tab) => {
@@ -554,7 +553,7 @@ export default function App() {
             theme={theme}
           />
         </MainCanvas>
-      </Workspace>
+      </div>
 
       {/* Floating Action Buttons — primary (Download) + secondary (Log Burn) */}
       <GenerateFAB
