@@ -380,18 +380,21 @@ export function generatePatternPaths(
 
   // G-code generation
   const gcodeLines: string[] = [];
+  const stripComments = machine.firmware === 'marlin_v1';
 
-  gcodeLines.push(`; LaserBench Calibration Suite Generated File`);
-  gcodeLines.push(`; Pattern: ${patternType.toUpperCase()}`);
-  gcodeLines.push(`; Machine Profile: ${machine.name}`);
-  gcodeLines.push(`; Firmware: ${machine.firmware}`);
-  if (machine.isDelta) {
-    gcodeLines.push(`; Delta Kinematics: ENABLED (radius: ${machine.deltaPrintRadius ?? DEFAULT_DELTA_PARAMS.printRadius}mm)`);
+  if (!stripComments) {
+    gcodeLines.push(`; LaserBench Calibration Suite Generated File`);
+    gcodeLines.push(`; Pattern: ${patternType.toUpperCase()}`);
+    gcodeLines.push(`; Machine Profile: ${machine.name}`);
+    gcodeLines.push(`; Firmware: ${machine.firmware}`);
+    if (machine.isDelta) {
+      gcodeLines.push(`; Delta Kinematics: ENABLED (radius: ${machine.deltaPrintRadius ?? DEFAULT_DELTA_PARAMS.printRadius}mm)`);
+    }
+    gcodeLines.push(`; Material: ${material.name} (${material.thickness}mm)`);
   }
-  gcodeLines.push(`; Material: ${material.name} (${material.thickness}mm)`);
-  gcodeLines.push(`G21 ; Set units to millimeters`);
-  gcodeLines.push(`G90 ; Absolute positioning`);
-  gcodeLines.push(`G0 F${machine.travelSpeed} Z${machine.safeZ} ; Move to safe Z`);
+  gcodeLines.push(`G21${stripComments ? '' : ' ; Set units to millimeters'}`);
+  gcodeLines.push(`G90${stripComments ? '' : ' ; Absolute positioning'}`);
+  gcodeLines.push(`G0 F${machine.travelSpeed} Z${machine.safeZ}${stripComments ? '' : ' ; Move to safe Z'}`);
 
   let currentX = 0;
   let currentY = 0;
@@ -406,7 +409,7 @@ export function generatePatternPaths(
     const p0 = points[0];
 
     if (isLaserOnState) {
-      gcodeLines.push(`${machine.laserOff} ; Disable laser before travel`);
+      gcodeLines.push(`${machine.laserOff}${stripComments ? '' : ' ; Disable laser before travel'}`);
       isLaserOnState = false;
     }
 
@@ -416,12 +419,12 @@ export function generatePatternPaths(
       zMoveCmd = ` Z${currentZ}`;
     }
 
-    gcodeLines.push(`G0 F${machine.travelSpeed} X${p0[0].toFixed(3)} Y${p0[1].toFixed(3)}${zMoveCmd} ; Rapid move to path start ; path:${index}`);
+    gcodeLines.push(`G0 F${machine.travelSpeed} X${p0[0].toFixed(3)} Y${p0[1].toFixed(3)}${zMoveCmd}${stripComments ? '' : ` ; Rapid move to path start ; path:${index}`}`);
     currentX = p0[0];
     currentY = p0[1];
 
     const laserCmd = machine.laserOn.replace('{power}', group.power.toString());
-    gcodeLines.push(`${laserCmd} ; Enable laser (S=${group.power}) ; path:${index}`);
+    gcodeLines.push(`${laserCmd}${stripComments ? '' : ` ; Enable laser (S=${group.power}) ; path:${index}`}`);
     isLaserOnState = true;
 
     for (let i = 1; i < points.length; i++) {
@@ -431,23 +434,25 @@ export function generatePatternPaths(
         currentFeedrate = group.speed;
         fCmd = ` F${currentFeedrate}`;
       }
-      gcodeLines.push(`G1${fCmd} X${p[0].toFixed(3)} Y${p[1].toFixed(3)} ; Scribing path ; path:${index}`);
+      gcodeLines.push(`G1${fCmd} X${p[0].toFixed(3)} Y${p[1].toFixed(3)}${stripComments ? '' : ` ; Scribing path ; path:${index}`}`);
       currentX = p[0];
       currentY = p[1];
     }
   });
 
   if (isLaserOnState) {
-    gcodeLines.push(`${machine.laserOff} ; Disable laser at job end`);
+    gcodeLines.push(`${machine.laserOff}${stripComments ? '' : ' ; Disable laser at job end'}`);
   }
 
-  gcodeLines.push(`G0 F${machine.travelSpeed} Z${machine.safeZ} ; Return to safe Z`);
+  gcodeLines.push(`G0 F${machine.travelSpeed} Z${machine.safeZ}${stripComments ? '' : ' ; Return to safe Z'}`);
   if (machine.bedShape === 'circular') {
-    gcodeLines.push(`G0 X0 Y0 ; Centered parking`);
+    gcodeLines.push(`G0 X0 Y0${stripComments ? '' : ' ; Centered parking'}`);
   } else {
-    gcodeLines.push(`G0 X0 Y${machine.bedHeight.toFixed(1)} ; Return to back-left parking`);
+    gcodeLines.push(`G0 X0 Y${machine.bedHeight.toFixed(1)}${stripComments ? '' : ' ; Return to back-left parking'}`);
   }
-  gcodeLines.push(`M30 ; Program end`);
+  if (!stripComments) {
+    gcodeLines.push(`M30`);
+  }
 
   const rawGCode = gcodeLines.join('\n');
 

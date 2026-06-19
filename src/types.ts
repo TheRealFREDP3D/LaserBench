@@ -1,4 +1,4 @@
-export type FirmwareType = 'marlin' | 'grbl';
+export type FirmwareType = 'marlin' | 'marlin_v1' | 'grbl';
 
 export interface MachineProfile {
   id: string;

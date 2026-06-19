@@ -147,4 +147,47 @@ describe('gcodeGenerator', () => {
       }
     });
   });
+
+  describe('Marlin V1 comment stripping', () => {
+    const MARLIN_V1_MACHINE: MachineProfile = {
+      ...CARTESIAN_MACHINE,
+      firmware: 'marlin_v1',
+    };
+
+    it('strips all comment lines from G-code', () => {
+      const result = generatePatternPaths('power_ramp', MARLIN_V1_MACHINE, MATERIAL, CONFIG);
+      const lines = result.gcode.split('\n');
+      for (const line of lines) {
+        expect(line.startsWith(';')).toBe(false);
+      }
+    });
+
+    it('strips inline comments from command lines', () => {
+      const result = generatePatternPaths('power_ramp', MARLIN_V1_MACHINE, MATERIAL, CONFIG);
+      const lines = result.gcode.split('\n');
+      for (const line of lines) {
+        expect(line).not.toContain(';');
+      }
+    });
+
+    it('does not include M30 program end', () => {
+      const result = generatePatternPaths('power_ramp', MARLIN_V1_MACHINE, MATERIAL, CONFIG);
+      expect(result.gcode).not.toMatch(/^M30$/m);
+    });
+
+    it('still includes essential G-code commands', () => {
+      const result = generatePatternPaths('power_ramp', MARLIN_V1_MACHINE, MATERIAL, CONFIG);
+      expect(result.gcode).toContain('G21');
+      expect(result.gcode).toContain('G90');
+      expect(result.gcode).toMatch(/G0 F\d+/);
+      expect(result.gcode).toMatch(/G1 /);
+    });
+
+    it('preserves comments for non-Marlin-V1 firmware', () => {
+      const result = generatePatternPaths('power_ramp', CARTESIAN_MACHINE, MATERIAL, CONFIG);
+      const lines = result.gcode.split('\n');
+      const commentLines = lines.filter(l => l.startsWith(';'));
+      expect(commentLines.length).toBeGreaterThan(0);
+    });
+  });
 });

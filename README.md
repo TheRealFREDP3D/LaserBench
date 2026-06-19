@@ -1,5 +1,7 @@
 # LaserBench
 
+![LaserBench - Logo](logo.jpg)
+
 A web-based laser calibration suite with G-code generation, SVG toolpath pre-visualization, serial communication, and a real-time printer console.
 
 ## Features

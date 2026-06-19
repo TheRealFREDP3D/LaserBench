@@ -245,15 +245,16 @@ export default function MachineSelector({
                   onChange={(e) => {
                     const fw = e.target.value as FirmwareType;
                     const defaults =
-                      fw === 'marlin'
-                        ? { laserOn: 'M106 S{power}', laserOff: 'M107', pwmMax: 255 }
-                        : { laserOn: 'M3 S{power}', laserOff: 'M5', pwmMax: 1000 };
+                      fw === 'grbl'
+                        ? { laserOn: 'M3 S{power}', laserOff: 'M5', pwmMax: 1000 }
+                        : { laserOn: 'M106 S{power}', laserOff: 'M107', pwmMax: 255 };
                     onUpdateMachine({ ...activeMachine, firmware: fw, ...defaults });
                   }}
                   className="w-full elegant-input rounded-md px-2 py-1.5"
                 >
                   <option value="grbl" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>GRBL ($32 mode)</option>
                   <option value="marlin" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Marlin Fan PWM</option>
+                  <option value="marlin_v1" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Marlin V1 (no comments)</option>
                 </select>
               </div>
               <div>
