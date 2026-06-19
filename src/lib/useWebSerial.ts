@@ -72,7 +72,7 @@ export function useWebSerial() {
     }
     try {
       setConnectionState('connecting');
-      const port = await (navigator as any).serial.requestPort();
+      const port = await navigator.serial.requestPort();
       await port.open({ baudRate });
       portRef.current = port;
       setConnectionState('connected');

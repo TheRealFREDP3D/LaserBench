@@ -215,7 +215,7 @@ export function getStoredMaterials(): MaterialProfile[] {
   return INITIAL_MATERIALS;
 }
 
-export function saveStoredMaterials(materials: MaterialProfile[]) {
+export function saveStoredMaterials(materials: MaterialProfile[]): void {
   try {
     localStorage.setItem('laserbench_materials', JSON.stringify(materials));
   } catch (e) {
@@ -240,7 +240,7 @@ export function getStoredMachines(): MachineProfile[] {
   return INITIAL_MACHINES;
 }
 
-export function saveStoredMachines(machines: MachineProfile[]) {
+export function saveStoredMachines(machines: MachineProfile[]): void {
   try {
     localStorage.setItem('laserbench_machines', JSON.stringify(machines));
   } catch (e) {

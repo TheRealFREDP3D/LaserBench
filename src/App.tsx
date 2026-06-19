@@ -316,6 +316,12 @@ export default function App() {
 
   return (
     <div id="laserbench-root" className={`min-h-screen bg-[#0A0A0A] text-[#E0E0E0] flex flex-col antialiased pb-8 ${theme === 'light' ? 'theme-light' : ''}`}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2 focus:bg-red-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:font-bold"
+      >
+        Skip to content
+      </a>
       {/* Skip to content — keyboard accessibility */}
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-indigo-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:outline-none">
         Skip to main content
