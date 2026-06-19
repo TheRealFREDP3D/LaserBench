@@ -30,6 +30,7 @@ import StatusBar from './components/layout/StatusBar';
 import WorkflowStepper, { WorkflowStage } from './components/layout/WorkflowStepper';
 
 import { Sun, Moon, BookOpen, AlertTriangle, X, Menu } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 export default function App() {
   const {
@@ -608,6 +609,9 @@ export default function App() {
           theme={theme}
         />
       )}
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 }
