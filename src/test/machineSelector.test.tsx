@@ -171,13 +171,13 @@ describe('Property 4: MachineSelector always-visible header', () => {
 
     // Delta Kinematics section should be collapsed initially (hidden class present)
     const deltaSection = screen.getByTestId('section-deltaKinematics');
-    expect(deltaSection.classList.contains('hidden')).toBe(true);
+    expect(deltaSection).toHaveClass('hidden');
 
     // Click the isDelta checkbox
     fireEvent.click(screen.getByTestId('machine-is-delta-checkbox'));
 
     // Delta section should now be visible (hidden class removed)
-    expect(deltaSection.classList.contains('hidden')).toBe(false);
+    expect(deltaSection).not.toHaveClass('hidden');
 
     unmount();
   });

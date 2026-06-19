@@ -1,10 +1,10 @@
 import {describe, expect, it, afterEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, cleanup} from '@testing-library/react';
 import fc from 'fast-check';
 import GenerateFAB from '@/src/components/layout/GenerateFAB';
 
 afterEach(() => {
-  document.body.innerHTML = '';
+  cleanup();
 });
 
 // ─── Property 10: FAB enabled state mirrors generatedResults ──────

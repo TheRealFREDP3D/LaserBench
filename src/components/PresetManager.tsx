@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { Save, FolderOpen, Trash2, Plus, Search, Sparkles, Check, Info, FileSliders } from 'lucide-react';
 import { GeneratorPreset, PatternType } from '../types';
+import { useConfirmModal } from '../hooks/useConfirmModal';
 
 interface PresetManagerProps {
   // Current settings parameters to save
@@ -180,8 +181,7 @@ export default function PresetManager({
   theme = 'dark',
 }: PresetManagerProps) {
   const isLight = theme === 'light';
-  
-  // Custom presets saved in localStorage
+  const { confirm, ConfirmModalComponent } = useConfirmModal(theme);
   const [customPresets, setCustomPresets] = useState<GeneratorPreset[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [newPresetName, setNewPresetName] = useState('');
@@ -246,9 +246,10 @@ export default function PresetManager({
     setTimeout(() => setJustSaved(false), 2500);
   };
 
-  const handleDeletePreset = (id: string, e: ReactMouseEvent) => {
-    e.stopPropagation(); // Avoid triggering load
-    if (confirm('Are you sure you want to delete this custom preset?')) {
+  const handleDeletePreset = async (id: string, e: ReactMouseEvent) => {
+    e.stopPropagation();
+    const ok = await confirm('Are you sure you want to delete this custom preset?');
+    if (ok) {
       const updated = customPresets.filter((p) => p.id !== id);
       setCustomPresets(updated);
       saveToLocalStorage(updated);
@@ -541,6 +542,7 @@ export default function PresetManager({
           )}
         </div>
       </div>
+      {ConfirmModalComponent}
     </div>
   );
 }

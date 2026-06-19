@@ -6,7 +6,7 @@ import MaterialDatabase from '@/src/components/MaterialDatabase';
 import type {MaterialProfile, MaterialCategory} from '@/src/types';
 
 afterEach(() => {
-  document.body.innerHTML = '';
+  cleanup();
 });
 
 const emptyHandlers = {

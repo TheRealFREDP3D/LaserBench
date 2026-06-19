@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MachineProfile, FirmwareType } from '../types';
 import { Plus, Trash2, Cpu, Triangle, ChevronDown } from 'lucide-react';
 import { DEFAULT_DELTA_PARAMS } from '../lib/deltaKinematics';
+import { useConfirmModal } from '../hooks/useConfirmModal';
 
 export type SectionKey = 'laserCommands' | 'motionZ' | 'bedGeometry' | 'deltaKinematics';
 
@@ -47,6 +48,7 @@ export default function MachineSelector({
   theme = 'dark',
 }: MachineSelectorProps) {
   const isLight = theme === 'light';
+  const { confirm, ConfirmModalComponent } = useConfirmModal(theme);
   const [isEditing, setIsEditing] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<SectionKey, boolean>>({ ...DEFAULT_COLLAPSED });
   const prevEditingRef = useRef(isEditing);
@@ -200,8 +202,9 @@ export default function MachineSelector({
             <button
               id="delete-machine-btn"
               type="button"
-              onClick={() => {
-                if (window.confirm("Are you sure you want to delete this profile?")) {
+              onClick={async () => {
+                const ok = await confirm("Are you sure you want to delete this profile?");
+                if (ok) {
                   onDeleteMachine(activeMachine.id);
                   setIsEditing(false);
                 }
@@ -261,7 +264,7 @@ export default function MachineSelector({
                   min="1"
                   max="10000"
                   value={activeMachine.pwmMax}
-                  onChange={(e) => handleFieldChange('pwmMax', parseInt(e.target.value) || 255)}
+                    onChange={(e) => handleFieldChange('pwmMax', parseInt(e.target.value, 10) || 255)}
                   className="w-full elegant-input rounded-md px-2 py-1.5"
                 />
               </div>
@@ -338,13 +341,13 @@ export default function MachineSelector({
                   <div>
                     <label className="block mb-1 label-caps">Travel (mm/m)</label>
                     <input id="machine-travelspeed-input" type="number" min="100" step="100" value={activeMachine.travelSpeed}
-                      onChange={(e) => handleFieldChange('travelSpeed', parseInt(e.target.value) || 3000)}
+                      onChange={(e) => handleFieldChange('travelSpeed', parseInt(e.target.value, 10) || 3000)}
                       className="w-full elegant-input rounded-md px-2 py-1.5" />
                   </div>
                   <div>
                     <label className="block mb-1 label-caps">Acc (mm/s²)</label>
                     <input id="machine-acceleration-input" type="number" min="50" step="50" value={activeMachine.acceleration ?? 1000}
-                      onChange={(e) => handleFieldChange('acceleration', parseInt(e.target.value) || 1000)}
+                      onChange={(e) => handleFieldChange('acceleration', parseInt(e.target.value, 10) || 1000)}
                       className="w-full elegant-input rounded-md px-2 py-1.5" />
                   </div>
                 </div>
@@ -379,7 +382,7 @@ export default function MachineSelector({
                     <div className="col-span-2">
                       <label className="block mb-1 label-caps">Bed Radius (mm)</label>
                       <input id="machine-bedwidth-radius-input" type="number" min="10" value={activeMachine.bedWidth}
-                        onChange={(e) => handleFieldChange('bedWidth', parseInt(e.target.value) || 100)}
+                        onChange={(e) => handleFieldChange('bedWidth', parseInt(e.target.value, 10) || 100)}
                         className="w-full elegant-input rounded-md px-2 py-1.5" />
                     </div>
                   ) : (
@@ -387,13 +390,13 @@ export default function MachineSelector({
                       <div>
                         <label className="block mb-1 label-caps">Width X (mm)</label>
                         <input id="machine-bedwidth-rectangular-input" type="number" min="10" value={activeMachine.bedWidth}
-                          onChange={(e) => handleFieldChange('bedWidth', parseInt(e.target.value) || 200)}
+                          onChange={(e) => handleFieldChange('bedWidth', parseInt(e.target.value, 10) || 200)}
                           className="w-full elegant-input rounded-md px-2 py-1.5" />
                       </div>
                       <div>
                         <label className="block mb-1 label-caps">Height Y (mm)</label>
                         <input id="machine-bedheight-input" type="number" min="10" value={activeMachine.bedHeight}
-                          onChange={(e) => handleFieldChange('bedHeight', parseInt(e.target.value) || 200)}
+                          onChange={(e) => handleFieldChange('bedHeight', parseInt(e.target.value, 10) || 200)}
                           className="w-full elegant-input rounded-md px-2 py-1.5" />
                       </div>
                     </>
@@ -404,13 +407,13 @@ export default function MachineSelector({
                   <div>
                     <label className="block mb-1 label-caps">Origin X Coord (mm)</label>
                     <input id="machine-originx-input" type="number" placeholder="0" value={activeMachine.originX ?? 0}
-                      onChange={(e) => handleFieldChange('originX', parseInt(e.target.value) || 0)}
+                      onChange={(e) => handleFieldChange('originX', parseInt(e.target.value, 10) || 0)}
                       className="w-full elegant-input rounded-md px-2 py-1.5" />
                   </div>
                   <div>
                     <label className="block mb-1 label-caps">Origin Y Coord (mm)</label>
                     <input id="machine-originy-input" type="number" placeholder="0" value={activeMachine.originY ?? 0}
-                      onChange={(e) => handleFieldChange('originY', parseInt(e.target.value) || 0)}
+                      onChange={(e) => handleFieldChange('originY', parseInt(e.target.value, 10) || 0)}
                       className="w-full elegant-input rounded-md px-2 py-1.5" />
                   </div>
                   <p className={`col-span-2 text-[10px] leading-snug italic pt-1 ${isLight ? 'text-zinc-500' : 'text-neutral-500'}`}>
@@ -533,6 +536,7 @@ export default function MachineSelector({
           </div>
         )}
       </div>
+      {ConfirmModalComponent}
     </div>
   );
 }

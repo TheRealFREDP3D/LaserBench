@@ -4,7 +4,7 @@ import fc from 'fast-check';
 import StatusBar from '@/src/components/layout/StatusBar';
 
 afterEach(() => {
-  document.body.innerHTML = '';
+  cleanup();
 });
 
 // ─── Property 14: Status bar completeness ─────────────────────────

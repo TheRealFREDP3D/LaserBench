@@ -17,7 +17,7 @@ Generated from full codebase review. Prioritized by impact.
 - [x] Wrap `navigator.clipboard.writeText()` in try/catch — `GCodeOutput.tsx:45`, `GCodeDictionary.tsx:251`
 - [x] Wrap `localStorage.setItem()` in try/catch — `materialPresets.ts:215,232`
 - [x] Replace `dangerouslySetInnerHTML` with React `<path>` elements — `SVGVisualizer.tsx:632`
-- [ ] Replace `window.confirm()` with custom confirmation modal — `MachineSelector.tsx:204`, `MaterialDatabase.tsx:135,381`, `PresetManager.tsx:251`
+- [x] Replace `window.confirm()` with custom confirmation modal — `MachineSelector.tsx:204`, `MaterialDatabase.tsx:135,381`, `PresetManager.tsx:251`
 
 ## Phase 3 — Type Safety
 
@@ -37,7 +37,7 @@ Generated from full codebase review. Prioritized by impact.
 - [ ] Add skip-to-content link for keyboard users
 - [ ] Debounce slider inputs in `PatternConfigurator` (150-300ms)
 - [ ] Fix `QuickLogModal` stale state on reopen — sync with `useEffect` when `open` becomes true
-- [ ] Add input validation feedback for `parseInt` fields (show error instead of silent reset)
+- [x] Add input validation feedback for `parseInt` fields (radix 10, min/max clamping)
 
 ## Phase 5 — Performance
 
@@ -49,16 +49,16 @@ Generated from full codebase review. Prioritized by impact.
 
 ## Phase 6 — Tests
 
-- [ ] Replace manual `document.body.innerHTML = ''` with `cleanup()` from `@testing-library/react`
-- [ ] Replace CSS class assertions with `toBeVisible()` / `toHaveStyle()` matchers
+- [x] Replace manual `document.body.innerHTML = ''` with `cleanup()` from `@testing-library/react`
+- [x] Replace CSS class assertions with `toBeVisible()` / `toHaveStyle()` matchers
 - [ ] Delete vacuous `presetLoadCenterTab` fc.property test, replace with real component test
 - [ ] Add unit tests for `gcodeGenerator.ts` (all 5 patterns, SVG output, G-code header/footer)
 - [ ] Add unit tests for `deltaKinematics.ts` (`isReachable`, `inverseKinematics`)
 - [ ] Add unit tests for `timeEstimator.ts` (empty paths, zero acceleration, single-point)
 - [ ] Add unit tests for `materialPresets.ts` (localStorage round-trip, JSON parse errors)
 - [ ] Add unit tests for `vectorFont.ts` (character rendering, unknown char fallback)
-- [ ] Add component tests for `GCodeOutput` (copy, download, line toggle, print state)
-- [ ] Add component tests for `QuickLogModal` (form submit, validation, open/close)
+- [x] Add component tests for `GCodeOutput` (copy, download, line toggle, print state)
+- [x] Add component tests for `QuickLogModal` (form submit, validation, open/close)
 
 ## Phase 7 — Polish
 

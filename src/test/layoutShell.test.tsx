@@ -1,5 +1,5 @@
 import {describe, expect, it, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, cleanup} from '@testing-library/react';
 import fc from 'fast-check';
 import {useState} from 'react';
 import LeftSidebar from '@/src/components/layout/LeftSidebar';
@@ -7,7 +7,7 @@ import CenterPanel from '@/src/components/layout/CenterPanel';
 import MainCanvas, {CanvasView} from '@/src/components/layout/MainCanvas';
 
 afterEach(() => {
-  document.body.innerHTML = '';
+  cleanup();
 });
 
 function hasClass(el: HTMLElement, cls: string): boolean {

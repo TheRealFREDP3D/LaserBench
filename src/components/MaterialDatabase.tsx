@@ -5,6 +5,7 @@ import {
   TreePine, Beaker, Shirt, Mountain, Hammer, FileText, Package,
   ChevronDown,
 } from 'lucide-react';
+import { useConfirmModal } from '../hooks/useConfirmModal';
 
 interface MaterialDatabaseProps {
   materials: MaterialProfile[];
@@ -45,6 +46,7 @@ export default function MaterialDatabase({
   theme = 'dark',
 }: MaterialDatabaseProps) {
   const isLight = theme === 'light';
+  const { confirm, ConfirmModalComponent } = useConfirmModal(theme);
   const [activeCategory, setActiveCategory] = useState<MaterialCategory>('Wood');
   const [isEditing, setIsEditing] = useState(false);
   const [showLogForm, setShowLogForm] = useState(false);
@@ -130,10 +132,10 @@ export default function MaterialDatabase({
     setShowLogForm(false);
   };
 
-  const handleDeleteLog = (logId: string) => {
+  const handleDeleteLog = async (logId: string) => {
     if (!activeMaterial) return;
-    const confirm = window.confirm("Delete this calibration entry?");
-    if (confirm) {
+    const ok = await confirm("Delete this calibration entry?");
+    if (ok) {
       onUpdateMaterial({
         ...activeMaterial,
         history: activeMaterial.history.filter((h) => h.id !== logId),
@@ -377,9 +379,9 @@ export default function MaterialDatabase({
                       <button
                         id="delete-material-btn"
                         type="button"
-                        onClick={() => {
-                          const conf = window.confirm(`Permanently delete ${activeMaterial.name}?`);
-                          if (conf) {
+                        onClick={async () => {
+                          const ok = await confirm(`Permanently delete ${activeMaterial.name}?`);
+                          if (ok) {
                             onDeleteMaterial(activeMaterial.id);
                             setIsEditing(false);
                           }
@@ -626,6 +628,7 @@ export default function MaterialDatabase({
           )}
         </div>
       </div>
+      {ConfirmModalComponent}
     </div>
   );
 }

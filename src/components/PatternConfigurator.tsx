@@ -322,7 +322,7 @@ export default memo(function PatternConfigurator({
                       min="50"
                       max={speedMax - 1}
                       value={speedMin}
-                      onChange={(e) => onSetSpeedMin(parseInt(e.target.value) || 50)}
+                      onChange={(e) => onSetSpeedMin(Math.max(50, Math.min(speedMax - 1, parseInt(e.target.value, 10) || 50)))}
                       className={`w-full elegant-input px-2 py-1 outline-none text-xs rounded border ${
                         isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
                       }`}
@@ -336,7 +336,7 @@ export default memo(function PatternConfigurator({
                       step="100"
                       min={speedMin + 1}
                       value={speedMax}
-                      onChange={(e) => onSetSpeedMax(parseInt(e.target.value) || 2000)}
+                      onChange={(e) => onSetSpeedMax(Math.max(speedMin + 1, parseInt(e.target.value, 10) || 2000))}
                       className={`w-full elegant-input px-2 py-1 outline-none text-xs rounded border ${
                         isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
                       }`}
