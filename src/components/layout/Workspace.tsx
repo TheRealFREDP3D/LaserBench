@@ -6,7 +6,7 @@ interface WorkspaceProps {
 
 export default function Workspace({ children }: WorkspaceProps) {
   return (
-    <div className="flex flex-1 overflow-hidden overflow-x-hidden">
+    <div id="main-content" tabIndex={-1} className="flex flex-1 overflow-hidden overflow-x-hidden">
       {children}
     </div>
   );

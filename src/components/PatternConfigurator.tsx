@@ -1,6 +1,7 @@
 import { PatternType } from '../types';
 import { Zap, Play, ChevronRight, Gauge, Grid3X3, Focus, Sliders, Scissors } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import DebouncedRange from './DebouncedRange';
 
 interface PatternConfiguratorProps {
   selectedPattern: PatternType;
@@ -197,14 +198,14 @@ export default function PatternConfigurator({
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <input
+            <DebouncedRange
               id="pattern-blocksize-slider"
-              type="range"
-              min="5"
-              max="30"
-              step="1"
+              min={5}
+              max={30}
+              step={1}
               value={blockSize}
-              onChange={(e) => onSetBlockSize(parseInt(e.target.value) || 12)}
+              onChange={onSetBlockSize}
+              ariaLabel="Block size"
               className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
             />
             <span id="block-size-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[32px] text-center ${
@@ -232,25 +233,25 @@ export default function PatternConfigurator({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={`text-[10px] block mb-0.5 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Min Power S</label>
-                    <input
+                    <DebouncedRange
                       id="pattern-powermin-slider"
-                      type="range"
-                      min="1"
+                      min={1}
                       max={powerMax - 1}
                       value={powerMin}
-                      onChange={(e) => onSetPowerMin(parseInt(e.target.value) || 10)}
+                      onChange={onSetPowerMin}
+                      ariaLabel="Minimum power"
                       className={`w-full h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                     />
                   </div>
                   <div>
                     <label className={`text-[10px] block mb-0.5 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Max Power S</label>
-                    <input
+                    <DebouncedRange
                       id="pattern-powermax-slider"
-                      type="range"
                       min={powerMin + 1}
                       max={pwmMax}
                       value={powerMax}
-                      onChange={(e) => onSetPowerMax(parseInt(e.target.value) || 255)}
+                      onChange={onSetPowerMax}
+                      ariaLabel="Maximum power"
                       className={`w-full h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                     />
                   </div>
@@ -260,13 +261,13 @@ export default function PatternConfigurator({
                   <div>
                     <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Power Grid Columns</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <DebouncedRange
                         id="pattern-powersteps-slider"
-                        type="range"
-                        min="2"
-                        max="8"
+                        min={2}
+                        max={8}
                         value={powerSteps}
-                        onChange={(e) => onSetPowerSteps(parseInt(e.target.value) || 2)}
+                        onChange={onSetPowerSteps}
+                        ariaLabel="Power grid columns"
                         className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
                       <span id="power-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
@@ -281,13 +282,13 @@ export default function PatternConfigurator({
                   <div>
                     <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Calibration Blocks (Steps)</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <DebouncedRange
                         id="power-ramp-steps-slider"
-                        type="range"
-                        min="3"
-                        max="10"
+                        min={3}
+                        max={10}
                         value={powerSteps}
-                        onChange={(e) => onSetPowerSteps(parseInt(e.target.value) || 3)}
+                        onChange={onSetPowerSteps}
+                        ariaLabel="Power ramp calibration blocks"
                         className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
                       <span id="power-ramp-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
@@ -346,13 +347,13 @@ export default function PatternConfigurator({
                   <div>
                     <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Speed Grid Rows</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <DebouncedRange
                         id="pattern-speedsteps-slider"
-                        type="range"
-                        min="2"
-                        max="8"
+                        min={2}
+                        max={8}
                         value={speedSteps}
-                        onChange={(e) => onSetSpeedSteps(parseInt(e.target.value) || 2)}
+                        onChange={onSetSpeedSteps}
+                        ariaLabel="Speed grid rows"
                         className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
                       <span id="speed-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
@@ -367,13 +368,13 @@ export default function PatternConfigurator({
                   <div>
                     <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Calibration Lines (Steps)</label>
                     <div className="flex items-center gap-2">
-                      <input
+                      <DebouncedRange
                         id="speed-ramp-steps-slider"
-                        type="range"
-                        min="3"
-                        max="10"
+                        min={3}
+                        max={10}
                         value={speedSteps}
-                        onChange={(e) => onSetSpeedSteps(parseInt(e.target.value) || 3)}
+                        onChange={onSetSpeedSteps}
+                        ariaLabel="Speed ramp calibration lines"
                         className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
                       <span id="speed-ramp-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
@@ -427,13 +428,13 @@ export default function PatternConfigurator({
             <div>
               <label className={`text-[10px] block mb-1 label-caps ${isLight ? 'text-zinc-500' : 'text-[#888]'}`}>Z Increments (Test Lines)</label>
               <div className="flex items-center gap-2">
-                <input
+                <DebouncedRange
                   id="pattern-zsteps-slider"
-                  type="range"
-                  min="3"
-                  max="10"
+                  min={3}
+                  max={10}
                   value={zSteps}
-                  onChange={(e) => onSetZSteps(parseInt(e.target.value) || 3)}
+                  onChange={onSetZSteps}
+                  ariaLabel="Z increments"
                   className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                 />
                 <span id="z-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${

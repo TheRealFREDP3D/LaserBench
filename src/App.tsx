@@ -325,6 +325,10 @@ export default function App() {
 
   return (
     <div id="laserbench-root" className={`min-h-screen bg-[#0A0A0A] text-[#E0E0E0] flex flex-col antialiased pb-8 ${theme === 'light' ? 'theme-light' : ''}`}>
+      {/* Skip to content — keyboard accessibility */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-indigo-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:outline-none">
+        Skip to main content
+      </a>
       {/* Header */}
       <header className="h-16 flex items-center justify-between px-6 border-b border-white/10 bg-[#0E0E0E] sticky top-0 z-50 shrink-0">
         <div className="flex items-center gap-4">

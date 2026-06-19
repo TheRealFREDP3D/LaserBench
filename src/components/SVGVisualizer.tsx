@@ -506,6 +506,7 @@ export default function SVGVisualizer({
             <button
               id="zoom-in-btn"
               onClick={handleZoomIn}
+              aria-label="Zoom in"
               className={`p-2 border rounded transition duration-200 cursor-pointer ${
                 isLight 
                   ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200 hover:text-black' 
@@ -518,6 +519,7 @@ export default function SVGVisualizer({
             <button
               id="zoom-out-btn"
               onClick={handleZoomOut}
+              aria-label="Zoom out"
               className={`p-2 border rounded transition duration-200 cursor-pointer ${
                 isLight 
                   ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200 hover:text-black' 
@@ -530,6 +532,7 @@ export default function SVGVisualizer({
             <button
               id="fit-view-btn"
               onClick={handleFit}
+              aria-label="Reset view to fit"
               className={`p-2 border rounded transition duration-200 cursor-pointer ${
                 isLight 
                   ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200 hover:text-black' 

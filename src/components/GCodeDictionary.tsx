@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Book, Search, X, Check, Copy, Zap, Settings, ArrowRight, CornerDownRight } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export interface GCodeEntry {
   code: string;
@@ -237,6 +238,8 @@ export default function GCodeDictionary({ onClose, theme = 'dark' }: GCodeDictio
   const [selectedEntry, setSelectedEntry] = useState<GCodeEntry | null>(GCODE_DATABASE[0]);
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
+  const trapRef = useFocusTrap<HTMLDivElement>(true);
+
   const filteredEntries = GCODE_DATABASE.filter(entry => {
     const matchesSearch = 
       entry.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -269,7 +272,11 @@ export default function GCodeDictionary({ onClose, theme = 'dark' }: GCodeDictio
   };
 
   return (
-    <div 
+    <div
+      ref={trapRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="G-Code Dictionary"
       className="fixed inset-0 bg-black/80 backdrop-blur-xs z-[110] flex items-center justify-center p-4 animate-fade-in"
       onClick={onClose}
     >
@@ -292,8 +299,9 @@ export default function GCodeDictionary({ onClose, theme = 'dark' }: GCodeDictio
               <p className={`text-[10px] ${isLight ? 'text-zinc-400' : 'text-neutral-500'}`}>Reference documentation for direct calibration adjustments</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
+            aria-label="Close dictionary"
             className={`p-1.5 rounded-lg transition-all duration-200 cursor-pointer ${
               isLight ? 'hover:bg-zinc-200 text-zinc-400 hover:text-black' : 'hover:bg-white/5 text-neutral-500 hover:text-white'
             }`}

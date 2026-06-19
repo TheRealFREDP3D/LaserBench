@@ -129,13 +129,13 @@ export const PrinterConsole: FC<PrinterConsoleProps> = ({
         <div className="flex flex-col items-center gap-1">
           <div className="grid grid-cols-3 gap-1">
             <div />
-            <button onClick={() => jog('Y', 10)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowUp className="w-4 h-4" /></button>
+            <button onClick={() => jog('Y', 10)} disabled={isControlDisabled} aria-label="Jog Y positive" className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowUp className="w-4 h-4" /></button>
             <div />
-            <button onClick={() => jog('X', -10)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowLeft className="w-4 h-4" /></button>
-            <button onClick={() => onSend('G28')} disabled={isControlDisabled} className="p-2 bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"><Home className="w-4 h-4" /></button>
-            <button onClick={() => jog('X', 10)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowRight className="w-4 h-4" /></button>
+            <button onClick={() => jog('X', -10)} disabled={isControlDisabled} aria-label="Jog X negative" className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowLeft className="w-4 h-4" /></button>
+            <button onClick={() => onSend('G28')} disabled={isControlDisabled} aria-label="Home all axes" className="p-2 bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition disabled:opacity-50 disabled:cursor-not-allowed"><Home className="w-4 h-4" /></button>
+            <button onClick={() => jog('X', 10)} disabled={isControlDisabled} aria-label="Jog X positive" className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowRight className="w-4 h-4" /></button>
             <div />
-            <button onClick={() => jog('Y', -10)} disabled={isControlDisabled} className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowDown className="w-4 h-4" /></button>
+            <button onClick={() => jog('Y', -10)} disabled={isControlDisabled} aria-label="Jog Y negative" className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><ArrowDown className="w-4 h-4" /></button>
             <div />
           </div>
           <span className="text-[10px] text-zinc-500 font-mono">JOG XY (10mm)</span>
@@ -185,7 +185,7 @@ export const PrinterConsole: FC<PrinterConsoleProps> = ({
       }`}>
         <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/5">
           <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Live Feed</span>
-          <button onClick={onClear} className="text-zinc-500 hover:text-zinc-300 transition">
+          <button onClick={onClear} aria-label="Clear log" className="text-zinc-500 hover:text-zinc-300 transition">
             <Trash2 className="w-3 h-3" />
           </button>
         </div>
@@ -218,6 +218,7 @@ export const PrinterConsole: FC<PrinterConsoleProps> = ({
           <button
             type="submit"
             disabled={isControlDisabled || !command.trim()}
+            aria-label="Send command"
             className="text-indigo-500 disabled:text-zinc-700 transition"
           >
             <Send className="w-4 h-4" />

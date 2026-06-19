@@ -12,6 +12,8 @@ interface StatusBarProps {
   deltaPrintRadius?: number;
   isPrinting: boolean;
   progress: number;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
 }
 
 const CONNECTION_CONFIG: Record<string, {dotClass: string; label: string}> = {
@@ -21,10 +23,11 @@ const CONNECTION_CONFIG: Record<string, {dotClass: string; label: string}> = {
 };
 
 export default function StatusBar({
-  connectionState, machineName, firmware, materialName,
+  isConnected, connectionState, machineName, firmware, materialName,
   estimatedTimeStr, isDelta, deltaPrintRadius, isPrinting, progress,
+  onConnect, onDisconnect,
 }: StatusBarProps) {
-  const cfg = CONNECTION_CONFIG[connectionState];
+  const cfg = CONNECTION_CONFIG[connectionState] || CONNECTION_CONFIG.offline;
 
   let progressIndicator: ReactNode = null;
   if (isPrinting) {
@@ -37,11 +40,17 @@ export default function StatusBar({
 
   return (
     <footer className="h-8 bg-[#0E0E0E] border-t border-white/8 flex items-center px-4 gap-4 text-[10px] font-mono shrink-0 fixed bottom-0 inset-x-0 z-40">
-      {/* Connection status */}
-      <span className="flex items-center gap-1.5 shrink-0" data-testid="connection-label">
+      {/* Connection status — clickable to connect/disconnect */}
+      <button
+        onClick={() => { if (isConnected) onDisconnect?.(); else onConnect?.(); }}
+        aria-label={isConnected ? 'Disconnect from printer' : 'Connect to printer'}
+        className="flex items-center gap-1.5 shrink-0 hover:text-white transition"
+        title={isConnected ? 'Disconnect from printer' : 'Connect to printer'}
+        data-testid="connection-label"
+      >
         <span className={`inline-block w-1.5 h-1.5 rounded-full ${cfg.dotClass}`} />
         {cfg.label}
-      </span>
+      </button>
 
       {/* Machine name */}
       <span className="truncate max-w-[120px]" title={machineName} data-testid="machine-name">
