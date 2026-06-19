@@ -1,6 +1,5 @@
 import {describe, expect, it, afterEach} from 'vitest';
-import {render, screen, cleanup} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, fireEvent, cleanup} from '@testing-library/react';
 import fc from 'fast-check';
 import {useEffect, useState} from 'react';
 import {CanvasView} from '@/src/components/layout/MainCanvas';
@@ -92,28 +91,28 @@ afterEach(() => {
 });
 
 describe('Property 17: Keyboard shortcut activation (revised)', () => {
-  it('pressing a number key activates the correct view/tab', async () => {
-    const user = userEvent.setup();
+  it('pressing a number key activates the correct view/tab', () => {
     render(<TabTestApp />);
 
-    await user.keyboard('2');
+    fireEvent.keyDown(window, {key: '2'});
     expect(screen.getByTestId('sidebarTab')).toHaveTextContent('material');
 
-    await user.keyboard('6');
+    fireEvent.keyDown(window, {key: '6'});
     expect(screen.getByTestId('canvasView')).toHaveTextContent('operate');
 
-    await user.keyboard('4');
+    fireEvent.keyDown(window, {key: '4'});
     expect(screen.getByTestId('canvasView')).toHaveTextContent('preview');
+
+    cleanup();
   });
 
-  it('fc.property: for any key 1-6, the corresponding state is activated', async () => {
-    const user = userEvent.setup();
-    await fc.assert(
-      fc.asyncProperty(
+  it('fc.property: for any key 1-6, the corresponding state is activated', () => {
+    fc.assert(
+      fc.property(
         fc.constantFrom('1', '2', '3', '4', '5', '6'),
-        async (key) => {
+        (key) => {
           render(<TabTestApp />);
-          await user.keyboard(key);
+          fireEvent.keyDown(window, {key});
 
           const entry = KEY_ACTION_MAP[key];
           const stateEl = screen.getByTestId(entry.state);
@@ -127,15 +126,14 @@ describe('Property 17: Keyboard shortcut activation (revised)', () => {
 });
 
 describe('Property 18: Escape key closes modals; L toggles Quick Log', () => {
-  it('fc.property: Escape closes both Dictionary and Quick Log modals regardless of initial state', async () => {
-    const user = userEvent.setup();
-    await fc.assert(
-      fc.asyncProperty(
+  it('fc.property: Escape closes both Dictionary and Quick Log modals regardless of initial state', () => {
+    fc.assert(
+      fc.property(
         fc.boolean(),
         fc.boolean(),
-        async (dictOpen, quickLogOpen) => {
+        (dictOpen, quickLogOpen) => {
           render(<ModalTestApp initialDict={dictOpen} initialQuickLog={quickLogOpen} />);
-          await user.keyboard('{Escape}');
+          fireEvent.keyDown(window, {key: 'Escape'});
 
           expect(screen.getByTestId('dictOpen')).toHaveTextContent('false');
           expect(screen.getByTestId('quickLogOpen')).toHaveTextContent('false');
@@ -146,17 +144,16 @@ describe('Property 18: Escape key closes modals; L toggles Quick Log', () => {
     );
   });
 
-  it('pressing L toggles the Quick Log modal', async () => {
-    const user = userEvent.setup();
+  it('pressing L toggles the Quick Log modal', () => {
     render(<ModalTestApp initialDict={false} initialQuickLog={false} />);
 
-    await user.keyboard('l');
+    fireEvent.keyDown(window, {key: 'l'});
     expect(screen.getByTestId('quickLogOpen')).toHaveTextContent('true');
 
-    await user.keyboard('l');
+    fireEvent.keyDown(window, {key: 'l'});
     expect(screen.getByTestId('quickLogOpen')).toHaveTextContent('false');
 
-    await user.keyboard('L');
+    fireEvent.keyDown(window, {key: 'L'});
     expect(screen.getByTestId('quickLogOpen')).toHaveTextContent('true');
 
     cleanup();

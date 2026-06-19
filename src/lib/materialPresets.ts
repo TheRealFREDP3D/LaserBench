@@ -207,12 +207,20 @@ export function getStoredMaterials(): MaterialProfile[] {
       console.error("Error parsing materials database, resetting to defaults", e);
     }
   }
-  localStorage.setItem('laserbench_materials', JSON.stringify(INITIAL_MATERIALS));
+  try {
+    localStorage.setItem('laserbench_materials', JSON.stringify(INITIAL_MATERIALS));
+  } catch (e) {
+    console.error('Failed to save default materials to localStorage', e);
+  }
   return INITIAL_MATERIALS;
 }
 
 export function saveStoredMaterials(materials: MaterialProfile[]) {
-  localStorage.setItem('laserbench_materials', JSON.stringify(materials));
+  try {
+    localStorage.setItem('laserbench_materials', JSON.stringify(materials));
+  } catch (e) {
+    console.error('Failed to save materials to localStorage', e);
+  }
 }
 
 export function getStoredMachines(): MachineProfile[] {
@@ -224,10 +232,18 @@ export function getStoredMachines(): MachineProfile[] {
       console.error("Error parsing machines database, resetting to defaults", e);
     }
   }
-  localStorage.setItem('laserbench_machines', JSON.stringify(INITIAL_MACHINES));
+  try {
+    localStorage.setItem('laserbench_machines', JSON.stringify(INITIAL_MACHINES));
+  } catch (e) {
+    console.error('Failed to save default machines to localStorage', e);
+  }
   return INITIAL_MACHINES;
 }
 
 export function saveStoredMachines(machines: MachineProfile[]) {
-  localStorage.setItem('laserbench_machines', JSON.stringify(machines));
+  try {
+    localStorage.setItem('laserbench_machines', JSON.stringify(machines));
+  } catch (e) {
+    console.error('Failed to save machines to localStorage', e);
+  }
 }

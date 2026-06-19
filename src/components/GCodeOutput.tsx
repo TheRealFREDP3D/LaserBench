@@ -41,10 +41,14 @@ export default function GCodeOutput({
   const gutterRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLDivElement>(null);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(gcode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(gcode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
   };
 
   const handleDownloadGCode = () => {

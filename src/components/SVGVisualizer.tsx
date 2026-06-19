@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MachineProfile, MaterialProfile, PatternType } from '../types';
+import type { SvgPathElement } from '../lib/gcodeGenerator';
 import { ZoomIn, ZoomOut, Maximize, Crosshair, HelpCircle, Eye } from 'lucide-react';
 
 interface SVGVisualizerProps {
-  svgPathData: string;
+  svgPaths: SvgPathElement[];
   machine: MachineProfile;
   material: MaterialProfile;
   patternType: PatternType;
@@ -20,7 +21,7 @@ interface SVGVisualizerProps {
 }
 
 export default function SVGVisualizer({
-  svgPathData,
+  svgPaths,
   machine,
   material,
   patternType,
@@ -146,7 +147,7 @@ export default function SVGVisualizer({
     if (autoFitOnChange) {
       handleFit();
     }
-  }, [svgPathData, autoFitOnChange]);
+  }, [svgPaths, autoFitOnChange]);
 
   // Simulation playback effect block
   useEffect(() => {
@@ -629,7 +630,17 @@ export default function SVGVisualizer({
               </>
             ) : (
               <>
-                <g dangerouslySetInnerHTML={{ __html: svgPathData }} />
+                {svgPaths.map((sp, i) => (
+                  <path
+                    key={`svg-default-${i}`}
+                    d={sp.d}
+                    fill={sp.fill}
+                    stroke={sp.stroke}
+                    strokeWidth={sp.strokeWidth}
+                    strokeLinecap={sp.strokeLinecap}
+                    strokeLinejoin={sp.strokeLinejoin}
+                  />
+                ))}
                 {hoveredPathIndex !== null && paths[hoveredPathIndex] && (
                   <path
                     d={paths[hoveredPathIndex].points.map((pt, pIdx) => `${pIdx === 0 ? 'M' : 'L'} ${pt[0]} ${pt[1]}`).join(' ')}

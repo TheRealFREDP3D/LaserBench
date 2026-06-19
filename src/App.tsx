@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { MachineProfile, MaterialProfile, PatternType } from './types';
+import { MachineProfile, MaterialProfile, PatternType, CalibrationHistoryEntry } from './types';
 import {
   getStoredMachines,
   getStoredMaterials,
@@ -20,14 +20,16 @@ import GCodeOutput from './components/GCodeOutput';
 import { PrinterConsole } from './components/PrinterConsole';
 import { useWebSerial } from './lib/useWebSerial';
 import GCodeDictionary from './components/GCodeDictionary';
+import QuickLogModal from './components/QuickLogModal';
 import Workspace from './components/layout/Workspace';
 import LeftSidebar from './components/layout/LeftSidebar';
 import CenterPanel from './components/layout/CenterPanel';
-import MainCanvas from './components/layout/MainCanvas';
+import MainCanvas, { CanvasView } from './components/layout/MainCanvas';
 import GenerateFAB from './components/layout/GenerateFAB';
 import StatusBar from './components/layout/StatusBar';
+import WorkflowStepper, { WorkflowStage } from './components/layout/WorkflowStepper';
 
-import { Info, Sun, Moon, BookOpen, AlertTriangle, X, Menu } from 'lucide-react';
+import { Sun, Moon, BookOpen, AlertTriangle, X, Menu } from 'lucide-react';
 
 export default function App() {
   const {
@@ -84,13 +86,22 @@ export default function App() {
 
   const [generatedResults, setGeneratedResults] = useState<GeneratedData | null>(null);
   const [hoveredPathIndex, setHoveredPathIndex] = useState<number | null>(null);
-  const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
   const [showDictionary, setShowDictionary] = useState<boolean>(false);
   const [dismissedDeltaWarnings, setDismissedDeltaWarnings] = useState(false);
 
+  // ── New workflow-aware state ───────────────────────────────────────
+  // sidebarTab: 'machine' | 'material'  (kept for backward compat with LeftSidebar)
   const [sidebarTab, setSidebarTab] = useState<'machine' | 'material'>('machine');
-  const [centerTab, setCenterTab] = useState<'pattern' | 'presets'>('pattern');
-  const [outputTab, setOutputTab] = useState<'gcode' | 'console'>('gcode');
+  // canvasView: replaces old outputTab. 3 view modes for the main canvas.
+  const [canvasView, setCanvasView] = useState<CanvasView>('preview');
+  // Preset flyout (controlled by App so we can close it after a preset is loaded)
+  const [presetFlyoutOpen, setPresetFlyoutOpen] = useState<boolean>(false);
+  // Quick Log Modal
+  const [showQuickLogModal, setShowQuickLogModal] = useState<boolean>(false);
+  // Track last-touched panel to derive the active workflow stage
+  const [lastTouched, setLastTouched] = useState<WorkflowStage>('machine');
+
+  // Mobile sidebar slide-over
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -102,8 +113,8 @@ export default function App() {
     if (loadedMaterials.length > 0) setSelectedMaterialId(loadedMaterials[0].id);
   }, []);
 
-  const activeMachine = machines.find((m) => m.id === selectedMachineId) || machines[0];
-  const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0];
+  const activeMachine = machines.find((m) => m.id === selectedMachineId) || machines[0] || null;
+  const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0] || null;
 
   const estimatedTimeStr = useMemo(() => {
     if (!generatedResults || !activeMachine || !generatedResults.paths) return null;
@@ -121,7 +132,7 @@ export default function App() {
     if (activeMaterial) {
       setNominalThickness(activeMaterial.thickness);
     }
-  }, [selectedMachineId, selectedMaterialId]);
+  }, [selectedMachineId, selectedMaterialId, activeMachine, activeMaterial]);
 
   // Reset dismissed warnings when pattern or machine changes
   useEffect(() => {
@@ -146,6 +157,13 @@ export default function App() {
     machines, materials,
   ]);
 
+  // ── Keyboard shortcuts ─────────────────────────────────────────────
+  // New mapping (1-6 + L for log):
+  //   1 → sidebar machine         2 → sidebar material
+  //   3 → pattern (close flyout, focus pattern)
+  //   4 → canvas preview          5 → canvas code     6 → canvas operate
+  //   L → toggle Quick Log modal
+  //   Esc → close any modal / flyout
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
@@ -153,22 +171,46 @@ export default function App() {
       if (isEditable) return;
 
       switch (e.key) {
-        case '1': setSidebarTab('machine'); break;
-        case '2': setSidebarTab('material'); break;
-        case '3': setCenterTab('pattern'); break;
-        case '4': setCenterTab('presets'); break;
-        case '5': setOutputTab('gcode'); break;
-        case '6': setOutputTab('console'); break;
+        case '1':
+          setSidebarTab('machine');
+          setLastTouched('machine');
+          break;
+        case '2':
+          setSidebarTab('material');
+          setLastTouched('material');
+          break;
+        case '3':
+          setPresetFlyoutOpen(false);
+          setLastTouched('pattern');
+          break;
+        case '4':
+          setCanvasView('preview');
+          setLastTouched('preview');
+          break;
+        case '5':
+          setCanvasView('code');
+          setLastTouched('burn');
+          break;
+        case '6':
+          setCanvasView('operate');
+          setLastTouched('burn');
+          break;
+        case 'l':
+        case 'L':
+          setShowQuickLogModal((v) => !v);
+          break;
         case 'Escape':
-          if (showHelpModal) setShowHelpModal(false);
           if (showDictionary) setShowDictionary(false);
+          if (showQuickLogModal) setShowQuickLogModal(false);
+          if (presetFlyoutOpen) setPresetFlyoutOpen(false);
           break;
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showHelpModal, showDictionary]);
+  }, [showDictionary, showQuickLogModal, presetFlyoutOpen]);
 
+  // ── Machine / Material CRUD (unchanged) ────────────────────────────
   const handleUpdateMachine = (updated: MachineProfile) => {
     const updatedList = machines.map((m) => (m.id === updated.id ? updated : m));
     setMachines(updatedList);
@@ -202,6 +244,7 @@ export default function App() {
     if (selectedMaterialId === id && updatedList.length > 0) setSelectedMaterialId(updatedList[0].id);
   };
 
+  // ── Download / Print / Log handlers ────────────────────────────────
   const handleDownloadGCode = () => {
     if (!generatedResults) return;
     const blob = new Blob([generatedResults.gcode], { type: 'text/plain;charset=utf-8' });
@@ -214,6 +257,65 @@ export default function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    // After download, switch to code view (so user can review what was downloaded) and mark burn stage
+    setCanvasView('code');
+    setLastTouched('burn');
+  };
+
+  const handlePrint = () => {
+    if (!generatedResults) return;
+    setCanvasView('operate');
+    setLastTouched('burn');
+    printGCode(generatedResults.gcode);
+  };
+
+  const handleQuickLogSave = (entry: CalibrationHistoryEntry, optimal: { power: number; speed: number; focusZ: number }) => {
+    if (!activeMaterial) return;
+    handleUpdateMaterial({
+      ...activeMaterial,
+      history: [entry, ...activeMaterial.history],
+      engrave: {
+        power: optimal.power,
+        speed: optimal.speed,
+      },
+      focusZ: optimal.focusZ,
+    });
+    setShowQuickLogModal(false);
+  };
+
+  // ── Workflow stepper derivation ────────────────────────────────────
+  const activeStage: WorkflowStage = lastTouched;
+  const completedStages: WorkflowStage[] = [
+    selectedMachineId ? 'machine' : null,
+    selectedMaterialId ? 'material' : null,
+    generatedResults ? 'pattern' : null,
+    generatedResults ? 'preview' : null,
+    (activeMaterial?.history?.length ?? 0) > 0 ? 'burn' : null,
+  ].filter(Boolean) as WorkflowStage[];
+
+  const handleStageClick = (stage: WorkflowStage) => {
+    switch (stage) {
+      case 'machine':
+        setSidebarTab('machine');
+        setLastTouched('machine');
+        break;
+      case 'material':
+        setSidebarTab('material');
+        setLastTouched('material');
+        break;
+      case 'pattern':
+        setPresetFlyoutOpen(false);
+        setLastTouched('pattern');
+        break;
+      case 'preview':
+        setCanvasView('preview');
+        setLastTouched('preview');
+        break;
+      case 'burn':
+        setCanvasView('operate');
+        setLastTouched('burn');
+        break;
+    }
   };
 
   const hasDeltaWarnings =
@@ -222,14 +324,14 @@ export default function App() {
     generatedResults.deltaWarnings.length > 0;
 
   return (
-    <div id="laserbench-root" className={`min-h-screen bg-[#0A0A0A] text-[#E0E0E0] flex flex-col antialiased ${theme === 'light' ? 'theme-light' : ''}`}>
+    <div id="laserbench-root" className={`min-h-screen bg-[#0A0A0A] text-[#E0E0E0] flex flex-col antialiased pb-8 ${theme === 'light' ? 'theme-light' : ''}`}>
       {/* Header */}
       <header className="h-16 flex items-center justify-between px-6 border-b border-white/10 bg-[#0E0E0E] sticky top-0 z-50 shrink-0">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 bg-red-600 flex items-center justify-center rounded-sm font-bold text-black font-sans select-none">LB</div>
           <h1 className="text-base font-medium tracking-tight text-white flex items-center gap-1.5">
             LaserBench
-            <span className="text-[#666] font-normal italic text-xs">v1.3-beta</span>
+            <span className="text-[#666] font-normal italic text-xs">v1.4-ui</span>
           </h1>
         </div>
         <div className="flex items-center gap-6">
@@ -256,7 +358,7 @@ export default function App() {
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-indigo-550 shrink-0" />
+                <Moon className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                 <span className="hidden sm:inline">Dark Mode</span>
               </>
             )}
@@ -274,7 +376,14 @@ export default function App() {
         </div>
       </header>
 
-      {/* Delta Reachability Warning Banner */}
+      {/* Workflow Stepper — new persistent navigation showing the 5-stage workflow */}
+      <WorkflowStepper
+        activeStage={activeStage}
+        completedStages={completedStages}
+        onStageClick={handleStageClick}
+      />
+
+      {/* Delta Reachability Warning Banner (kept inline, no longer interrupts header) */}
       {hasDeltaWarnings && (
         <div className="bg-amber-950/60 border-b border-amber-800/50 px-6 py-2.5 flex items-start justify-between gap-3">
           <div className="flex items-start gap-2 text-amber-300">
@@ -296,13 +405,21 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Layout — Workspace with tabbed panels */}
+      {/* Main Layout — Workspace with refined 3-pane structure */}
       <Workspace>
-        <LeftSidebar activeTab={sidebarTab} onTabChange={setSidebarTab} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}>
+        <LeftSidebar
+          activeTab={sidebarTab}
+          onTabChange={(tab) => {
+            setSidebarTab(tab);
+            setLastTouched(tab);
+          }}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        >
           <MachineSelector
             machines={machines}
             selectedMachineId={selectedMachineId}
-            onSelectMachine={setSelectedMachineId}
+            onSelectMachine={(id) => { setSelectedMachineId(id); setLastTouched('machine'); }}
             onUpdateMachine={handleUpdateMachine}
             onCreateMachine={handleCreateMachine}
             onDeleteMachine={handleDeleteMachine}
@@ -312,17 +429,21 @@ export default function App() {
             materials={materials}
             selectedMaterialId={selectedMaterialId}
             pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-            onSelectMaterial={setSelectedMaterialId}
+            onSelectMaterial={(id) => { setSelectedMaterialId(id); setLastTouched('material'); }}
             onUpdateMaterial={handleUpdateMaterial}
             onCreateMaterial={handleCreateMaterial}
             onDeleteMaterial={handleDeleteMaterial}
+            onQuickLog={() => setShowQuickLogModal(true)}
             theme={theme}
           />
         </LeftSidebar>
-        <CenterPanel activeTab={centerTab} onTabChange={setCenterTab}>
+        <CenterPanel
+          presetFlyoutOpen={presetFlyoutOpen}
+          onPresetFlyoutToggle={setPresetFlyoutOpen}
+        >
           <PatternConfigurator
             selectedPattern={selectedPattern}
-            onSelectPattern={setSelectedPattern}
+            onSelectPattern={(p) => { setSelectedPattern(p); setLastTouched('pattern'); }}
             powerMin={powerMin}
             powerMax={powerMax}
             speedMin={speedMin}
@@ -336,18 +457,18 @@ export default function App() {
             zMax={zMax}
             zSteps={zSteps}
             pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-            onSetPowerMin={setPowerMin}
-            onSetPowerMax={setPowerMax}
-            onSetSpeedMin={setSpeedMin}
-            onSetSpeedMax={setSpeedMax}
-            onSetPowerSteps={setPowerSteps}
-            onSetSpeedSteps={setSpeedSteps}
-            onSetNominalThickness={setNominalThickness}
-            onSetKerfValues={setKerfValues}
-            onSetZMin={setZMin}
-            onSetZMax={setZMax}
-            onSetZSteps={setZSteps}
-            onSetBlockSize={setBlockSize}
+            onSetPowerMin={(v) => { setPowerMin(v); setLastTouched('pattern'); }}
+            onSetPowerMax={(v) => { setPowerMax(v); setLastTouched('pattern'); }}
+            onSetSpeedMin={(v) => { setSpeedMin(v); setLastTouched('pattern'); }}
+            onSetSpeedMax={(v) => { setSpeedMax(v); setLastTouched('pattern'); }}
+            onSetPowerSteps={(v) => { setPowerSteps(v); setLastTouched('pattern'); }}
+            onSetSpeedSteps={(v) => { setSpeedSteps(v); setLastTouched('pattern'); }}
+            onSetNominalThickness={(v) => { setNominalThickness(v); setLastTouched('pattern'); }}
+            onSetKerfValues={(v) => { setKerfValues(v); setLastTouched('pattern'); }}
+            onSetZMin={(v) => { setZMin(v); setLastTouched('pattern'); }}
+            onSetZMax={(v) => { setZMax(v); setLastTouched('pattern'); }}
+            onSetZSteps={(v) => { setZSteps(v); setLastTouched('pattern'); }}
+            onSetBlockSize={(v) => { setBlockSize(v); setLastTouched('pattern'); }}
             theme={theme}
           />
           <PresetManager
@@ -379,15 +500,21 @@ export default function App() {
               setZMin(preset.zMin);
               setZMax(preset.zMax);
               setZSteps(preset.zSteps);
-              setCenterTab('pattern');
+              setPresetFlyoutOpen(false);
+              setLastTouched('pattern');
             }}
             theme={theme}
           />
         </CenterPanel>
-        <MainCanvas outputTab={outputTab} onOutputTabChange={setOutputTab} isConnected={isConnected}>
+        <MainCanvas
+          canvasView={canvasView}
+          onViewChange={(v) => { setCanvasView(v); setLastTouched(v === 'preview' ? 'preview' : 'burn'); }}
+          isConnected={isConnected}
+          isPrinting={isPrinting}
+        >
           {generatedResults && activeMachine && activeMaterial ? (
             <SVGVisualizer
-              svgPathData={generatedResults.svgPathData}
+              svgPaths={generatedResults.svgPaths}
               machine={activeMachine}
               material={activeMaterial}
               patternType={selectedPattern}
@@ -411,7 +538,7 @@ export default function App() {
               theme={theme}
               hoveredPathIndex={hoveredPathIndex}
               onHoverPath={setHoveredPathIndex}
-              onPrint={() => { setOutputTab('console'); printGCode(generatedResults.gcode); }}
+              onPrint={handlePrint}
               isPrinterConnected={isConnected}
               isPrinting={isPrinting}
             />
@@ -433,11 +560,13 @@ export default function App() {
         </MainCanvas>
       </Workspace>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Buttons — primary (Download) + secondary (Log Burn) */}
       <GenerateFAB
         disabled={!generatedResults}
         estimatedTimeStr={estimatedTimeStr}
         onClick={handleDownloadGCode}
+        onLogClick={() => setShowQuickLogModal(true)}
+        logDisabled={!activeMaterial}
       />
 
       {/* Status Bar */}
@@ -452,52 +581,24 @@ export default function App() {
         deltaPrintRadius={activeMachine?.deltaPrintRadius}
         isPrinting={isPrinting}
         progress={progress}
+        onConnect={() => connect(250000)}
+        onDisconnect={disconnect}
       />
 
-      {/* Help Modal */}
-      {showHelpModal && (
-        <div
-          className="fixed inset-0 bg-black/85 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => setShowHelpModal(false)}
-        >
-          <div
-            className="bg-[#0E0E0E] border border-red-900/60 rounded p-6 max-w-lg w-full text-[#E0E0E0] shadow-2xl relative space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-2 border-b border-white/8 pb-3">
-              <Info className="text-red-500 w-5 h-5 shrink-0" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">LaserBench Calibration Guide</h3>
-            </div>
-            <div className="space-y-3.5 text-xs leading-relaxed text-neutral-300">
-              {[
-                ['01', 'Config Machine Profile', 'Select your machine (Marlin Delta or GRBL Rectangular). Configure physical coordinate bounds, focal elevations, and feed rates. Enable Delta Kinematics to validate pattern reachability.'],
-                ['02', 'Load Material Database', 'Load timber wood or cast acrylic sheets. Record completed burns directly into the localized log history database.'],
-                ['03', 'Customize Patterns', 'Select Matrix grids, power blocks, speed ramps, Z focus ladders, or clearance kerf combs to isolate properties.'],
-                ['04', 'Run & Save Optimal Log', 'Burn G-code physically, evaluate visual result, key in optimum values, and build your benchmark library.'],
-              ].map(([step, title, desc]) => (
-                <div key={step} className="flex gap-2.5">
-                  <span className="font-mono text-xs text-red-400 font-bold bg-red-950/45 px-2 py-0.5 rounded h-fit">{step}</span>
-                  <div>
-                    <h4 className="font-bold text-white mb-0.5">{title}</h4>
-                    <p>{desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="bg-red-950/15 border border-red-900/30 p-2.5 rounded text-[10px] text-red-300/80 leading-normal font-sans">
-              <strong>⚠️ Laser Ignition & Optical Safety:</strong> Always operate inside a fire-resistant enclosure. Wear laser safety glasses calibrated for your diode wavelength (e.g., OD5+ protection).
-            </div>
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={() => setShowHelpModal(false)}
-                className="bg-red-650 hover:bg-red-600 text-white px-4 py-1.5 rounded font-bold text-xs tracking-tight transition cursor-pointer"
-              >
-                DISMISS GUIDE
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Quick Log Modal — opens from FAB area, Material tab, or 'L' keyboard shortcut */}
+      <QuickLogModal
+        open={showQuickLogModal}
+        onClose={() => setShowQuickLogModal(false)}
+        activeMaterial={activeMaterial}
+        activeMachineName={activeMachine?.name ?? ''}
+        patternType={selectedPattern}
+        pwmMax={activeMachine ? activeMachine.pwmMax : 255}
+        paramSnapshot={{
+          powerMin, powerMax, speedMin, speedMax, zMin, zMax, blockSize,
+        }}
+        onSave={handleQuickLogSave}
+        theme={theme}
+      />
 
       {/* G-Code Dictionary Modal */}
       {showDictionary && (

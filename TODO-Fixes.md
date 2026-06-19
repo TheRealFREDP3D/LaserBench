@@ -13,10 +13,10 @@ Generated from full codebase review. Prioritized by impact.
 
 ## Phase 2 — Safety (security, crash recovery)
 
-- [ ] Add ErrorBoundary wrapping `<App />` in `main.tsx`
-- [ ] Wrap `navigator.clipboard.writeText()` in try/catch — `GCodeOutput.tsx:45`, `GCodeDictionary.tsx:251`
-- [ ] Wrap `localStorage.setItem()` in try/catch — `materialPresets.ts:215,232`
-- [ ] Replace `dangerouslySetInnerHTML` with React `<path>` elements — `SVGVisualizer.tsx:632`
+- [x] Add ErrorBoundary wrapping `<App />` in `main.tsx`
+- [x] Wrap `navigator.clipboard.writeText()` in try/catch — `GCodeOutput.tsx:45`, `GCodeDictionary.tsx:251`
+- [x] Wrap `localStorage.setItem()` in try/catch — `materialPresets.ts:215,232`
+- [x] Replace `dangerouslySetInnerHTML` with React `<path>` elements — `SVGVisualizer.tsx:632`
 - [ ] Replace `window.confirm()` with custom confirmation modal — `MachineSelector.tsx:204`, `MaterialDatabase.tsx:135,381`, `PresetManager.tsx:251`
 
 ## Phase 3 — Type Safety

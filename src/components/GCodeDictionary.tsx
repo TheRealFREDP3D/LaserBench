@@ -247,12 +247,16 @@ export default function GCodeDictionary({ onClose, theme = 'dark' }: GCodeDictio
     return matchesSearch && matchesTab;
   });
 
-  const handleCopyExample = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedText(text);
-    setTimeout(() => {
+  const handleCopyExample = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedText(text);
+      setTimeout(() => {
+        setCopiedText(null);
+      }, 2000);
+    } catch {
       setCopiedText(null);
-    }, 2000);
+    }
   };
 
   const getCategoryColor = (cat: GCodeEntry['category']) => {

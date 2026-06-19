@@ -2,9 +2,18 @@ import { MachineProfile, MaterialProfile, PathElement, PatternType, Vector2D } f
 import { renderTextPath } from './vectorFont';
 import { DeltaKinematics, DEFAULT_DELTA_PARAMS } from './deltaKinematics';
 
+export interface SvgPathElement {
+  d: string;
+  fill: string;
+  stroke: string;
+  strokeWidth: string;
+  strokeLinecap?: string;
+  strokeLinejoin?: string;
+}
+
 export interface GeneratedData {
   gcode: string;
-  svgPathData: string;
+  svgPaths: SvgPathElement[];
   paths: {
     points: [number, number][];
     power: number;
@@ -461,7 +470,7 @@ export function generatePatternPaths(
     minX = -50; maxX = 50; minY = -50; maxY = 50;
   }
 
-  let svgPaths: string[] = [];
+  const svgPaths: SvgPathElement[] = [];
   pathGroups.forEach(g => {
     if (g.points.length < 1) return;
     const first = g.points[0];
@@ -490,14 +499,19 @@ export function generatePatternPaths(
       strokeWidth = 0.15;
     }
 
-    svgPaths.push(`<path d="${d}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth.toFixed(2)}" stroke-linecap="round" stroke-linejoin="round" />`);
+    svgPaths.push({
+      d,
+      fill: 'none',
+      stroke: strokeColor,
+      strokeWidth: strokeWidth.toFixed(2),
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+    });
   });
-
-  const svgInner = svgPaths.join('\n');
 
   return {
     gcode: rawGCode,
-    svgPathData: svgInner,
+    svgPaths,
     paths: pathGroups,
     width: maxX - minX,
     height: maxY - minY,
