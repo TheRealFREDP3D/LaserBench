@@ -18,3 +18,5 @@ pnpm-workspace.yaml
 /.github/copilot-instructions.md
 /metadata.json
 /REVIEW_v0.4.1.md
+/AGENTS.md
+/TODO-Fixes.md
