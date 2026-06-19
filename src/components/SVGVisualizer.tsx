@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent } from 'react';
+import { useState, useRef, useEffect, useMemo, memo, type MouseEvent as ReactMouseEvent } from 'react';
 import { MachineProfile, MaterialProfile, PatternType } from '../types';
 import type { SvgPathElement } from '../lib/gcodeGenerator';
 import { ZoomIn, ZoomOut, Maximize, Crosshair, HelpCircle, Eye } from 'lucide-react';
@@ -20,7 +20,7 @@ interface SVGVisualizerProps {
   onHoverPath?: (index: number | null) => void;
 }
 
-export default function SVGVisualizer({
+export default memo(function SVGVisualizer({
   svgPaths,
   machine,
   material,
@@ -57,6 +57,13 @@ export default function SVGVisualizer({
 
   const svgRef = useRef<SVGSVGElement>(null);
   const dragStart = useRef({ x: 0, y: 0 });
+
+  const laserPaths = useMemo(() => paths.filter(p => p.isLaserOn), [paths]);
+  const laserPathCount = laserPaths.length;
+  const laserPowerMin = laserPathCount > 0 ? Math.min(...laserPaths.map(p => p.power)) : 0;
+  const laserPowerMax = laserPathCount > 0 ? Math.max(...laserPaths.map(p => p.power)) : machine.pwmMax;
+  const laserSpeedMin = laserPathCount > 0 ? Math.min(...laserPaths.map(p => p.speed)) : 0;
+  const laserSpeedMax = laserPathCount > 0 ? Math.max(...laserPaths.map(p => p.speed)) : 0;
 
   // Bed coordinates sizing
   const isCircular = machine.bedShape === 'circular';
@@ -857,9 +864,9 @@ export default function SVGVisualizer({
         }`}>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-neutral-400 whitespace-nowrap">Calibration Heatmap Calibration:</span>
-            <span className="font-mono text-blue-500 font-bold">Min S{paths.filter(p=>p.isLaserOn).length > 0 ? Math.min(...paths.filter(p=>p.isLaserOn).map(p=>p.power)) : 0}</span>
+            <span className="font-mono text-blue-500 font-bold">Min S{laserPowerMin}</span>
             <div className="w-36 h-2 rounded bg-gradient-to-r from-[#3b82f6] via-[#06b6d4] via-[#10b981] via-[#eab308] to-[#ef4444]" />
-            <span className="font-mono text-red-500 font-bold">Max S{paths.filter(p=>p.isLaserOn).length > 0 ? Math.max(...paths.filter(p=>p.isLaserOn).map(p=>p.power)) : machine.pwmMax}</span>
+            <span className="font-mono text-red-500 font-bold">Max S{laserPowerMax}</span>
           </div>
           <div className="flex items-center gap-1.5 text-neutral-500">
             <span className="w-2.5 h-0.5 border-t border-dashed border-neutral-600 inline-block w-4"></span>
@@ -909,4 +916,4 @@ export default function SVGVisualizer({
       )}
     </div>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { PatternType } from '../types';
 import { Zap, Play, ChevronRight, Gauge, Grid3X3, Focus, Sliders, Scissors } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -39,7 +40,7 @@ interface PatternConfiguratorProps {
   theme?: 'dark' | 'light';
 }
 
-export default function PatternConfigurator({
+export default memo(function PatternConfigurator({
   selectedPattern,
   onSelectPattern,
   powerMin,
@@ -501,4 +502,4 @@ export default function PatternConfigurator({
       </div>
     </div>
   );
-}
+});

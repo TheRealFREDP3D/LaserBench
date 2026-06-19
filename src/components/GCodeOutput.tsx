@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo, useCallback, memo } from 'react';
 import { Copy, FileDown, Check, FileCode, Clock, Compass, Hash, Play } from 'lucide-react';
 import { MachineProfile, MaterialProfile, PatternType } from '../types';
+import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
 
 interface GCodeOutputProps {
   gcode: string;
@@ -22,7 +23,7 @@ interface GCodeOutputProps {
   isPrinting?: boolean;
 }
 
-export default function GCodeOutput({
+export default memo(function GCodeOutput({
   gcode,
   patternType,
   machine,
@@ -51,23 +52,13 @@ export default function GCodeOutput({
     }
   };
 
-  const handleDownloadGCode = () => {
-    const blob = new Blob([gcode], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    
-    const safeMatName = material.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    link.download = `laserbench_${patternType}_${safeMatName}.gcode`;
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+  const handleDownloadGCode = useCallback(() => {
+    const filename = makeGCodeFilename(patternType, material.name);
+    downloadGCode(gcode, filename);
+  }, [gcode, patternType, material.name]);
 
   // Estimate total job parameters (Craftsmanship detail)
-  const estimateMotionStats = () => {
+  const stats = useMemo(() => {
     let totalCutLength = 0;
     let totalTravelLength = 0;
     let estimatedTimeSec = 0;
@@ -105,9 +96,9 @@ export default function GCodeOutput({
       estimatedDuration: timeStr,
       pathsCount: paths.filter(p => p.isLaserOn).length,
     };
-  };
+  }, [paths, machine.travelSpeed]);
 
-  const stats = estimateMotionStats();
+  const gcodeLines = useMemo(() => gcode.split('\n'), [gcode]);
 
   return (
     <div id="gcode-output-card" className={`border rounded-xl p-5 shadow-sm flex flex-col h-full space-y-4 transition-all duration-200 ${
@@ -252,7 +243,7 @@ export default function GCodeOutput({
           }`}
           style={{ maxHeight: '400px' }}
         >
-          {gcode.split('\n').map((line, idx) => {
+          {gcodeLines.map((line, idx) => {
             const linePathMatch = line.match(/; path:(\d+)/);
             const linePathIdx = linePathMatch ? parseInt(linePathMatch[1]) : null;
             const isLineHighlighted = hoveredPathIndex !== null && linePathIdx === hoveredPathIndex;
@@ -316,4 +307,4 @@ export default function GCodeOutput({
       </div>
     </div>
   );
-}
+});

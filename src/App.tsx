@@ -10,6 +10,7 @@ import {
 } from './lib/materialPresets';
 import { generatePatternPaths, GeneratedData } from './lib/gcodeGenerator';
 import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
+import { downloadGCode, makeGCodeFilename } from './lib/downloadGCode';
 
 import MachineSelector from './components/MachineSelector';
 import MaterialDatabase from './components/MaterialDatabase';
@@ -247,17 +248,8 @@ export default function App() {
   // ── Download / Print / Log handlers ────────────────────────────────
   const handleDownloadGCode = () => {
     if (!generatedResults) return;
-    const blob = new Blob([generatedResults.gcode], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    const safeMatName = activeMaterial ? activeMaterial.name.toLowerCase().replace(/[^a-z0-9]/g, '_') : 'material';
-    link.download = `laserbench_${selectedPattern}_${safeMatName}.gcode`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    // After download, switch to code view (so user can review what was downloaded) and mark burn stage
+    const filename = makeGCodeFilename(selectedPattern, activeMaterial ? activeMaterial.name : 'material');
+    downloadGCode(generatedResults.gcode, filename);
     setCanvasView('code');
     setLastTouched('burn');
   };
