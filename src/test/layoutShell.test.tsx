@@ -4,7 +4,7 @@ import fc from 'fast-check';
 import {useState} from 'react';
 import LeftSidebar from '@/src/components/layout/LeftSidebar';
 import CenterPanel from '@/src/components/layout/CenterPanel';
-import MainCanvas from '@/src/components/layout/MainCanvas';
+import MainCanvas, {CanvasView} from '@/src/components/layout/MainCanvas';
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -47,26 +47,27 @@ describe('Property 1: Sidebar tab mutual exclusivity', () => {
   });
 });
 
-// ─── Property 5: Center panel tab mutual exclusivity ──────────────
+// ─── Property 5 (revised): Center panel always shows Pattern ──────
+// The old Presets tab is now a dropdown flyout; pattern-panel is always visible.
 
-describe('Property 5: Center panel tab mutual exclusivity', () => {
-  it('fc.property: PatternConfigurator visible iff tab is pattern, PresetManager iff tab is presets', async () => {
+describe('Property 5 (revised): Center panel always shows Pattern', () => {
+  it('pattern-panel is always visible regardless of presetFlyoutOpen state', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom<'pattern' | 'presets'>('pattern', 'presets'),
-        async (tab) => {
+        fc.boolean(),
+        async (flyoutOpen) => {
           const {unmount} = render(
-            <CenterPanel activeTab={tab} onTabChange={() => {}}>
+            <CenterPanel presetFlyoutOpen={flyoutOpen} onPresetFlyoutToggle={() => {}}>
               {<div data-testid="pattern-content" />}
               {<div data-testid="presets-content" />}
             </CenterPanel>
           );
           const patternPanel = screen.getByTestId('pattern-panel');
+          // pattern-panel is always 'block' (visible)
+          expect(hasClass(patternPanel, 'block')).toBe(true);
+          // presets-panel is always hidden (it's a flyout now, not a tab)
           const presetsPanel = screen.getByTestId('presets-panel');
-
-          expect(hasClass(patternPanel, 'block')).toBe(tab === 'pattern');
-          expect(hasClass(presetsPanel, 'block')).toBe(tab === 'presets');
-
+          expect(hasClass(presetsPanel, 'hidden')).toBe(true);
           unmount();
         }
       )
@@ -74,21 +75,23 @@ describe('Property 5: Center panel tab mutual exclusivity', () => {
   });
 });
 
-// ─── Property 7: Output panel DOM persistence ─────────────────────
+// ─── Property 7 (revised): Canvas view DOM persistence ────────────
+// All three view panels (preview, gcode, console) are in the DOM regardless of canvasView.
 
-describe('Property 7: Output panel DOM persistence', () => {
-  it('fc.property: both GCodeOutput and PrinterConsole panels are in the DOM regardless of outputTab', async () => {
+describe('Property 7 (revised): All canvas view panels are in the DOM', () => {
+  it('fc.property: preview/gcode/console panels all in DOM for any canvasView', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom<'gcode' | 'console'>('gcode', 'console'),
-        async (tab) => {
+        fc.constantFrom<CanvasView>('preview', 'code', 'operate'),
+        async (view) => {
           const {unmount} = render(
-            <MainCanvas outputTab={tab} onOutputTabChange={() => {}} isConnected={false}>
+            <MainCanvas canvasView={view} onViewChange={() => {}} isConnected={false} isPrinting={false}>
               {<div data-testid="viz-content" />}
               {<div data-testid="gcode-content" />}
               {<div data-testid="console-content" />}
             </MainCanvas>
           );
+          expect(screen.getByTestId('preview-panel')).toBeInTheDocument();
           expect(screen.getByTestId('gcode-panel')).toBeInTheDocument();
           expect(screen.getByTestId('console-panel')).toBeInTheDocument();
           unmount();
@@ -98,23 +101,24 @@ describe('Property 7: Output panel DOM persistence', () => {
   });
 });
 
-// ─── Property 9: Console tab connection badge ─────────────────────
+// ─── Property 9 (revised): Operate view connection badge ──────────
 
-describe('Property 9: Console tab connection badge', () => {
-  it('fc.property: badge element present iff isConnected === true', async () => {
+describe('Property 9 (revised): Operate view shows connection badge', () => {
+  it('fc.property: badge present iff (isConnected OR isPrinting) when canvasView=operate', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.boolean(),
-        async (connected) => {
+        fc.boolean(),
+        async (connected, printing) => {
           const {unmount} = render(
-            <MainCanvas outputTab="console" onOutputTabChange={() => {}} isConnected={connected}>
+            <MainCanvas canvasView="operate" onViewChange={() => {}} isConnected={connected} isPrinting={printing}>
               {<div data-testid="viz-content" />}
               {<div data-testid="gcode-content" />}
               {<div data-testid="console-content" />}
             </MainCanvas>
           );
           const badge = screen.queryByTestId('connection-badge');
-          if (connected) {
+          if (connected || printing) {
             expect(badge).toBeInTheDocument();
           } else {
             expect(badge).not.toBeInTheDocument();
@@ -126,28 +130,28 @@ describe('Property 9: Console tab connection badge', () => {
   });
 });
 
-// ─── Property 8: Job start switches output tab to Console ─────────
+// ─── Property 8 (revised): Job start switches canvasView to 'operate' ─
 
-describe('Property 8: Job start switches output tab to Console', () => {
-  it('fc.property: outputTab becomes console after printGCode call, regardless of previous value', async () => {
+describe('Property 8 (revised): Job start switches canvasView to operate', () => {
+  it('fc.property: canvasView becomes operate after printGCode call, regardless of previous value', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom<'gcode' | 'console'>('gcode', 'console'),
-        async (initialTab) => {
+        fc.constantFrom<CanvasView>('preview', 'code', 'operate'),
+        async (initialView) => {
           function PrintTestApp() {
-            const [outputTab, setOutputTab] = useState<'gcode' | 'console'>(initialTab);
-            const printGCode = () => { setOutputTab('console'); };
+            const [canvasView, setCanvasView] = useState<CanvasView>(initialView);
+            const printGCode = () => { setCanvasView('operate'); };
             return (
               <div>
-                <span data-testid="output-tab">{outputTab}</span>
+                <span data-testid="canvas-view">{canvasView}</span>
                 <button data-testid="print-btn" onClick={printGCode}>Print</button>
               </div>
             );
           }
           const {unmount} = render(<PrintTestApp />);
-          expect(screen.getByTestId('output-tab')).toHaveTextContent(initialTab);
+          expect(screen.getByTestId('canvas-view')).toHaveTextContent(initialView);
           fireEvent.click(screen.getByTestId('print-btn'));
-          expect(screen.getByTestId('output-tab')).toHaveTextContent('console');
+          expect(screen.getByTestId('canvas-view')).toHaveTextContent('operate');
           unmount();
         }
       )

@@ -19,7 +19,8 @@ describe('Property 10: FAB enabled state mirrors generatedResults', () => {
           const {unmount} = render(
             <GenerateFAB disabled={disabled} estimatedTimeStr={null} onClick={() => {}} />
           );
-          const btn = screen.getByRole('button', {name: /generate/i});
+          // The primary FAB is now labeled "Download G-Code" (renamed from "Generate")
+          const btn = screen.getByRole('button', {name: /download/i});
           expect(btn.getAttribute('aria-disabled')).toBe(disabled.toString());
           unmount();
         }
@@ -49,5 +50,46 @@ describe('Property 11: FAB shows estimated time when available', () => {
         }
       )
     );
+  });
+});
+
+// ─── Property 12 (new): Secondary "Log Burn" button appears when onLogClick is provided ──
+
+describe('Property 12: Secondary Log Burn button', () => {
+  it('fc.property: Log Burn button is in the document iff onLogClick is provided', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.option(fc.constant(() => {})),
+        async (onLogClick) => {
+          const {unmount} = render(
+            <GenerateFAB
+              disabled={false}
+              estimatedTimeStr={null}
+              onClick={() => {}}
+              onLogClick={onLogClick === null ? undefined : onLogClick}
+            />
+          );
+          const logBtn = screen.queryByTestId('log-burn-fab');
+          if (onLogClick === null) {
+            expect(logBtn).not.toBeInTheDocument();
+          } else {
+            expect(logBtn).toBeInTheDocument();
+          }
+          unmount();
+        }
+      )
+    );
+  });
+
+  it('Log Burn button aria-disabled matches logDisabled prop', () => {
+    const {rerender} = render(
+      <GenerateFAB disabled={false} estimatedTimeStr={null} onClick={() => {}} onLogClick={() => {}} logDisabled={true} />
+    );
+    expect(screen.getByTestId('log-burn-fab').getAttribute('aria-disabled')).toBe('true');
+
+    rerender(
+      <GenerateFAB disabled={false} estimatedTimeStr={null} onClick={() => {}} onLogClick={() => {}} logDisabled={false} />
+    );
+    expect(screen.getByTestId('log-burn-fab').getAttribute('aria-disabled')).toBe('false');
   });
 });
