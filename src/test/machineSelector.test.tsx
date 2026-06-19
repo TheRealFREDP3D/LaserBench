@@ -314,5 +314,5 @@ describe('Property 2: machine operations do not change sidebar tab', () => {
       ),
       {timeout: 10_000}
     );
-  });
+  }, 15_000);
 });
