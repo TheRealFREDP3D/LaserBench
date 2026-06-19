@@ -1,6 +1,6 @@
-import React from 'react';
 import { PatternType } from '../types';
 import { Zap, Play, ChevronRight, Gauge, Grid3X3, Focus, Sliders, Scissors } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface PatternConfiguratorProps {
   selectedPattern: PatternType;
@@ -69,7 +69,7 @@ export default function PatternConfigurator({
   theme = 'dark',
 }: PatternConfiguratorProps) {
   const isLight = theme === 'light';
-  const patterns: { type: PatternType; name: string; desc: string; icon: any; colorClass: string }[] = [
+  const patterns: { type: PatternType; name: string; desc: string; icon: LucideIcon; colorClass: string }[] = [
     {
       type: 'matrix',
       name: 'Power-Speed Matrix',

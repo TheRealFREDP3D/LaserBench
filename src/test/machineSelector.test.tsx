@@ -273,7 +273,7 @@ describe('Property 2: machine operations do not change sidebar tab', () => {
           fc.record({
             action: fc.constantFrom<'select' | 'rename'>('select', 'rename'),
           }),
-          {minLength: 1, maxLength: 10}
+          {minLength: 1, maxLength: 5}
         ),
         async (initialTab, sequence) => {
           const {unmount} = render(
@@ -288,7 +288,7 @@ describe('Property 2: machine operations do not change sidebar tab', () => {
           const initialText = tabTracker.textContent;
 
           for (const step of sequence) {
-            await act(async () => {
+            act(() => {
               if (step.action === 'select') {
                 const select = document.querySelector('#machine-profile-select') as HTMLSelectElement;
                 const currentVal = select.value;

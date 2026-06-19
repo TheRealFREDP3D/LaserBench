@@ -69,7 +69,7 @@ export default function MachineSelector({
     });
   };
 
-  const handleFieldChange = (field: keyof MachineProfile, value: any) => {
+  const handleFieldChange = <K extends keyof MachineProfile>(field: K, value: MachineProfile[K]) => {
     if (!activeMachine) return;
     onUpdateMachine({ ...activeMachine, [field]: value });
   };
@@ -369,7 +369,7 @@ export default function MachineSelector({
                   <div>
                     <label className="block mb-1 label-caps">Bed Shape</label>
                     <select id="machine-bedshape-select" value={activeMachine.bedShape}
-                      onChange={(e) => handleFieldChange('bedShape', e.target.value)}
+                      onChange={(e) => handleFieldChange('bedShape', e.target.value as 'circular' | 'rectangular')}
                       className="w-full elegant-input rounded-md px-2 py-1.5">
                       <option value="rectangular" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Rect (X/Y)</option>
                       <option value="circular" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Delta (Circ)</option>

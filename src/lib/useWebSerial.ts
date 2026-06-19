@@ -13,9 +13,9 @@ export function useWebSerial() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const portRef = useRef<any>(null);
-  const readerRef = useRef<any>(null);
-  const writerRef = useRef<any>(null);
+  const portRef = useRef<SerialPort | null>(null);
+  const readerRef = useRef<ReadableStreamDefaultReader<string> | null>(null);
+  const writerRef = useRef<WritableStreamDefaultWriter<string> | null>(null);
   const keepReadingRef = useRef(true);
   const pendingOkResolversRef = useRef<((value: void) => void)[]>([]);
 
@@ -154,7 +154,7 @@ export function useWebSerial() {
         
         // Register response handler BEFORE sending to eliminate race condition
         await new Promise<void>((resolve, reject) => {
-          let timeoutId: any;
+          let timeoutId: ReturnType<typeof setTimeout>;
           
           const resolver = () => {
             clearTimeout(timeoutId);

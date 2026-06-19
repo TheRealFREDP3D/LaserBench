@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { Save, FolderOpen, Trash2, Plus, Search, Sparkles, Check, Info, FileSliders } from 'lucide-react';
 import { GeneratorPreset, PatternType } from '../types';
 
@@ -210,7 +210,7 @@ export default function PresetManager({
     }
   };
 
-  const handleSavePreset = (e: React.FormEvent) => {
+  const handleSavePreset = (e: FormEvent) => {
     e.preventDefault();
     if (!newPresetName.trim()) return;
 
@@ -246,7 +246,7 @@ export default function PresetManager({
     setTimeout(() => setJustSaved(false), 2500);
   };
 
-  const handleDeletePreset = (id: string, e: React.MouseEvent) => {
+  const handleDeletePreset = (id: string, e: ReactMouseEvent) => {
     e.stopPropagation(); // Avoid triggering load
     if (confirm('Are you sure you want to delete this custom preset?')) {
       const updated = customPresets.filter((p) => p.id !== id);

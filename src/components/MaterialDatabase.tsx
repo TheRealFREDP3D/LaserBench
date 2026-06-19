@@ -14,6 +14,8 @@ interface MaterialDatabaseProps {
   onUpdateMaterial: (material: MaterialProfile) => void;
   onCreateMaterial: (material: MaterialProfile) => void;
   onDeleteMaterial: (id: string) => void;
+  /** When provided, the 'Log Test Result' button opens the Quick Log modal instead of the inline form */
+  onQuickLog?: () => void;
   theme?: 'dark' | 'light';
 }
 
@@ -39,6 +41,7 @@ export default function MaterialDatabase({
   onUpdateMaterial,
   onCreateMaterial,
   onDeleteMaterial,
+  onQuickLog,
   theme = 'dark',
 }: MaterialDatabaseProps) {
   const isLight = theme === 'light';
@@ -54,15 +57,15 @@ export default function MaterialDatabase({
   const [logOptZ, setLogOptZ] = useState<number>(-40);
 
   const categoryMaterials = materials.filter((m) => m.category === activeCategory);
-  const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0];
+  const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0] || null;
 
-  const handleUpdateField = (field: string, subField: string | null, value: any) => {
+  const handleUpdateField = (field: string, subField: string | null, value: string | number) => {
     if (!activeMaterial) return;
     if (subField) {
       onUpdateMaterial({
         ...activeMaterial,
         [field]: {
-          ...(activeMaterial[field as keyof MaterialProfile] as any),
+          ...(activeMaterial[field as keyof MaterialProfile] as Record<string, string | number>),
           [subField]: value,
         },
       });
@@ -192,7 +195,7 @@ export default function MaterialDatabase({
                     ? 'bg-red-50 text-red-500 border border-red-200 shadow-xs'
                     : 'bg-red-950/40 text-red-400 border border-red-900/40'
                   : isLight
-                    ? 'text-zinc-550 hover:text-black hover:bg-zinc-150 border border-transparent'
+                    ? 'text-zinc-600 hover:text-black hover:bg-zinc-100 border border-transparent'
                     : 'text-[#888] hover:text-[#E0E0E0] hover:bg-[#1A1A1A] border border-transparent'
               }`}
             >
@@ -223,7 +226,7 @@ export default function MaterialDatabase({
                   className={`w-full text-left px-2.5 py-1.5 rounded text-xs transition flex justify-between items-center cursor-pointer ${
                     selectedMaterialId === mat.id
                       ? isLight
-                        ? 'bg-red-50 text-red-650 font-bold border-l-2 border-red-600'
+                        ? 'bg-red-50 text-red-600 font-bold border-l-2 border-red-600'
                         : 'bg-[#1E1414] text-red-400 font-bold border-l-2 border-red-600'
                       : isLight
                         ? 'text-zinc-600 hover:bg-zinc-100 hover:text-black'
@@ -341,7 +344,7 @@ export default function MaterialDatabase({
                         </div>
                       </div>
                       <div>
-                        <span className="text-[10px] font-bold text-red-650 block mb-1">CUTTING DEFAULT</span>
+                        <span className="text-[10px] font-bold text-red-600 block mb-1">CUTTING DEFAULT</span>
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
                             <label className="text-[9px] label-caps block">Power</label>
@@ -446,18 +449,22 @@ export default function MaterialDatabase({
                       <button
                         id="log-calibration-test-btn"
                         onClick={() => {
-                          setLogOptPower(activeMaterial.engrave.power);
-                          setLogOptSpeed(activeMaterial.engrave.speed);
-                          setLogOptZ(activeMaterial.focusZ);
-                          setShowLogForm(true);
+                          if (onQuickLog) {
+                            onQuickLog();
+                          } else {
+                            setLogOptPower(activeMaterial.engrave.power);
+                            setLogOptSpeed(activeMaterial.engrave.speed);
+                            setLogOptZ(activeMaterial.focusZ);
+                            setShowLogForm(true);
+                          }
                         }}
                         className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-tight transition cursor-pointer border ${
                           isLight
-                            ? 'bg-red-50 border-red-200 text-red-650 hover:bg-red-100'
+                            ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
                             : 'bg-red-950/45 border-red-900/40 text-red-400 hover:bg-red-900/40'
                         }`}
                       >
-                        + Log Test Result
+                        {onQuickLog ? '+ Quick Log Burn' : '+ Log Test Result'}
                       </button>
                     )}
                   </div>
@@ -550,7 +557,7 @@ export default function MaterialDatabase({
                           type="submit"
                           className={`px-2.5 py-1 rounded font-bold cursor-pointer ${
                             isLight
-                              ? 'bg-red-650 text-white hover:bg-red-700'
+                              ? 'bg-red-600 text-white hover:bg-red-700'
                               : 'bg-red-600 text-black hover:bg-red-500'
                           }`}
                         >
@@ -585,7 +592,7 @@ export default function MaterialDatabase({
                             <span className="mx-1">•</span>
                             <span className={`px-1 py-0.5 rounded capitalize ${
                               isLight
-                                ? 'text-red-650 bg-red-50 font-semibold'
+                                ? 'text-red-600 bg-red-50 font-semibold'
                                 : 'text-red-400 bg-red-950/20'
                             }`}>
                               {log.patternType.replace('_', ' ')}
@@ -597,13 +604,13 @@ export default function MaterialDatabase({
                               : 'bg-[#0E0E0E] text-neutral-300'
                           }`}>
                             {log.optimalPower !== undefined && (
-                              <span>Power: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalPower}</strong></span>
+                              <span>Power: <strong className={isLight ? 'text-red-600' : 'text-red-400'}>{log.optimalPower}</strong></span>
                             )}
                             {log.optimalSpeed !== undefined && (
-                              <span>Speed: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalSpeed}</strong></span>
+                              <span>Speed: <strong className={isLight ? 'text-red-600' : 'text-red-400'}>{log.optimalSpeed}</strong></span>
                             )}
                             {log.optimalFocusZ !== undefined && (
-                              <span>Z: <strong className={isLight ? 'text-red-650' : 'text-red-400'}>{log.optimalFocusZ}mm</strong></span>
+                              <span>Z: <strong className={isLight ? 'text-red-600' : 'text-red-400'}>{log.optimalFocusZ}mm</strong></span>
                             )}
                           </div>
                           <p className={isLight ? 'text-zinc-600 leading-relaxed italic' : 'text-[#AAA] leading-relaxed italic'}>{log.notes}</p>

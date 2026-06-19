@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent } from 'react';
 import { MachineProfile, MaterialProfile, PatternType } from '../types';
 import type { SvgPathElement } from '../lib/gcodeGenerator';
 import { ZoomIn, ZoomOut, Maximize, Crosshair, HelpCircle, Eye } from 'lucide-react';
@@ -77,12 +77,12 @@ export default function SVGVisualizer({
   };
 
   // Drag pan
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: ReactMouseEvent) => {
     setIsDragging(true);
     dragStart.current = { x: e.clientX - panX, y: e.clientY - panY };
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: ReactMouseEvent) => {
     if (isDragging) {
       setPanX(e.clientX - dragStart.current.x);
       setPanY(e.clientY - dragStart.current.y);

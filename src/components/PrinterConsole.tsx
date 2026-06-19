@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FC, type FormEvent } from 'react';
 import {
   Terminal,
   Power,
@@ -29,7 +29,7 @@ interface PrinterConsoleProps {
   theme: 'light' | 'dark';
 }
 
-export const PrinterConsole: React.FC<PrinterConsoleProps> = ({
+export const PrinterConsole: FC<PrinterConsoleProps> = ({
   isConnected,
   messages,
   isPrinting,
@@ -49,7 +49,7 @@ export const PrinterConsole: React.FC<PrinterConsoleProps> = ({
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleManualSend = (e: React.FormEvent) => {
+  const handleManualSend = (e: FormEvent) => {
     e.preventDefault();
     if (command.trim()) {
       onSend(command.trim());

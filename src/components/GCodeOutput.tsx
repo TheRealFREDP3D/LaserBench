@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Copy, FileDown, Check, FileCode, Clock, Compass, Hash, Play } from 'lucide-react';
 import { MachineProfile, MaterialProfile, PatternType } from '../types';
 

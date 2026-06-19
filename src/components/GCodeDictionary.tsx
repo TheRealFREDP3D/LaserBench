@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Book, Search, X, Check, Copy, Zap, Settings, ArrowRight, CornerDownRight } from 'lucide-react';
 
 export interface GCodeEntry {
