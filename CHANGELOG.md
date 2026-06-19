@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.4.3] — 2026-06-19
+
+### Added
+- **`abortPrint` function** in `useWebSerial` — user can cancel an in-progress print via new **Abort Print** button in PrinterConsole
+- **Slot-based serial buffer** (`BUFFER_SIZE=4`) replacing single-ok flow control — sends up to 4 G-code lines before waiting for acknowledgement, with drain logic to wait for all in-flight commands before marking print complete
+- **`React.memo` wrappers** on MachineSelector, MaterialDatabase, PresetManager, and PrinterConsole — prevents re-renders when parent state unrelated to these components changes
+- **`useCallback` wrappers** on all CRUD handlers in `App.tsx` (handleUpdateMachine, handleCreateMachine, handleDeleteMachine, handleUpdateMaterial, handleCreateMaterial, handleDeleteMaterial, handleDownloadGCode, handlePrint, handleQuickLogSave, handleStageClick)
+- **Apache 2.0 LICENSE** file
+
+### Changed
+- **PrinterConsole** progress bar layout — percentage label and abort button shown side-by-side below the bar
+- **README** logo reference updated from `logo.jpg` to `header.jpg`
+
+### Fixed
+- **Print reliability** — abort resolves all pending buffer-slot promises and resets state cleanly on disconnect or error
+
+---
+
 ## [0.4.1] — 2026-06-19
 
 ### Added

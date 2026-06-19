@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FC, type FormEvent } from 'react';
+import { useEffect, useRef, useState, memo, type FC, type FormEvent } from 'react';
 import {
   Terminal,
   Power,
@@ -25,11 +25,12 @@ interface PrinterConsoleProps {
   onDisconnect: () => void;
   onSend: (command: string) => void;
   onClear: () => void;
+  onAbortPrint: () => void;
   activeMachine: MachineProfile | null;
   theme: 'light' | 'dark';
 }
 
-export const PrinterConsole: FC<PrinterConsoleProps> = ({
+export const PrinterConsole: FC<PrinterConsoleProps> = memo(({
   isConnected,
   messages,
   isPrinting,
@@ -38,6 +39,7 @@ export const PrinterConsole: FC<PrinterConsoleProps> = ({
   onDisconnect,
   onSend,
   onClear,
+  onAbortPrint,
   activeMachine,
   theme,
 }) => {
@@ -114,12 +116,23 @@ export const PrinterConsole: FC<PrinterConsoleProps> = ({
 
       {/* Progress Bar for Printing */}
       {isPrinting && (
-        <div className="w-full bg-zinc-800 rounded-full h-1.5">
-          <div
-            className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-          <p className="text-[10px] mt-1 text-indigo-400 font-mono">PRINTING: {progress}%</p>
+        <div className="flex flex-col gap-2">
+          <div className="w-full bg-zinc-800 rounded-full h-1.5">
+            <div
+              className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] text-indigo-400 font-mono">PRINTING: {progress}%</p>
+            <button 
+              onClick={onAbortPrint}
+              aria-label="Abort Print"
+              className="px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white text-[10px] rounded font-bold transition shadow-sm"
+            >
+              Abort Print
+            </button>
+          </div>
         </div>
       )}
 
@@ -227,4 +240,4 @@ export const PrinterConsole: FC<PrinterConsoleProps> = ({
       </div>
     </div>
   );
-};
+});

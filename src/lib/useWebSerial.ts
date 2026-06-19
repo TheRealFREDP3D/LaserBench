@@ -6,6 +6,8 @@ export interface SerialMessage {
   timestamp: number;
 }
 
+const BUFFER_SIZE = 4;
+
 export function useWebSerial() {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionState, setConnectionState] = useState<'connected' | 'offline' | 'connecting'>('offline');
@@ -17,16 +19,37 @@ export function useWebSerial() {
   const readerRef = useRef<ReadableStreamDefaultReader<string> | null>(null);
   const writerRef = useRef<WritableStreamDefaultWriter<string> | null>(null);
   const keepReadingRef = useRef(true);
-  const pendingOkResolversRef = useRef<((value: void) => void)[]>([]);
+  const abortPrintRef = useRef(false);
+  const bufferSlotsRef = useRef(BUFFER_SIZE);
+  const bufferResolveRef = useRef<(() => void)[]>([]);
 
   const addMessage = useCallback((type: 'sent' | 'received', text: string) => {
     setMessages((prev) => {
       const newMessages = [...prev, { type, text, timestamp: Date.now() }];
-      return newMessages.slice(-500); // Keep last 500 messages
+      return newMessages.slice(-500);
     });
   }, []);
 
   const clearMessages = useCallback(() => setMessages([]), []);
+
+  const waitForSlot = (): Promise<void> => {
+    if (bufferSlotsRef.current > 0) {
+      bufferSlotsRef.current--;
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      bufferResolveRef.current.push(resolve);
+    });
+  };
+
+  const releaseSlot = () => {
+    const resolve = bufferResolveRef.current.shift();
+    if (resolve) {
+      resolve();
+    } else {
+      bufferSlotsRef.current++;
+    }
+  };
 
   const readLoop = async () => {
     const textDecoder = new TextDecoderStream();
@@ -46,13 +69,9 @@ export function useWebSerial() {
             if (line.trim()) {
               const trimmedLine = line.trim();
               addMessage('received', trimmedLine);
-              
-              // Match 'ok' responses — covers bare 'ok' and Marlin V1-style 'ok N3 P15 B3'
+
               if (trimmedLine.toLowerCase().startsWith('ok')) {
-                const resolver = pendingOkResolversRef.current.shift();
-                if (resolver) {
-                  resolver();
-                }
+                releaseSlot();
               }
             }
           }
@@ -101,7 +120,6 @@ export function useWebSerial() {
       if (writerRef.current) {
         await writerRef.current.close();
       }
-      // Small delay to allow the read loop to terminate and release the lock
       await new Promise((resolve) => setTimeout(resolve, 50));
       if (portRef.current) {
         await portRef.current.close();
@@ -112,6 +130,8 @@ export function useWebSerial() {
       portRef.current = null;
       setIsConnected(false);
       setConnectionState('offline');
+      bufferSlotsRef.current = BUFFER_SIZE;
+      bufferResolveRef.current = [];
       addMessage('sent', '--- Disconnected ---');
     }
   };
@@ -126,70 +146,71 @@ export function useWebSerial() {
     }
   };
 
+  const abortPrint = useCallback(() => {
+    if (!isPrinting) return;
+    abortPrintRef.current = true;
+    while (bufferResolveRef.current.length > 0) {
+      const resolve = bufferResolveRef.current.shift();
+      if (resolve) resolve();
+    }
+    addMessage('sent', '--- Print Aborted by User ---');
+  }, [isPrinting, addMessage]);
+
   const printGCode = async (gcode: string) => {
     if (!isConnected || isPrinting) return;
 
     setIsPrinting(true);
     setProgress(0);
+    bufferSlotsRef.current = BUFFER_SIZE;
+    bufferResolveRef.current = [];
     try {
       const lines = gcode
         .split('\n')
         .map(line => {
-          // Strip inline comments (everything from ; onwards), then trim whitespace
           const stripped = line.split(';')[0].trim();
           return stripped;
         })
         .filter(line => {
           if (line.length === 0) return false;
-          // M30 (program end) is not supported by Marlin V1 / Sprinter mashup — skip it
           if (line.toUpperCase().startsWith('M30')) return false;
           return true;
         });
       const totalLines = lines.length;
 
+      abortPrintRef.current = false;
+
       for (let i = 0; i < totalLines; i++) {
-        if (!keepReadingRef.current) break; // If disconnected during print
+        if (!keepReadingRef.current || abortPrintRef.current) break;
 
         const line = lines[i];
-        
-        // Register response handler BEFORE sending to eliminate race condition
-        await new Promise<void>((resolve, reject) => {
-          let timeoutId: ReturnType<typeof setTimeout>;
-          
-          const resolver = () => {
-            clearTimeout(timeoutId);
-            resolve();
-          };
-          
-          // Add resolver to queue before sending
-          pendingOkResolversRef.current.push(resolver);
-          
-          // Send the line
-          send(line).catch(reject);
-          
-          // Timeout as fallback — 2s is plenty for a local USB serial link
-          timeoutId = setTimeout(() => {
-            // Remove resolver from queue if timeout occurs
-            const index = pendingOkResolversRef.current.indexOf(resolver);
-            if (index > -1) {
-              pendingOkResolversRef.current.splice(index, 1);
-            }
-            resolve();
-          }, 2000);
-        });
+        await waitForSlot();
+        if (!keepReadingRef.current || abortPrintRef.current) break;
+        await send(line);
 
         setProgress(Math.round(((i + 1) / totalLines) * 100));
       }
-      addMessage('sent', '--- Print Job Finished ---');
+
+      // Drain: wait for all in-flight commands to be acknowledged
+      let slotsReleased = 0;
+      const slotsNeeded = BUFFER_SIZE - bufferSlotsRef.current;
+      while (slotsReleased < slotsNeeded && !abortPrintRef.current) {
+        await new Promise<void>((r) => bufferResolveRef.current.push(r));
+        slotsReleased++;
+      }
+
+      if (!abortPrintRef.current) {
+        addMessage('sent', '--- Print Job Finished ---');
+      }
     } catch (error) {
       console.error('Printing failed:', error);
       addMessage('received', 'Print error: ' + (error as Error).message);
     } finally {
       setIsPrinting(false);
-      // Clear any pending resolvers on error/abort
-      pendingOkResolversRef.current = [];
+      abortPrintRef.current = false;
+      bufferSlotsRef.current = BUFFER_SIZE;
+      bufferResolveRef.current = [];
     }
   };
 
-  return { isConnected, connectionState, messages, isPrinting, progress, connect, disconnect, send, printGCode, clearMessages };
+  return { isConnected, connectionState, messages, isPrinting, progress, connect, disconnect, send, printGCode, abortPrint, clearMessages };
 }

@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type FC } from 'react';
+import { useState, memo, type FormEvent, type FC } from 'react';
 import { MaterialProfile, MaterialCategory, CalibrationHistoryEntry } from '../types';
 import {
   FolderHeart, Plus, Trash2, Calendar, Check,
@@ -34,7 +34,7 @@ const categoryIcons: Record<MaterialCategory, FC<{className?: string}>> = {
   Other: Package,
 };
 
-export default function MaterialDatabase({
+export default memo(function MaterialDatabase({
   materials,
   selectedMaterialId,
   pwmMax,
@@ -631,4 +631,4 @@ export default function MaterialDatabase({
       {ConfirmModalComponent}
     </div>
   );
-}
+});

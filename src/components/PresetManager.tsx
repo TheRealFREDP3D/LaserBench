@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent, type MouseEvent as ReactMouseEvent } from 'react';
+import { useState, useEffect, memo, type FormEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { Save, FolderOpen, Trash2, Plus, Search, Sparkles, Check, Info, FileSliders } from 'lucide-react';
 import { GeneratorPreset, PatternType } from '../types';
 import { useConfirmModal } from '../hooks/useConfirmModal';
@@ -162,7 +162,7 @@ const FACTORY_PRESETS: GeneratorPreset[] = [
   },
 ];
 
-export default function PresetManager({
+export default memo(function PresetManager({
   currentPattern,
   powerMin,
   powerMax,
@@ -545,4 +545,4 @@ export default function PresetManager({
       {ConfirmModalComponent}
     </div>
   );
-}
+});

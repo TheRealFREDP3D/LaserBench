@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { MachineProfile, FirmwareType } from '../types';
 import { Plus, Trash2, Cpu, Triangle, ChevronDown } from 'lucide-react';
 import { DEFAULT_DELTA_PARAMS } from '../lib/deltaKinematics';
@@ -38,7 +38,7 @@ export function applyToggles(
   return state;
 }
 
-export default function MachineSelector({
+export default memo(function MachineSelector({
   machines,
   selectedMachineId,
   onSelectMachine,
@@ -540,4 +540,4 @@ export default function MachineSelector({
       {ConfirmModalComponent}
     </div>
   );
-}
+});

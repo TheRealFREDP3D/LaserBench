@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MachineProfile, MaterialProfile, PatternType, CalibrationHistoryEntry } from './types';
 import {
   getStoredMachines,
@@ -43,6 +43,7 @@ export default function App() {
     disconnect,
     send,
     printGCode,
+    abortPrint,
     clearMessages
   } = useWebSerial();
 
@@ -212,56 +213,77 @@ export default function App() {
   }, [showDictionary, showQuickLogModal, presetFlyoutOpen]);
 
   // ── Machine / Material CRUD (unchanged) ────────────────────────────
-  const handleUpdateMachine = (updated: MachineProfile) => {
-    const updatedList = machines.map((m) => (m.id === updated.id ? updated : m));
-    setMachines(updatedList);
-    saveStoredMachines(updatedList);
-  };
-  const handleCreateMachine = (created: MachineProfile) => {
-    const updatedList = [...machines, created];
-    setMachines(updatedList);
-    saveStoredMachines(updatedList);
-  };
-  const handleDeleteMachine = (id: string) => {
-    const updatedList = machines.filter((m) => m.id !== id);
-    setMachines(updatedList);
-    saveStoredMachines(updatedList);
-    if (selectedMachineId === id && updatedList.length > 0) setSelectedMachineId(updatedList[0].id);
-  };
-  const handleUpdateMaterial = (updated: MaterialProfile) => {
-    const updatedList = materials.map((m) => (m.id === updated.id ? updated : m));
-    setMaterials(updatedList);
-    saveStoredMaterials(updatedList);
-  };
-  const handleCreateMaterial = (created: MaterialProfile) => {
-    const updatedList = [...materials, created];
-    setMaterials(updatedList);
-    saveStoredMaterials(updatedList);
-  };
-  const handleDeleteMaterial = (id: string) => {
-    const updatedList = materials.filter((m) => m.id !== id);
-    setMaterials(updatedList);
-    saveStoredMaterials(updatedList);
-    if (selectedMaterialId === id && updatedList.length > 0) setSelectedMaterialId(updatedList[0].id);
-  };
+  const handleUpdateMachine = useCallback((updated: MachineProfile) => {
+    setMachines((prev) => {
+      const updatedList = prev.map((m) => (m.id === updated.id ? updated : m));
+      saveStoredMachines(updatedList);
+      return updatedList;
+    });
+  }, []);
+
+  const handleCreateMachine = useCallback((created: MachineProfile) => {
+    setMachines((prev) => {
+      const updatedList = [...prev, created];
+      saveStoredMachines(updatedList);
+      return updatedList;
+    });
+  }, []);
+
+  const handleDeleteMachine = useCallback((id: string) => {
+    setMachines((prev) => {
+      const updatedList = prev.filter((m) => m.id !== id);
+      saveStoredMachines(updatedList);
+      if (selectedMachineId === id && updatedList.length > 0) {
+        setSelectedMachineId(updatedList[0].id);
+      }
+      return updatedList;
+    });
+  }, [selectedMachineId]);
+
+  const handleUpdateMaterial = useCallback((updated: MaterialProfile) => {
+    setMaterials((prev) => {
+      const updatedList = prev.map((m) => (m.id === updated.id ? updated : m));
+      saveStoredMaterials(updatedList);
+      return updatedList;
+    });
+  }, []);
+
+  const handleCreateMaterial = useCallback((created: MaterialProfile) => {
+    setMaterials((prev) => {
+      const updatedList = [...prev, created];
+      saveStoredMaterials(updatedList);
+      return updatedList;
+    });
+  }, []);
+
+  const handleDeleteMaterial = useCallback((id: string) => {
+    setMaterials((prev) => {
+      const updatedList = prev.filter((m) => m.id !== id);
+      saveStoredMaterials(updatedList);
+      if (selectedMaterialId === id && updatedList.length > 0) {
+        setSelectedMaterialId(updatedList[0].id);
+      }
+      return updatedList;
+    });
+  }, [selectedMaterialId]);
 
   // ── Download / Print / Log handlers ────────────────────────────────
-  const handleDownloadGCode = () => {
+  const handleDownloadGCode = useCallback(() => {
     if (!generatedResults) return;
     const filename = makeGCodeFilename(selectedPattern, activeMaterial ? activeMaterial.name : 'material');
     downloadGCode(generatedResults.gcode, filename);
     setCanvasView('code');
     setLastTouched('burn');
-  };
+  }, [generatedResults, selectedPattern, activeMaterial]);
 
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     if (!generatedResults) return;
     setCanvasView('operate');
     setLastTouched('burn');
     printGCode(generatedResults.gcode);
-  };
+  }, [generatedResults, printGCode]);
 
-  const handleQuickLogSave = (entry: CalibrationHistoryEntry, optimal: { power: number; speed: number; focusZ: number }) => {
+  const handleQuickLogSave = useCallback((entry: CalibrationHistoryEntry, optimal: { power: number; speed: number; focusZ: number }) => {
     if (!activeMaterial) return;
     handleUpdateMaterial({
       ...activeMaterial,
@@ -273,7 +295,7 @@ export default function App() {
       focusZ: optimal.focusZ,
     });
     setShowQuickLogModal(false);
-  };
+  }, [activeMaterial, handleUpdateMaterial]);
 
   // ── Workflow stepper derivation ────────────────────────────────────
   const activeStage: WorkflowStage = lastTouched;
@@ -285,7 +307,7 @@ export default function App() {
     (activeMaterial?.history?.length ?? 0) > 0 ? 'burn' : null,
   ].filter(Boolean) as WorkflowStage[];
 
-  const handleStageClick = (stage: WorkflowStage) => {
+  const handleStageClick = useCallback((stage: WorkflowStage) => {
     switch (stage) {
       case 'machine':
         setSidebarTab('machine');
@@ -308,7 +330,7 @@ export default function App() {
         setLastTouched('burn');
         break;
     }
-  };
+  }, []);
 
   const hasDeltaWarnings =
     !dismissedDeltaWarnings &&
@@ -556,6 +578,7 @@ export default function App() {
             onDisconnect={disconnect}
             onSend={send}
             onClear={clearMessages}
+            onAbortPrint={abortPrint}
             activeMachine={activeMachine}
             theme={theme}
           />
