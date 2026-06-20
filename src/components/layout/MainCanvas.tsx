@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { FileCode, Terminal } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 
 export type CanvasView = 'code' | 'operate';
 
@@ -71,38 +70,22 @@ export default function MainCanvas({ canvasView, onViewChange, isConnected, isPr
         })}
       </div>
 
-      {/* View content — animated transitions between panels */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        <AnimatePresence mode="wait">
-          {canvasView === 'code' && (
-            <motion.div
-              key="code"
-              id="panel-gcode"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12 }}
-              className="flex-1 flex flex-col min-h-0"
-              data-testid="gcode-panel"
-            >
-              {children[0]}
-            </motion.div>
-          )}
-          {canvasView === 'operate' && (
-            <motion.div
-              key="operate"
-              id="panel-console"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12 }}
-              className="flex-1 flex flex-col min-h-0"
-              data-testid="console-panel"
-            >
-              {children[1]}
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* View content — both panels stay mounted, opacity toggles preserve state */}
+      <div className="flex-1 min-h-0 flex flex-col relative">
+        <div
+          id="panel-gcode"
+          className={"flex-1 flex flex-col min-h-0 transition-opacity duration-150 " + (canvasView === 'code' ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none absolute inset-0")}
+          data-testid="gcode-panel"
+        >
+          {children[0]}
+        </div>
+        <div
+          id="panel-console"
+          className={"flex-1 flex flex-col min-h-0 transition-opacity duration-150 " + (canvasView === 'operate' ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none absolute inset-0")}
+          data-testid="console-panel"
+        >
+          {children[1]}
+        </div>
       </div>
     </div>
   );

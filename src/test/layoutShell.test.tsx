@@ -9,11 +9,11 @@ afterEach(() => {
 });
 
 // ─── Property 7 (revised): Canvas view renders active panel ────────
-// With AnimatePresence, only the active view panel is in the DOM at a time.
-// MainCanvas now has 2 views: 'code' and 'operate' (preview lives in left panel).
+// Both panels stay mounted in the DOM. Active panel is opacity-100,
+// inactive panel is opacity-0 + pointer-events-none (preserves state).
 
-describe('Property 7 (revised): Active canvas view panel is in the DOM', () => {
-  it('fc.property: active panel is in DOM, inactive panels are not, for any canvasView', async () => {
+describe('Property 7 (revised): Active canvas view panel is visible', () => {
+  it('fc.property: active panel is visible, inactive panel is hidden, for any canvasView', async () => {
     const panelMap: Record<CanvasView, string> = {
       code: 'gcode-panel',
       operate: 'console-panel',
@@ -28,12 +28,18 @@ describe('Property 7 (revised): Active canvas view panel is in the DOM', () => {
               {<div data-testid="console-content" />}
             </MainCanvas>
           );
-          // Active panel should be in the DOM
-          expect(screen.getByTestId(panelMap[view])).toBeInTheDocument();
-          // Other panels should NOT be in the DOM
+          // Both panels should be in the DOM
           for (const key of Object.keys(panelMap) as CanvasView[]) {
-            if (key !== view) {
-              expect(screen.queryByTestId(panelMap[key])).not.toBeInTheDocument();
+            const panel = screen.getByTestId(panelMap[key]);
+            expect(panel).toBeInTheDocument();
+            if (key === view) {
+              // Active panel: visible
+              expect(panel).toHaveClass('opacity-100');
+              expect(panel).toHaveClass('pointer-events-auto');
+            } else {
+              // Inactive panel: hidden but mounted
+              expect(panel).toHaveClass('opacity-0');
+              expect(panel).toHaveClass('pointer-events-none');
             }
           }
           unmount();
