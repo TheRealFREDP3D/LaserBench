@@ -20,7 +20,7 @@ const STAGES: { key: WorkflowStage; label: string; icon: LucideIcon; shortcut: s
 export default function WorkflowStepper({ activeStage, completedStages, onStageClick }: WorkflowStepperProps) {
   return (
     <div
-      className="h-10 bg-[#0E0E0E] border-b border-white/8 flex items-center px-4 gap-1 shrink-0 select-none"
+      className="h-10 bg-[#0F0F0F] border-b border-white/8 flex items-center px-4 gap-1 shrink-0 select-none"
       role="navigation"
       aria-label="Workflow progress"
       data-testid="workflow-stepper"
@@ -35,7 +35,7 @@ export default function WorkflowStepper({ activeStage, completedStages, onStageC
           ? 'bg-red-600 text-black border-red-500 shadow-[0_0_8px_rgba(220,38,38,0.5)]'
           : isComplete
             ? 'bg-red-950/60 text-red-300 border-red-900/50'
-            : 'bg-[#151515] text-neutral-500 border-white/10';
+            : 'bg-[#1A1A1A] text-neutral-500 border-white/10';
 
         const labelClass = isActive
           ? 'text-white font-semibold'
@@ -60,7 +60,7 @@ export default function WorkflowStepper({ activeStage, completedStages, onStageC
                 <Icon className="w-3 h-3" />
                 {stage.label}
               </span>
-              <kbd className={`hidden lg:inline-block text-[9px] font-mono px-1 py-0.5 rounded border ${isActive ? 'border-red-500/40 text-red-300 bg-red-950/30' : 'border-white/10 text-neutral-600 bg-[#0A0A0A]'}`}>
+              <kbd className={`hidden lg:inline-block text-[9px] font-mono px-1 py-0.5 rounded border ${isActive ? 'border-red-500/40 text-red-300 bg-red-950/30' : 'border-white/10 text-neutral-600 bg-[#080808]'}`}>
                 {stage.shortcut}
               </kbd>
             </button>

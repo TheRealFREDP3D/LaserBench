@@ -309,7 +309,7 @@ export default memo(function PresetManager({
     <div id="preset-manager-card" className={`border rounded-lg p-5 shadow-sm space-y-5 transition-all duration-200 ${
       isLight 
         ? 'bg-white border-zinc-200 text-zinc-800' 
-        : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
+        : 'bg-[#0F0F0F] border-white/10 text-[#E8E8E8]'
     }`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -331,7 +331,7 @@ export default memo(function PresetManager({
 
       {/* Preset Saving Mini-Form */}
       <form onSubmit={handleSavePreset} id="save-preset-form" className={`p-4 rounded border ${
-        isLight ? 'bg-zinc-50/55 border-zinc-200' : 'bg-[#151515] border-white/5'
+        isLight ? 'bg-zinc-50/55 border-zinc-200' : 'bg-[#1A1A1A] border-white/5'
       } space-y-3`}>
         <div className="flex items-center justify-between">
           <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-zinc-650' : 'text-zinc-400'}`}>
@@ -357,7 +357,7 @@ export default memo(function PresetManager({
             required
             onChange={(e) => setNewPresetName(e.target.value)}
             className={`w-full elegant-input px-2.5 py-1.5 text-xs rounded border outline-none ${
-              isLight ? 'bg-white border-zinc-300 text-zinc-800 focus:border-indigo-500' : 'bg-[#0A0A0A] border-white/10 text-white focus:border-indigo-900/60'
+              isLight ? 'bg-white border-zinc-300 text-zinc-800 focus:border-indigo-500' : 'bg-[#080808] border-white/10 text-white focus:border-indigo-900/60'
             }`}
           />
           <input
@@ -367,7 +367,7 @@ export default memo(function PresetManager({
             value={newPresetDesc}
             onChange={(e) => setNewPresetDesc(e.target.value)}
             className={`w-full elegant-input px-2.5 py-1.5 text-xs rounded border outline-none ${
-              isLight ? 'bg-white border-zinc-300 text-zinc-800 focus:border-indigo-500' : 'bg-[#0A0A0A] border-white/10 text-neutral-300 focus:border-indigo-900/60'
+              isLight ? 'bg-white border-zinc-300 text-zinc-800 focus:border-indigo-500' : 'bg-[#080808] border-white/10 text-neutral-300 focus:border-indigo-900/60'
             }`}
           />
         </div>
@@ -410,7 +410,7 @@ export default memo(function PresetManager({
             className={`w-full pl-8 pr-3 py-1.5 text-xs rounded border outline-none transition-all duration-150 ${
               isLight 
                 ? 'bg-zinc-50 border-zinc-200 text-zinc-800 focus:bg-white focus:border-indigo-500' 
-                : 'bg-[#0A0A0A] border-white/10 text-neutral-300 focus:border-indigo-900/60'
+                : 'bg-[#080808] border-white/10 text-neutral-300 focus:border-indigo-900/60'
             }`}
           />
         </div>
@@ -439,7 +439,7 @@ export default memo(function PresetManager({
                         : 'bg-[#181825] border-indigo-500/80 ring-1 ring-indigo-500/10'
                       : isLight
                         ? 'bg-zinc-50 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300 text-zinc-800'
-                        : 'bg-[#0A0A0A] border-white/8 hover:border-white/12 text-[#E0E0E0]'
+                        : 'bg-[#080808] border-white/8 hover:border-white/12 text-[#E8E8E8]'
                   }`}
                 >
                   <div className="flex items-start justify-between">

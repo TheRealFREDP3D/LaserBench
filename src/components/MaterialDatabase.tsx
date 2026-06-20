@@ -3,7 +3,7 @@ import { MaterialProfile, MaterialCategory, CalibrationHistoryEntry } from '../t
 import {
   FolderHeart, Plus, Trash2, Calendar, Check,
   TreePine, Beaker, Shirt, Mountain, Hammer, FileText, Package,
-  ChevronDown,
+  ChevronDown, Inbox,
 } from 'lucide-react';
 import { useConfirmModal } from '../hooks/useConfirmModal';
 
@@ -146,12 +146,12 @@ export default memo(function MaterialDatabase({
   return (
     <div
       id="material-database-card"
-      className={`border rounded-lg p-5 shadow-sm flex flex-col h-full transition-all duration-200 ${
+      className={`border rounded-lg p-3 shadow-sm flex flex-col h-full transition-all duration-200 ${
         isEditing ? 'border-l-2 border-l-red-600 border-white/8' :
-        isLight ? 'bg-white border-zinc-200 text-zinc-800' : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
+        isLight ? 'bg-white border-zinc-200 text-zinc-800' : 'bg-[#0F0F0F] border-white/10 text-[#E8E8E8]'
       }`}
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <FolderHeart className="text-red-500 w-5 h-5" />
           <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>
@@ -176,7 +176,7 @@ export default memo(function MaterialDatabase({
       </div>
 
       {/* Category Tabs — icon+label on md+, icon-only on sm */}
-      <div className={`flex flex-wrap gap-1 mb-4 border-b pb-2 ${isLight ? 'border-zinc-250' : 'border-white/8'}`}>
+      <div className={`flex flex-wrap gap-1 mb-2 border-b pb-1.5 ${isLight ? 'border-zinc-250' : 'border-white/8'}`}>
         {categories.map((cat) => {
           const Icon = categoryIcons[cat];
           return (
@@ -198,7 +198,7 @@ export default memo(function MaterialDatabase({
                     : 'bg-red-950/40 text-red-400 border border-red-900/40'
                   : isLight
                     ? 'text-zinc-600 hover:text-black hover:bg-zinc-100 border border-transparent'
-                    : 'text-[#888] hover:text-[#E0E0E0] hover:bg-[#1A1A1A] border border-transparent'
+                    : 'text-[#707070] hover:text-[#E8E8E8] hover:bg-[#1A1A1A] border border-transparent'
               }`}
             >
               <Icon className="w-3.5 h-3.5 inline" />
@@ -208,34 +208,41 @@ export default memo(function MaterialDatabase({
         })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+      <div className="grid grid-cols-1 gap-3 flex-1 overflow-y-auto">
         {/* Materials List */}
-        <div className={`md:col-span-1 border-r pr-4 space-y-2 flex flex-col justify-between max-h-[280px] md:max-h-none overflow-y-auto ${
-          isLight ? 'border-zinc-200' : 'border-white/8'
+        <div className={`space-y-1 flex flex-col ${
+          isLight ? '' : ''
         }`}>
           <div className="space-y-1">
             <span className={`block mb-1 label-caps ${isLight ? 'text-zinc-500' : ''}`}>
               Select {activeCategory}
             </span>
             {categoryMaterials.length === 0 ? (
-              <p className="text-neutral-500 text-xs italic py-2">No material sheets added yet.</p>
+              <div className={`flex flex-col items-center gap-2 py-4 px-2 rounded-lg border border-dashed ${isLight ? 'border-zinc-200 bg-zinc-50/50' : 'border-white/8 bg-[#080808]/50'}`}>
+                <Inbox className={`w-5 h-5 ${isLight ? 'text-zinc-300' : 'text-[#333333]'}`} />
+                <p className={`text-xs text-center leading-snug ${isLight ? 'text-zinc-400' : 'text-[#505050]'}`}>
+                  No {activeCategory.toLowerCase()} sheets yet.
+                  <br />
+                  <span className={`text-[10px] ${isLight ? 'text-zinc-300' : 'text-[#404040]'}`}>Add one to start calibrating.</span>
+                </p>
+              </div>
             ) : (
               categoryMaterials.map((mat) => (
                 <button
                   key={mat.id}
                   id={`material-select-${mat.id}`}
                   onClick={() => onSelectMaterial(mat.id)}
-                  className={`w-full text-left px-2.5 py-1.5 rounded text-xs transition flex justify-between items-center cursor-pointer ${
+                  className={`w-full text-left px-2.5 py-1.5 rounded text-xs transition flex justify-between items-center gap-2 cursor-pointer ${
                     selectedMaterialId === mat.id
                       ? isLight
                         ? 'bg-red-50 text-red-600 font-bold border-l-2 border-red-600'
                         : 'bg-[#1E1414] text-red-400 font-bold border-l-2 border-red-600'
                       : isLight
                         ? 'text-zinc-600 hover:bg-zinc-100 hover:text-black'
-                        : 'text-neutral-400 hover:bg-[#151515] hover:text-white'
+                        : 'text-neutral-400 hover:bg-[#1A1A1A] hover:text-white'
                   }`}
                 >
-                  <span className="truncate">{mat.name}</span>
+                  <span className="break-words leading-tight">{mat.name}</span>
                   <span className={`text-[10px] shrink-0 font-mono italic ${isLight ? 'text-zinc-400' : 'text-neutral-500'}`}>
                     {mat.thickness}mm
                   </span>
@@ -250,7 +257,7 @@ export default memo(function MaterialDatabase({
             className={`w-full mt-4 flex items-center justify-center gap-1 border text-xs py-1.5 rounded transition cursor-pointer font-bold ${
               isLight
                 ? 'bg-zinc-100 text-zinc-700 border-zinc-300 hover:bg-zinc-200'
-                : 'bg-[#222] border-white/10 hover:bg-[#333] hover:border-white/15 text-[#E0E0E0]'
+                : 'bg-[#222] border-white/10 hover:bg-[#333] hover:border-white/15 text-[#E8E8E8]'
             }`}
           >
             <Plus className="w-3.5 h-3.5" />
@@ -259,14 +266,14 @@ export default memo(function MaterialDatabase({
         </div>
 
         {/* Material Detail + Log */}
-        <div className="md:col-span-2 space-y-4">
+        <div className="space-y-3">
           {activeMaterial ? (
             <>
               {/* Profile Config */}
               <div className={`p-3.5 rounded border transition-all duration-200 ${
                 isLight
                   ? 'bg-zinc-50 border-zinc-200 text-zinc-800'
-                  : 'bg-[#151515] border-white/10'
+                  : 'bg-[#1A1A1A] border-white/10'
               }`}>
                 {isEditing ? (
                   /* ── Edit mode (unchanged) ── */
@@ -435,7 +442,7 @@ export default memo(function MaterialDatabase({
                   aria-controls="calibration-log-content"
                   onClick={() => setLogExpanded(!logExpanded)}
                   className={`w-full flex items-center justify-between text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
-                    isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#888] hover:text-white'
+                    isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#707070] hover:text-white'
                   }`}
                 >
                   <span>Calibration Log</span>
@@ -444,7 +451,7 @@ export default memo(function MaterialDatabase({
 
                 <div id="calibration-log-content" className={logExpanded ? 'block' : 'hidden'}>
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className={`text-xs font-semibold uppercase tracking-wider ${isLight ? 'text-zinc-500' : 'text-[#666]'}`}>
+                    <h4 className={`text-xs font-semibold uppercase tracking-wider ${isLight ? 'text-zinc-500' : 'text-[#505050]'}`}>
                       History
                     </h4>
                     {!showLogForm && (
@@ -475,7 +482,7 @@ export default memo(function MaterialDatabase({
                     <form onSubmit={handleAddLog} id="calibration-log-form" className={`border rounded p-3 space-y-2.5 text-xs ${
                       isLight
                         ? 'bg-zinc-50 border-red-200 text-zinc-800'
-                        : 'bg-[#151515] border-red-900/40 text-neutral-300'
+                        : 'bg-[#1A1A1A] border-red-900/40 text-neutral-300'
                     }`}>
                       <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Log Test Result</span>
                       <div className="grid grid-cols-2 gap-2">
@@ -487,11 +494,11 @@ export default memo(function MaterialDatabase({
                             onChange={(e) => setLogPattern(e.target.value)}
                             className="w-full elegant-input rounded px-2 py-1"
                           >
-                            <option value="matrix" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Power-Speed Matrix</option>
-                            <option value="power_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Power Ramp</option>
-                            <option value="speed_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Speed Ramp</option>
-                            <option value="focus_ladder" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Focus Ladder</option>
-                            <option value="kerf_test" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Kerf Clearance</option>
+                            <option value="matrix" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>Power-Speed Matrix</option>
+                            <option value="power_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>Power Ramp</option>
+                            <option value="speed_ramp" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>Speed Ramp</option>
+                            <option value="focus_ladder" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>Focus Ladder</option>
+                            <option value="kerf_test" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>Kerf Clearance</option>
                           </select>
                         </div>
                         <div>
@@ -550,7 +557,7 @@ export default memo(function MaterialDatabase({
                           id="cancel-log-btn"
                           type="button"
                           onClick={() => setShowLogForm(false)}
-                          className={`cursor-pointer ${isLight ? 'text-zinc-500 hover:text-black font-semibold' : 'text-[#888] hover:text-white'}`}
+                          className={`cursor-pointer ${isLight ? 'text-zinc-500 hover:text-black font-semibold' : 'text-[#707070] hover:text-white'}`}
                         >
                           Cancel
                         </button>
@@ -571,25 +578,32 @@ export default memo(function MaterialDatabase({
 
                   <div className="space-y-2 max-h-[160px] overflow-y-auto mt-2 pr-1">
                     {activeMaterial.history.length === 0 ? (
-                      <p className="text-neutral-500 text-xs italic py-2">No calibration logs saved yet for this sheet. Generate a matrix test to find optimal settings!</p>
+                      <div className={`flex flex-col items-center gap-2 py-4 px-2 rounded border border-dashed ${isLight ? 'border-zinc-200 bg-zinc-50/30' : 'border-white/5 bg-[#080808]/30'}`}>
+                        <Calendar className={`w-4 h-4 ${isLight ? 'text-zinc-300' : 'text-[#333333]'}`} />
+                        <p className={`text-[11px] text-center leading-snug ${isLight ? 'text-zinc-400' : 'text-[#505050]'}`}>
+                          No calibration logs yet.
+                          <br />
+                          <span className={`text-[10px] ${isLight ? 'text-zinc-300' : 'text-[#404040]'}`}>Run a matrix test to find optimal settings.</span>
+                        </p>
+                      </div>
                     ) : (
                       activeMaterial.history.map((log) => (
                         <div key={log.id} className={`border rounded p-2.5 text-[11px] relative transition-all duration-200 group ${
                           isLight
                             ? 'bg-zinc-50 border-zinc-200 hover:border-zinc-350 text-zinc-700'
-                            : 'bg-[#151515] border-white/8 hover:border-white/12 text-neutral-300'
+                            : 'bg-[#1A1A1A] border-white/8 hover:border-white/12 text-neutral-300'
                         }`}>
                           <button
                             onClick={() => handleDeleteLog(log.id)}
                             className={`absolute right-2 top-2 hover:text-red-500 opacity-0 group-hover:opacity-100 transition cursor-pointer ${
-                              isLight ? 'text-zinc-400' : 'text-[#666]'
+                              isLight ? 'text-zinc-400' : 'text-[#505050]'
                             }`}
                             title="Delete calibration entry"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
                           <div className={`flex items-center gap-1.5 font-mono text-[10px] mb-1 ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>
-                            <Calendar className={`w-3 h-3 shrink-0 ${isLight ? 'text-zinc-400' : 'text-[#666]'}`} />
+                            <Calendar className={`w-3 h-3 shrink-0 ${isLight ? 'text-zinc-400' : 'text-[#505050]'}`} />
                             <span>{log.date}</span>
                             <span className="mx-1">•</span>
                             <span className={`px-1 py-0.5 rounded capitalize ${
@@ -603,7 +617,7 @@ export default memo(function MaterialDatabase({
                           <div className={`grid grid-cols-3 gap-1 font-mono text-[10px] p-1.5 rounded mb-1 ${
                             isLight
                               ? 'bg-zinc-200/50 text-zinc-800'
-                              : 'bg-[#0E0E0E] text-neutral-300'
+                              : 'bg-[#0F0F0F] text-neutral-300'
                           }`}>
                             {log.optimalPower !== undefined && (
                               <span>Power: <strong className={isLight ? 'text-red-600' : 'text-red-400'}>{log.optimalPower}</strong></span>
@@ -624,7 +638,17 @@ export default memo(function MaterialDatabase({
               </div>
             </>
           ) : (
-            <p className="text-neutral-500 text-xs text-center py-6">Select a category and material to configure.</p>
+            <div className={`flex flex-col items-center justify-center gap-3 py-10 rounded-lg border border-dashed ${isLight ? 'border-zinc-200 bg-zinc-50/50' : 'border-white/8 bg-[#080808]/50'}`}>
+              <FolderHeart className={`w-8 h-8 ${isLight ? 'text-zinc-300' : 'text-[#252525]'}`} />
+              <div className="text-center space-y-1">
+                <p className={`text-xs font-medium ${isLight ? 'text-zinc-500' : 'text-[#606060]'}`}>
+                  No material selected
+                </p>
+                <p className={`text-[10px] leading-snug max-w-[200px] ${isLight ? 'text-zinc-400' : 'text-[#505050]'}`}>
+                  Select a material from the list on the left, or add a new one to configure engrave and cut defaults.
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -102,7 +102,7 @@ export default function QuickLogModal({
       data-testid="quick-log-modal-backdrop"
     >
       <div
-        className={`bg-[#0E0E0E] border border-red-900/60 rounded-lg p-6 max-w-md w-full text-[#E0E0E0] shadow-2xl relative space-y-4 ${isLight ? 'theme-light' : ''}`}
+        className={`bg-[#0F0F0F] border border-red-900/60 rounded-lg p-6 max-w-md w-full text-[#E8E8E8] shadow-2xl relative space-y-4 ${isLight ? 'theme-light' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -123,7 +123,7 @@ export default function QuickLogModal({
         </div>
 
         {/* Burn context (read-only) */}
-        <div className={`rounded border p-3 space-y-1.5 text-[11px] ${isLight ? 'bg-zinc-50 border-zinc-200' : 'bg-[#151515] border-white/8'}`}>
+        <div className={`rounded border p-3 space-y-1.5 text-[11px] ${isLight ? 'bg-zinc-50 border-zinc-200' : 'bg-[#1A1A1A] border-white/8'}`}>
           <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1">Burn Context</div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono">
             <div className="flex items-center gap-1.5">

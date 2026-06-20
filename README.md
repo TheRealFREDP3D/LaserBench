@@ -1,8 +1,10 @@
 # LaserBench
 
-![LaserBench - Logo](header.jpg)
+![LaserBench - Logo](logo.jpg)
 
 A web-based laser calibration suite with G-code generation, SVG toolpath pre-visualization, serial communication, and a real-time printer console.
+
+![Console and Machine Control](connect-console.gif)
 
 ## Features
 
@@ -17,6 +19,8 @@ A web-based laser calibration suite with G-code generation, SVG toolpath pre-vis
 - **Generator Presets**: Save and recall full parameter snapshots; ships with factory presets for common materials
 - **G-Code Dictionary**: In-app reference for all common G/M codes with syntax, examples, and compatibility notes
 - **Dark / Light Theme**: Toggle between elegant dark and high-contrast light modes
+
+![Generate G-Code Calibration](generate_gcode.gif)
 
 ## Delta Kinematics
 

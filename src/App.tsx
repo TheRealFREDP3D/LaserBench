@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { MachineProfile, MaterialProfile, PatternType, CalibrationHistoryEntry } from './types';
 import {
   getStoredMachines,
@@ -22,15 +22,14 @@ import { PrinterConsole } from './components/PrinterConsole';
 import { useWebSerial } from './lib/useWebSerial';
 import GCodeDictionary from './components/GCodeDictionary';
 import QuickLogModal from './components/QuickLogModal';
-import LeftSidebar from './components/layout/LeftSidebar';
-import CenterPanel from './components/layout/CenterPanel';
 import MainCanvas, { CanvasView } from './components/layout/MainCanvas';
 import GenerateFAB from './components/layout/GenerateFAB';
 import StatusBar from './components/layout/StatusBar';
 import WorkflowStepper, { WorkflowStage } from './components/layout/WorkflowStepper';
 
-import { Sun, Moon, BookOpen, AlertTriangle, X, Menu } from 'lucide-react';
+import { Sun, Moon, BookOpen, AlertTriangle, X, Sliders, FolderOpen, ChevronDown } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const {
@@ -92,10 +91,8 @@ export default function App() {
   const [dismissedDeltaWarnings, setDismissedDeltaWarnings] = useState(false);
 
   // ── New workflow-aware state ───────────────────────────────────────
-  // sidebarTab: 'machine' | 'material'  (kept for backward compat with LeftSidebar)
-  const [sidebarTab, setSidebarTab] = useState<'machine' | 'material'>('machine');
-  // canvasView: replaces old outputTab. 3 view modes for the main canvas.
-  const [canvasView, setCanvasView] = useState<CanvasView>('preview');
+  // canvasView: 2 view modes — Code and Operate (Preview lives in left panel)
+  const [canvasView, setCanvasView] = useState<CanvasView>('code');
   // Preset flyout (controlled by App so we can close it after a preset is loaded)
   const [presetFlyoutOpen, setPresetFlyoutOpen] = useState<boolean>(false);
   // Quick Log Modal
@@ -103,8 +100,8 @@ export default function App() {
   // Track last-touched panel to derive the active workflow stage
   const [lastTouched, setLastTouched] = useState<WorkflowStage>('machine');
 
-  // Mobile sidebar slide-over
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  // Preset flyout ref for outside-click detection
+  const presetFlyoutRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadedMachines = getStoredMachines();
@@ -114,6 +111,18 @@ export default function App() {
     if (loadedMachines.length > 0) setSelectedMachineId(loadedMachines[0].id);
     if (loadedMaterials.length > 0) setSelectedMaterialId(loadedMaterials[0].id);
   }, []);
+
+  // Close preset flyout on outside click
+  useEffect(() => {
+    if (!presetFlyoutOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (presetFlyoutRef.current && !presetFlyoutRef.current.contains(e.target as Node)) {
+        setPresetFlyoutOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [presetFlyoutOpen]);
 
   const activeMachine = machines.find((m) => m.id === selectedMachineId) || machines[0] || null;
   const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0] || null;
@@ -160,10 +169,9 @@ export default function App() {
   ]);
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────
-  // New mapping (1-6 + L for log):
-  //   1 → sidebar machine         2 → sidebar material
-  //   3 → pattern (close flyout, focus pattern)
-  //   4 → canvas preview          5 → canvas code     6 → canvas operate
+  //   1 → scroll to machine section     2 → scroll to material section
+  //   3 → close preset flyout            4 → switch to code view (Preview step)
+  //   5 → canvas code                    6 → canvas operate
   //   L → toggle Quick Log modal
   //   Esc → close any modal / flyout
   useEffect(() => {
@@ -174,11 +182,11 @@ export default function App() {
 
       switch (e.key) {
         case '1':
-          setSidebarTab('machine');
+          document.getElementById('machine-selector-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           setLastTouched('machine');
           break;
         case '2':
-          setSidebarTab('material');
+          document.getElementById('material-database-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           setLastTouched('material');
           break;
         case '3':
@@ -186,7 +194,7 @@ export default function App() {
           setLastTouched('pattern');
           break;
         case '4':
-          setCanvasView('preview');
+          setCanvasView('code');
           setLastTouched('preview');
           break;
         case '5':
@@ -310,19 +318,20 @@ export default function App() {
   const handleStageClick = useCallback((stage: WorkflowStage) => {
     switch (stage) {
       case 'machine':
-        setSidebarTab('machine');
+        document.getElementById('machine-selector-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         setLastTouched('machine');
         break;
       case 'material':
-        setSidebarTab('material');
+        document.getElementById('material-database-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         setLastTouched('material');
         break;
       case 'pattern':
+        document.getElementById('pattern-configurator-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         setPresetFlyoutOpen(false);
         setLastTouched('pattern');
         break;
       case 'preview':
-        setCanvasView('preview');
+        setCanvasView('code');
         setLastTouched('preview');
         break;
       case 'burn':
@@ -338,31 +347,27 @@ export default function App() {
     generatedResults.deltaWarnings.length > 0;
 
   return (
-    <div id="laserbench-root" className={`min-h-screen bg-[#0A0A0A] text-[#E0E0E0] flex flex-col antialiased pb-8 ${theme === 'light' ? 'theme-light' : ''}`}>
+    <div id="laserbench-root" className={`h-screen flex flex-col bg-[#080808] text-[#E8E8E8] antialiased overflow-hidden ${theme === 'light' ? 'theme-light' : ''}`}>
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2 focus:bg-red-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:font-bold"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-red-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:font-bold focus:outline-none"
       >
         Skip to content
       </a>
-      {/* Skip to content — keyboard accessibility */}
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-indigo-600 focus:text-white focus:px-4 focus:py-2 focus:rounded focus:outline-none">
-        Skip to main content
-      </a>
       {/* Header */}
-      <header className="h-16 flex items-center justify-between px-6 border-b border-white/10 bg-[#0E0E0E] sticky top-0 z-50 shrink-0">
+      <header className="h-16 flex items-center justify-between px-6 border-b border-white/10 bg-[#0F0F0F] sticky top-0 z-50 shrink-0">
         <div className="flex items-center gap-4">
           <div className="w-8 h-8 bg-red-600 flex items-center justify-center rounded-sm font-bold text-black font-sans select-none">LB</div>
           <h1 className="text-base font-medium tracking-tight text-white flex items-center gap-1.5">
             LaserBench
-            <span className="text-[#666] font-normal italic text-xs">v1.4-ui</span>
+            <span className="text-[#505050] font-normal italic text-xs">v0.4.3</span>
           </h1>
         </div>
         <div className="flex items-center gap-6">
           <button
             onClick={() => setShowDictionary(true)}
             id="gcode-dict-header-btn"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#222] border border-white/10 hover:bg-[#333] rounded text-[#AAA] hover:text-white transition-all duration-200 cursor-pointer text-xs font-semibold uppercase tracking-wider select-none outline-none"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#252525] border border-white/10 hover:bg-[#333333] rounded text-[#9A9A9A] hover:text-white transition-all duration-200 cursor-pointer text-xs font-semibold uppercase tracking-wider select-none outline-none"
             title="Open G-Code and M-Code Dictionary"
           >
             <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -372,7 +377,7 @@ export default function App() {
           <button
             onClick={toggleTheme}
             id="theme-toggle-btn"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#222] border border-white/10 hover:bg-[#333] rounded text-[#AAA] hover:text-white transition-all duration-200 cursor-pointer text-xs font-semibold uppercase tracking-wider select-none outline-none"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#252525] border border-white/10 hover:bg-[#333333] rounded text-[#9A9A9A] hover:text-white transition-all duration-200 cursor-pointer text-xs font-semibold uppercase tracking-wider select-none outline-none"
             title={theme === 'dark' ? 'Switch to High Contrast Light Mode' : 'Switch to Elegant Dark Mode'}
           >
             {theme === 'dark' ? (
@@ -386,16 +391,6 @@ export default function App() {
                 <span className="hidden sm:inline">Dark Mode</span>
               </>
             )}
-          </button>
-
-          <button
-            onClick={() => setSidebarOpen(true)}
-            id="sidebar-hamburger-btn"
-            className="lg:hidden flex items-center px-3 py-1.5 bg-[#222] border border-white/10 hover:bg-[#333] rounded text-[#AAA] hover:text-white transition-all duration-200 cursor-pointer text-xs"
-            aria-label="Open sidebar navigation"
-            title="Open sidebar"
-          >
-            <Menu className="w-4 h-4" />
           </button>
         </div>
       </header>
@@ -429,160 +424,220 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Layout — refined 3-pane structure */}
-      <div id="main-content" tabIndex={-1} className="flex flex-1 overflow-hidden overflow-x-hidden">
-        <LeftSidebar
-          activeTab={sidebarTab}
-          onTabChange={(tab) => {
-            setSidebarTab(tab);
-            setLastTouched(tab);
-          }}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        >
-          <MachineSelector
-            machines={machines}
-            selectedMachineId={selectedMachineId}
-            onSelectMachine={(id) => { setSelectedMachineId(id); setLastTouched('machine'); }}
-            onUpdateMachine={handleUpdateMachine}
-            onCreateMachine={handleCreateMachine}
-            onDeleteMachine={handleDeleteMachine}
-            theme={theme}
-          />
-          <MaterialDatabase
-            materials={materials}
-            selectedMaterialId={selectedMaterialId}
-            pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-            onSelectMaterial={(id) => { setSelectedMaterialId(id); setLastTouched('material'); }}
-            onUpdateMaterial={handleUpdateMaterial}
-            onCreateMaterial={handleCreateMaterial}
-            onDeleteMaterial={handleDeleteMaterial}
-            onQuickLog={() => setShowQuickLogModal(true)}
-            theme={theme}
-          />
-        </LeftSidebar>
-        <CenterPanel
-          presetFlyoutOpen={presetFlyoutOpen}
-          onPresetFlyoutToggle={setPresetFlyoutOpen}
-        >
-          <PatternConfigurator
-            selectedPattern={selectedPattern}
-            onSelectPattern={(p) => { setSelectedPattern(p); setLastTouched('pattern'); }}
-            powerMin={powerMin}
-            powerMax={powerMax}
-            speedMin={speedMin}
-            speedMax={speedMax}
-            powerSteps={powerSteps}
-            speedSteps={speedSteps}
-            blockSize={blockSize}
-            nominalThickness={nominalThickness}
-            kerfValues={kerfValues}
-            zMin={zMin}
-            zMax={zMax}
-            zSteps={zSteps}
-            pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-            onSetPowerMin={(v) => { setPowerMin(v); setLastTouched('pattern'); }}
-            onSetPowerMax={(v) => { setPowerMax(v); setLastTouched('pattern'); }}
-            onSetSpeedMin={(v) => { setSpeedMin(v); setLastTouched('pattern'); }}
-            onSetSpeedMax={(v) => { setSpeedMax(v); setLastTouched('pattern'); }}
-            onSetPowerSteps={(v) => { setPowerSteps(v); setLastTouched('pattern'); }}
-            onSetSpeedSteps={(v) => { setSpeedSteps(v); setLastTouched('pattern'); }}
-            onSetNominalThickness={(v) => { setNominalThickness(v); setLastTouched('pattern'); }}
-            onSetKerfValues={(v) => { setKerfValues(v); setLastTouched('pattern'); }}
-            onSetZMin={(v) => { setZMin(v); setLastTouched('pattern'); }}
-            onSetZMax={(v) => { setZMax(v); setLastTouched('pattern'); }}
-            onSetZSteps={(v) => { setZSteps(v); setLastTouched('pattern'); }}
-            onSetBlockSize={(v) => { setBlockSize(v); setLastTouched('pattern'); }}
-            theme={theme}
-          />
-          <PresetManager
-            currentPattern={selectedPattern}
-            powerMin={powerMin}
-            powerMax={powerMax}
-            speedMin={speedMin}
-            speedMax={speedMax}
-            powerSteps={powerSteps}
-            speedSteps={speedSteps}
-            blockSize={blockSize}
-            nominalThickness={nominalThickness}
-            kerfValues={kerfValues}
-            zMin={zMin}
-            zMax={zMax}
-            zSteps={zSteps}
-            pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-            onLoadPreset={(preset) => {
-              setSelectedPattern(preset.patternType);
-              setPowerMin(preset.powerMin);
-              setPowerMax(preset.powerMax);
-              setSpeedMin(preset.speedMin);
-              setSpeedMax(preset.speedMax);
-              setPowerSteps(preset.powerSteps);
-              setSpeedSteps(preset.speedSteps);
-              setBlockSize(preset.blockSize);
-              setNominalThickness(preset.nominalThickness);
-              setKerfValues(preset.kerfValues);
-              setZMin(preset.zMin);
-              setZMax(preset.zMax);
-              setZSteps(preset.zSteps);
-              setPresetFlyoutOpen(false);
-              setLastTouched('pattern');
-            }}
-            theme={theme}
-          />
-        </CenterPanel>
-        <MainCanvas
-          canvasView={canvasView}
-          onViewChange={(v) => { setCanvasView(v); setLastTouched(v === 'preview' ? 'preview' : 'burn'); }}
-          isConnected={isConnected}
-          isPrinting={isPrinting}
-        >
-          {generatedResults && activeMachine && activeMaterial ? (
-            <SVGVisualizer
-              svgPaths={generatedResults.svgPaths}
-              machine={activeMachine}
-              material={activeMaterial}
-              patternType={selectedPattern}
-              paths={generatedResults.paths}
+      {/* Main Layout — 2-row: config top, output bottom */}
+      <div id="main-content" tabIndex={-1} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+
+        {/* ── Top Row: Machine | Material | Pattern (config) ── */}
+        <div className="flex shrink-0 border-b border-white/8" style={{ height: '42%', minHeight: '280px' }}>
+          {/* Machine Selector */}
+          <div className="flex-1 overflow-y-auto border-r border-white/8">
+            <MachineSelector
+              machines={machines}
+              selectedMachineId={selectedMachineId}
+              onSelectMachine={(id) => { setSelectedMachineId(id); setLastTouched('machine'); }}
+              onUpdateMachine={handleUpdateMachine}
+              onCreateMachine={handleCreateMachine}
+              onDeleteMachine={handleDeleteMachine}
               theme={theme}
-              hoveredPathIndex={hoveredPathIndex}
-              onHoverPath={setHoveredPathIndex}
             />
-          ) : (
-            <div className="flex-1 min-h-[300px] md:min-h-[400px] flex items-center justify-center text-neutral-500 text-xs">
-              Configure a pattern and material to generate G-Code
+          </div>
+
+          {/* Material Database */}
+          <div className="flex-[1.2] overflow-y-auto border-r border-white/8">
+            <MaterialDatabase
+              materials={materials}
+              selectedMaterialId={selectedMaterialId}
+              pwmMax={activeMachine ? activeMachine.pwmMax : 255}
+              onSelectMaterial={(id) => { setSelectedMaterialId(id); setLastTouched('material'); }}
+              onUpdateMaterial={handleUpdateMaterial}
+              onCreateMaterial={handleCreateMaterial}
+              onDeleteMaterial={handleDeleteMaterial}
+              onQuickLog={() => setShowQuickLogModal(true)}
+              theme={theme}
+            />
+          </div>
+
+          {/* Pattern Configurator + Preset Flyout */}
+          <div className="flex-1 overflow-y-auto relative">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/8 bg-[#0F0F0F] sticky top-0 z-10">
+              <div className="flex items-center gap-2">
+                <Sliders className="text-red-500 w-4 h-4" />
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-white">Pattern</h2>
+              </div>
+              <div className="relative" ref={presetFlyoutRef}>
+                <button
+                  type="button"
+                  id="load-preset-btn"
+                  onClick={() => setPresetFlyoutOpen(!presetFlyoutOpen)}
+                  aria-expanded={presetFlyoutOpen}
+                  aria-controls="preset-flyout"
+                  data-testid="load-preset-toggle"
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer select-none outline-none border ${
+                    presetFlyoutOpen
+                      ? 'bg-red-600 text-black border-red-500 shadow-[0_0_8px_rgba(220,38,38,0.4)]'
+                      : 'bg-[#252525] border-white/10 text-[#9A9A9A] hover:bg-[#333333] hover:text-white'
+                  }`}
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Load Preset</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${presetFlyoutOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {presetFlyoutOpen && (
+                    <motion.div
+                      id="preset-flyout"
+                      data-testid="preset-flyout"
+                      initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      className="absolute right-0 top-full mt-1 w-[340px] max-w-[90vw] bg-[#0F0F0F] border border-white/10 rounded-md shadow-2xl z-50 max-h-[50vh] overflow-y-auto"
+                    >
+                      <PresetManager
+                        currentPattern={selectedPattern}
+                        powerMin={powerMin}
+                        powerMax={powerMax}
+                        speedMin={speedMin}
+                        speedMax={speedMax}
+                        powerSteps={powerSteps}
+                        speedSteps={speedSteps}
+                        blockSize={blockSize}
+                        nominalThickness={nominalThickness}
+                        kerfValues={kerfValues}
+                        zMin={zMin}
+                        zMax={zMax}
+                        zSteps={zSteps}
+                        pwmMax={activeMachine ? activeMachine.pwmMax : 255}
+                        onLoadPreset={(preset) => {
+                          setSelectedPattern(preset.patternType);
+                          setPowerMin(preset.powerMin);
+                          setPowerMax(preset.powerMax);
+                          setSpeedMin(preset.speedMin);
+                          setSpeedMax(preset.speedMax);
+                          setPowerSteps(preset.powerSteps);
+                          setSpeedSteps(preset.speedSteps);
+                          setBlockSize(preset.blockSize);
+                          setNominalThickness(preset.nominalThickness);
+                          setKerfValues(preset.kerfValues);
+                          setZMin(preset.zMin);
+                          setZMax(preset.zMax);
+                          setZSteps(preset.zSteps);
+                          setPresetFlyoutOpen(false);
+                          setLastTouched('pattern');
+                        }}
+                        theme={theme}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
-          )}
-          {generatedResults ? (
-            <GCodeOutput
-              gcode={generatedResults.gcode}
-              patternType={selectedPattern}
-              machine={activeMachine}
-              material={activeMaterial}
-              paths={generatedResults.paths}
+            <PatternConfigurator
+              selectedPattern={selectedPattern}
+              onSelectPattern={(p) => { setSelectedPattern(p); setLastTouched('pattern'); }}
+              powerMin={powerMin}
+              powerMax={powerMax}
+              speedMin={speedMin}
+              speedMax={speedMax}
+              powerSteps={powerSteps}
+              speedSteps={speedSteps}
+              blockSize={blockSize}
+              nominalThickness={nominalThickness}
+              kerfValues={kerfValues}
+              zMin={zMin}
+              zMax={zMax}
+              zSteps={zSteps}
+              pwmMax={activeMachine ? activeMachine.pwmMax : 255}
+              onSetPowerMin={(v) => { setPowerMin(v); setLastTouched('pattern'); }}
+              onSetPowerMax={(v) => { setPowerMax(v); setLastTouched('pattern'); }}
+              onSetSpeedMin={(v) => { setSpeedMin(v); setLastTouched('pattern'); }}
+              onSetSpeedMax={(v) => { setSpeedMax(v); setLastTouched('pattern'); }}
+              onSetPowerSteps={(v) => { setPowerSteps(v); setLastTouched('pattern'); }}
+              onSetSpeedSteps={(v) => { setSpeedSteps(v); setLastTouched('pattern'); }}
+              onSetNominalThickness={(v) => { setNominalThickness(v); setLastTouched('pattern'); }}
+              onSetKerfValues={(v) => { setKerfValues(v); setLastTouched('pattern'); }}
+              onSetZMin={(v) => { setZMin(v); setLastTouched('pattern'); }}
+              onSetZMax={(v) => { setZMax(v); setLastTouched('pattern'); }}
+              onSetZSteps={(v) => { setZSteps(v); setLastTouched('pattern'); }}
+              onSetBlockSize={(v) => { setBlockSize(v); setLastTouched('pattern'); }}
               theme={theme}
-              hoveredPathIndex={hoveredPathIndex}
-              onHoverPath={setHoveredPathIndex}
-              onPrint={handlePrint}
-              isPrinterConnected={isConnected}
-              isPrinting={isPrinting}
             />
-          ) : (
-            <div />
-          )}
-          <PrinterConsole
-            isConnected={isConnected}
-            messages={messages}
-            isPrinting={isPrinting}
-            progress={progress}
-            onConnect={() => connect(250000)}
-            onDisconnect={disconnect}
-            onSend={send}
-            onClear={clearMessages}
-            onAbortPrint={abortPrint}
-            activeMachine={activeMachine}
-            theme={theme}
-          />
-        </MainCanvas>
+          </div>
+        </div>
+
+        {/* ── Bottom Row: Toolpath Preview | G-Code Output + Operate ── */}
+        <div className="flex flex-1 min-h-0">
+          {/* SVG Toolpath Preview — always visible */}
+          <div className="flex-1 min-w-0 border-r border-white/8 flex flex-col min-h-0 overflow-y-auto">
+            {generatedResults && activeMachine && activeMaterial ? (
+              <SVGVisualizer
+                svgPaths={generatedResults.svgPaths}
+                machine={activeMachine}
+                material={activeMaterial}
+                patternType={selectedPattern}
+                paths={generatedResults.paths}
+                theme={theme}
+                hoveredPathIndex={hoveredPathIndex}
+                onHoverPath={setHoveredPathIndex}
+              />
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 text-[#505050]">
+                <svg className="w-12 h-12 opacity-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M9 3v18M3 9h18" strokeDasharray="2 2" />
+                  <circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.3" />
+                </svg>
+                <p className="text-xs text-center max-w-[200px] leading-relaxed">
+                  Toolpath preview will appear here once a pattern is generated.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* G-Code Output + Operate (tabbed) */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            <MainCanvas
+              canvasView={canvasView}
+              onViewChange={(v) => { setCanvasView(v); setLastTouched('burn'); }}
+              isConnected={isConnected}
+              isPrinting={isPrinting}
+            >
+              {generatedResults ? (
+                <GCodeOutput
+                  gcode={generatedResults.gcode}
+                  patternType={selectedPattern}
+                  machine={activeMachine}
+                  material={activeMaterial}
+                  paths={generatedResults.paths}
+                  theme={theme}
+                  hoveredPathIndex={hoveredPathIndex}
+                  onHoverPath={setHoveredPathIndex}
+                  onPrint={handlePrint}
+                  isPrinterConnected={isConnected}
+                  isPrinting={isPrinting}
+                />
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-[#505050] text-xs p-4">
+                  <p>G-Code output will appear here once a pattern is generated.</p>
+                </div>
+              )}
+              <PrinterConsole
+                isConnected={isConnected}
+                messages={messages}
+                isPrinting={isPrinting}
+                progress={progress}
+                onConnect={() => connect(250000)}
+                onDisconnect={disconnect}
+                onSend={send}
+                onClear={clearMessages}
+                onAbortPrint={abortPrint}
+                activeMachine={activeMachine}
+                theme={theme}
+              />
+            </MainCanvas>
+          </div>
+        </div>
       </div>
 
       {/* Floating Action Buttons — primary (Download) + secondary (Log Burn) */}

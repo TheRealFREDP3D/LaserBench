@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { MachineProfile, FirmwareType } from '../types';
-import { Plus, Trash2, Cpu, Triangle, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Cpu, Triangle, ChevronDown, Settings } from 'lucide-react';
 import { DEFAULT_DELTA_PARAMS } from '../lib/deltaKinematics';
 import { useConfirmModal } from '../hooks/useConfirmModal';
 
@@ -104,16 +104,16 @@ export default memo(function MachineSelector({
   return (
     <div
       id="machine-selector-card"
-      className={`border rounded-lg p-5 shadow-md transition-all duration-200 ${
+      className={`border rounded-lg p-3 shadow-md transition-all duration-200 ${
         isEditing
           ? 'border-l-2 border-l-red-600 border-white/8'
           : isLight
             ? 'bg-white border-zinc-200 text-zinc-800'
-            : 'bg-[#0E0E0E] text-[#E0E0E0] border-white/10'
+            : 'bg-[#0F0F0F] text-[#E8E8E8] border-white/10'
       }`}
     >
       {/* ── Always-visible header ── */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Cpu className="text-red-500 w-5 h-5" />
           <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>
@@ -135,14 +135,14 @@ export default memo(function MachineSelector({
                 : 'bg-red-600 text-black hover:bg-red-500 accent-glow'
               : isLight
                 ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200'
-                : 'bg-[#222] text-[#AAA] hover:bg-[#333]'
+                : 'bg-[#252525] text-[#9A9A9A] hover:bg-[#333333]'
           }`}
         >
           {isEditing ? 'Done Settings' : 'Edit Settings'}
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {/* Machine dropdown + New */}
         <div>
           <label className={`block mb-1 label-caps ${isLight ? 'text-zinc-500' : ''}`}>Active Machine Profile</label>
@@ -154,7 +154,7 @@ export default memo(function MachineSelector({
               className="flex-1 elegant-input rounded-md px-3 py-2 text-sm outline-none"
             >
               {machines.map((mac) => (
-                <option key={mac.id} value={mac.id} className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>
+                <option key={mac.id} value={mac.id} className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>
                   {mac.name} ({mac.firmware.toUpperCase()}{mac.isDelta ? ' · Δ' : ''})
                 </option>
               ))}
@@ -166,7 +166,7 @@ export default memo(function MachineSelector({
               className={`px-3.5 py-2 rounded-md text-sm flex items-center justify-center transition cursor-pointer border ${
                 isLight
                   ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200'
-                  : 'bg-[#222] text-[#E0E0E0] border-white/10 hover:bg-[#333]'
+                  : 'bg-[#252525] text-[#E8E8E8] border-white/10 hover:bg-[#333333]'
               }`}
             >
               <Plus className="w-4 h-4" />
@@ -217,11 +217,23 @@ export default memo(function MachineSelector({
           </div>
         )}
 
+        {/* Empty state — onboarding hint when not editing */}
+        {!isEditing && (
+          <div className={`flex items-center gap-2 rounded-lg border border-dashed px-3 py-2 transition-colors ${
+            isLight ? 'border-zinc-200 bg-zinc-50/50' : 'border-white/8 bg-[#080808]/50'
+          }`}>
+            <Settings className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-zinc-400' : 'text-[#505050]'}`} />
+            <p className={`text-[10px] leading-snug ${isLight ? 'text-zinc-500' : 'text-[#606060]'}`}>
+              Click <strong className={isLight ? 'text-zinc-700' : 'text-[#9A9A9A]'}>Edit Settings</strong> to configure firmware, bed geometry, and laser commands.
+            </p>
+          </div>
+        )}
+
         {/* ── Editor ── */}
         {isEditing && activeMachine && (
           <div
             id="machine-config-editor-form"
-            className={`border-t pt-3 mt-3 space-y-3 text-xs ${
+            className={`border-t pt-2 mt-2 space-y-2 text-xs ${
               isLight ? 'border-zinc-200 text-zinc-800' : 'border-white/8 text-slate-300'
             }`}
           >
@@ -252,9 +264,9 @@ export default memo(function MachineSelector({
                   }}
                   className="w-full elegant-input rounded-md px-2 py-1.5"
                 >
-                  <option value="grbl" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>GRBL ($32 mode)</option>
-                  <option value="marlin" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Marlin Fan PWM</option>
-                  <option value="marlin_v1" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Marlin V1 (no comments)</option>
+                  <option value="grbl" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>GRBL ($32 mode)</option>
+                  <option value="marlin" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>Marlin Fan PWM</option>
+                  <option value="marlin_v1" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>Marlin V1 (no comments)</option>
                 </select>
               </div>
               <div>
@@ -278,7 +290,7 @@ export default memo(function MachineSelector({
                 aria-controls="section-laserCommands"
                 onClick={() => toggleSection('laserCommands')}
                 className={`w-full flex items-center justify-between py-3 px-0 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
-                  isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#888] hover:text-white'
+                  isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#707070] hover:text-white'
                 }`}
               >
                 <span>Laser Commands</span>
@@ -319,7 +331,7 @@ export default memo(function MachineSelector({
                 aria-controls="section-motionZ"
                 onClick={() => toggleSection('motionZ')}
                 className={`w-full flex items-center justify-between py-3 px-0 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
-                  isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#888] hover:text-white'
+                  isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#707070] hover:text-white'
                 }`}
               >
                 <span>Motion & Z</span>
@@ -362,7 +374,7 @@ export default memo(function MachineSelector({
                 aria-controls="section-bedGeometry"
                 onClick={() => toggleSection('bedGeometry')}
                 className={`w-full flex items-center justify-between py-3 px-0 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
-                  isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#888] hover:text-white'
+                  isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#707070] hover:text-white'
                 }`}
               >
                 <span>Bed Geometry</span>
@@ -375,8 +387,8 @@ export default memo(function MachineSelector({
                     <select id="machine-bedshape-select" value={activeMachine.bedShape}
                       onChange={(e) => handleFieldChange('bedShape', e.target.value as 'circular' | 'rectangular')}
                       className="w-full elegant-input rounded-md px-2 py-1.5">
-                      <option value="rectangular" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Rect (X/Y)</option>
-                      <option value="circular" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#151515]'}>Delta (Circ)</option>
+                      <option value="rectangular" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>Rect (X/Y)</option>
+                      <option value="circular" className={isLight ? 'bg-white text-zinc-800' : 'bg-[#1A1A1A]'}>Delta (Circ)</option>
                     </select>
                   </div>
                   {activeMachine.bedShape === 'circular' ? (
@@ -431,7 +443,7 @@ export default memo(function MachineSelector({
                 aria-controls="section-deltaKinematics"
                 onClick={() => toggleSection('deltaKinematics')}
                 className={`w-full flex items-center justify-between py-3 px-0 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
-                  isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#888] hover:text-white'
+                  isLight ? 'text-zinc-500 hover:text-zinc-800' : 'text-[#707070] hover:text-white'
                 }`}
               >
                 <span>Delta Kinematics</span>

@@ -34,7 +34,7 @@ export default function GenerateFAB({ disabled, estimatedTimeStr, onClick, onLog
           className={`rounded-full min-h-[40px] px-4 py-2 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 select-none outline-none flex items-center gap-1.5 border
             ${logDisabled
               ? 'opacity-40 cursor-not-allowed pointer-events-none bg-[#1A1A1A] text-neutral-600 border-white/8'
-              : 'bg-[#0E0E0E] text-red-300 border-red-900/50 hover:bg-[#1A1A1A] hover:text-red-200 hover:border-red-700 active:scale-95 cursor-pointer shadow-md'
+              : 'bg-[#0F0F0F] text-red-300 border-red-900/50 hover:bg-[#1A1A1A] hover:text-red-200 hover:border-red-700 active:scale-95 cursor-pointer shadow-md'
             }`}
           title="Log the optimal settings from your last burn"
         >

@@ -25,7 +25,7 @@ export default function ConfirmModal({ open, message, onConfirm, onCancel, theme
       onClick={onCancel}
     >
       <div
-        className={`bg-[#0E0E0E] border border-white/10 rounded-lg p-5 max-w-sm w-full shadow-2xl relative space-y-4 ${isLight ? 'bg-white border-zinc-200 text-zinc-800' : ''}`}
+        className={`bg-[#0F0F0F] border border-white/10 rounded-lg p-5 max-w-sm w-full shadow-2xl relative space-y-4 ${isLight ? 'bg-white border-zinc-200 text-zinc-800' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button
