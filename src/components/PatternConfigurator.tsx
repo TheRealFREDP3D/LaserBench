@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { PatternType } from '../types';
-import { Zap, Play, ChevronRight, Gauge, Grid3X3, Focus, Sliders, Scissors } from 'lucide-react';
+import { Zap, Gauge, Grid3X3, Focus, Sliders, Scissors } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import DebouncedRange from './DebouncedRange';
 
@@ -114,18 +114,18 @@ export default memo(function PatternConfigurator({
   };
 
   return (
-    <div id="pattern-configurator-card" className={`border rounded-lg p-5 shadow-sm space-y-5 transition-all duration-200 ${
+    <div id="pattern-configurator-card" className={`border rounded-lg p-3 shadow-sm space-y-3 transition-all duration-200 overflow-y-auto ${
       isLight 
         ? 'bg-white border-zinc-200 text-zinc-800' 
-        : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
+        : 'bg-[#0F0F0F] border-white/10 text-[#E8E8E8]'
     }`}>
       <div className="flex items-center gap-2">
-        <Sliders className="text-red-500 w-5 h-5" />
-        <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>Calibration Patterns</h2>
+        <Sliders className="text-red-500 w-4 h-4" />
+        <h2 className={`text-xs font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>Calibration Patterns</h2>
       </div>
 
       {/* Pattern Selector Cards */}
-      <div className="grid grid-cols-1 gap-2.5">
+      <div className="grid grid-cols-1 gap-1.5">
         {patterns.map((pat) => {
           const Icon = pat.icon;
           const isSelected = selectedPattern === pat.type;
@@ -138,7 +138,7 @@ export default memo(function PatternConfigurator({
           } else {
             tailoredColorClass = isLight
               ? "text-zinc-500 bg-zinc-100 border-zinc-200"
-              : "text-neutral-400 bg-[#151515] border-white/8";
+              : "text-neutral-400 bg-[#1A1A1A] border-white/8";
           }
 
           return (
@@ -146,24 +146,24 @@ export default memo(function PatternConfigurator({
               key={pat.type}
               id={`pattern-card-${pat.type}`}
               onClick={() => onSelectPattern(pat.type)}
-              className={`w-full text-left p-3 rounded border transition-all duration-200 flex items-start gap-3 cursor-pointer ${
+              className={`w-full text-left px-2.5 py-2 rounded border transition-all duration-200 flex items-start gap-2.5 cursor-pointer ${
                 isSelected
                   ? isLight
                     ? 'bg-red-50/40 border-red-500 ring-1 ring-red-200 shadow-sm text-zinc-900'
-                    : 'bg-[#151515] border-red-600/80 ring-1 ring-red-600/20 shadow-md text-[#E0E0E0]'
+                    : 'bg-[#1A1A1A] border-red-600/80 ring-1 ring-red-600/20 shadow-md text-[#E8E8E8]'
                   : isLight
                     ? 'bg-zinc-50 border-zinc-200 text-zinc-800 hover:bg-zinc-100 hover:border-zinc-300'
-                    : 'bg-[#0A0A0A] border-white/8 hover:border-white/12 text-[#E0E0E0]'
+                    : 'bg-[#080808] border-white/8 hover:border-white/12 text-[#E8E8E8]'
               }`}
             >
-              <div className={`p-2 rounded ${tailoredColorClass} border shrink-0`}>
-                <Icon className="w-5 h-5" />
+              <div className={`p-1.5 rounded ${tailoredColorClass} border shrink-0`}>
+                <Icon className="w-4 h-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h3 className={`text-xs font-bold ${isLight ? 'text-zinc-850' : 'text-[#E0E0E0]'}`}>{pat.name}</h3>
+                  <h3 className={`text-[11px] font-bold ${isLight ? 'text-zinc-850' : 'text-[#E8E8E8]'}`}>{pat.name}</h3>
                   {isSelected && (
-                    <span className={`border text-[9px] px-1.5 py-0.5 rounded font-mono uppercase font-bold tracking-wider float-right select-none animate-pulse ${
+                    <span className={`border text-[8px] px-1 py-0.5 rounded font-mono uppercase font-bold tracking-wider select-none animate-pulse ${
                       isLight 
                         ? 'bg-red-100 border-red-300 text-red-600' 
                         : 'bg-red-950/60 border border-red-800 text-red-400'
@@ -172,7 +172,7 @@ export default memo(function PatternConfigurator({
                     </span>
                   )}
                 </div>
-                <p className={`text-[11px] mt-1 leading-relaxed ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>{pat.desc}</p>
+                <p className={`text-[10px] mt-0.5 leading-snug ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>{pat.desc}</p>
               </div>
             </button>
           );
@@ -180,18 +180,18 @@ export default memo(function PatternConfigurator({
       </div>
 
       {/* Dynamic parameters depending on the selected pattern */}
-      <div id="pattern-parameters-form" className={`p-4 rounded border space-y-4 transition-all duration-200 ${
-        isLight ? 'bg-zinc-50/55 border-zinc-200' : 'bg-[#151515] border-white/8'
+      <div id="pattern-parameters-form" className={`p-2.5 rounded border space-y-3 transition-all duration-200 ${
+        isLight ? 'bg-zinc-50/55 border-zinc-200' : 'bg-[#1A1A1A] border-white/8'
       }`}>
-        <h3 className={`text-xs font-semibold border-b pb-1.5 flex justify-between items-center ${
+        <h3 className={`text-[11px] font-semibold border-b pb-1 flex justify-between items-center ${
           isLight ? 'text-zinc-800 border-zinc-200' : 'text-white border-white/8'
         }`}>
           <span>Pattern Settings</span>
-          <span className={`text-[10px] uppercase tracking-widest font-mono ${isLight ? 'text-zinc-400' : 'text-neutral-500'}`}>Configure Grid Parameters</span>
+          <span className={`text-[9px] uppercase tracking-widest font-mono ${isLight ? 'text-zinc-400' : 'text-neutral-500'}`}>Configure Grid Parameters</span>
         </h3>
 
         {/* Universal Block Size Setting */}
-        <div id="general-block-size-setting" className={`space-y-1.5 pb-3 border-b ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
+        <div id="general-block-size-setting" className={`space-y-1 pb-2 border-b ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
           <div className="flex items-center justify-between text-xs">
             <span className={`font-bold ${isLight ? 'text-zinc-700' : 'text-neutral-300'}`}>Geometric Block Size</span>
             <span id="pattern-blocksize-label" className="font-mono text-red-500 font-bold">
@@ -210,7 +210,7 @@ export default memo(function PatternConfigurator({
               className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
             />
             <span id="block-size-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[32px] text-center ${
-              isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+              isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#080808] border-white/10 text-neutral-300'
             }`}>
               {blockSize}
             </span>
@@ -221,7 +221,7 @@ export default memo(function PatternConfigurator({
         </div>
 
         {(selectedPattern === 'matrix' || selectedPattern === 'power_ramp' || selectedPattern === 'speed_ramp') && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Power Range */}
             {(selectedPattern === 'matrix' || selectedPattern === 'power_ramp') && (
               <div className="space-y-2">
@@ -272,7 +272,7 @@ export default memo(function PatternConfigurator({
                         className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
                       <span id="power-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
-                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#080808] border-white/10 text-neutral-300'
                       }`}>
                         {powerSteps}
                       </span>
@@ -293,7 +293,7 @@ export default memo(function PatternConfigurator({
                         className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
                       <span id="power-ramp-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
-                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#080808] border-white/10 text-neutral-300'
                       }`}>
                         {powerSteps}
                       </span>
@@ -358,7 +358,7 @@ export default memo(function PatternConfigurator({
                         className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
                       <span id="speed-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
-                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#080808] border-white/10 text-neutral-300'
                       }`}>
                         {speedSteps}
                       </span>
@@ -379,7 +379,7 @@ export default memo(function PatternConfigurator({
                         className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                       />
                       <span id="speed-ramp-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
-                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                        isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#080808] border-white/10 text-neutral-300'
                       }`}>
                         {speedSteps}
                       </span>
@@ -393,7 +393,7 @@ export default memo(function PatternConfigurator({
 
         {/* Focus Ladder Params */}
         {selectedPattern === 'focus_ladder' && (
-          <div className="space-y-4 text-xs font-sans">
+          <div className="space-y-3 text-xs font-sans">
             <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">Ladder Z-Bounds</span>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -439,7 +439,7 @@ export default memo(function PatternConfigurator({
                   className={`flex-1 h-1 rounded-md appearance-none accent-red-650 cursor-pointer ${isLight ? 'bg-zinc-200' : 'bg-[#222]'}`}
                 />
                 <span id="z-steps-val" className={`border px-2 py-0.5 rounded font-mono text-xs min-w-[28px] text-center ${
-                  isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#0A0A0A] border-white/10 text-neutral-300'
+                  isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-[#080808] border-white/10 text-neutral-300'
                 }`}>
                   {zSteps}
                 </span>
@@ -453,7 +453,7 @@ export default memo(function PatternConfigurator({
 
         {/* Kerf Test Comb Params */}
         {selectedPattern === 'kerf_test' && (
-          <div className="space-y-4 text-xs font-sans">
+          <div className="space-y-3 text-xs font-sans">
             <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">Kerf Dimensions</span>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>

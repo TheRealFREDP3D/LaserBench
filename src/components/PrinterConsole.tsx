@@ -83,7 +83,7 @@ export const PrinterConsole: FC<PrinterConsoleProps> = memo(({
     <div className={`border rounded-xl p-5 shadow-sm flex flex-col h-full space-y-4 transition-all duration-200 ${
       isLight
         ? 'bg-white border-zinc-200 text-zinc-800'
-        : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
+        : 'bg-[#0F0F0F] border-white/10 text-[#E8E8E8]'
     }`}>
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">

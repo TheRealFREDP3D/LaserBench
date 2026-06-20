@@ -4,23 +4,20 @@ import fc from 'fast-check';
 import {useEffect, useState} from 'react';
 import {CanvasView} from '@/src/components/layout/MainCanvas';
 
-// New mapping (1-6 + L):
-//   1 → sidebarTab=machine          2 → sidebarTab=material
+// Updated mapping:
+//   1 → scroll to machine section (lastTouched=machine)
+//   2 → scroll to material section (lastTouched=material)
 //   3 → pattern (close flyout, mark pattern touched)
-//   4 → canvasView=preview          5 → canvasView=code     6 → canvasView=operate
+//   5 → canvasView=code     6 → canvasView=operate
 //   L → toggle Quick Log modal
 const KEY_ACTION_MAP: Record<string, {state: string; value: string}> = {
-  '1': {state: 'sidebarTab', value: 'machine'},
-  '2': {state: 'sidebarTab', value: 'material'},
   '3': {state: 'lastTouched', value: 'pattern'},
-  '4': {state: 'canvasView', value: 'preview'},
   '5': {state: 'canvasView', value: 'code'},
   '6': {state: 'canvasView', value: 'operate'},
 };
 
 function TabTestApp() {
-  const [sidebarTab, setSidebarTab] = useState<'machine' | 'material'>('machine');
-  const [canvasView, setCanvasView] = useState<CanvasView>('preview');
+  const [canvasView, setCanvasView] = useState<CanvasView>('code');
   const [lastTouched, setLastTouched] = useState<string>('machine');
   const [presetFlyoutOpen, setPresetFlyoutOpen] = useState<boolean>(false);
 
@@ -31,10 +28,9 @@ function TabTestApp() {
       if (isEditable) return;
 
       switch (e.key) {
-        case '1': setSidebarTab('machine'); setLastTouched('machine'); break;
-        case '2': setSidebarTab('material'); setLastTouched('material'); break;
+        case '1': setLastTouched('machine'); break;
+        case '2': setLastTouched('material'); break;
         case '3': setPresetFlyoutOpen(false); setLastTouched('pattern'); break;
-        case '4': setCanvasView('preview'); setLastTouched('preview'); break;
         case '5': setCanvasView('code'); setLastTouched('burn'); break;
         case '6': setCanvasView('operate'); setLastTouched('burn'); break;
       }
@@ -45,7 +41,6 @@ function TabTestApp() {
 
   return (
     <div>
-      <span data-testid="sidebarTab">{sidebarTab}</span>
       <span data-testid="canvasView">{canvasView}</span>
       <span data-testid="lastTouched">{lastTouched}</span>
       <span data-testid="presetFlyoutOpen">{String(presetFlyoutOpen)}</span>
@@ -91,25 +86,22 @@ afterEach(() => {
 });
 
 describe('Property 17: Keyboard shortcut activation (revised)', () => {
-  it('pressing a number key activates the correct view/tab', () => {
+  it('pressing a number key activates the correct view', () => {
     render(<TabTestApp />);
-
-    fireEvent.keyDown(window, {key: '2'});
-    expect(screen.getByTestId('sidebarTab')).toHaveTextContent('material');
 
     fireEvent.keyDown(window, {key: '6'});
     expect(screen.getByTestId('canvasView')).toHaveTextContent('operate');
 
-    fireEvent.keyDown(window, {key: '4'});
-    expect(screen.getByTestId('canvasView')).toHaveTextContent('preview');
+    fireEvent.keyDown(window, {key: '5'});
+    expect(screen.getByTestId('canvasView')).toHaveTextContent('code');
 
     cleanup();
   });
 
-  it('fc.property: for any key 1-6, the corresponding state is activated', () => {
+  it('fc.property: for keys 3, 5, 6 the corresponding state is activated', () => {
     fc.assert(
       fc.property(
-        fc.constantFrom('1', '2', '3', '4', '5', '6'),
+        fc.constantFrom('3', '5', '6'),
         (key) => {
           render(<TabTestApp />);
           fireEvent.keyDown(window, {key});
@@ -122,6 +114,18 @@ describe('Property 17: Keyboard shortcut activation (revised)', () => {
       ),
       {timeout: 10_000}
     );
+  });
+
+  it('pressing 1 or 2 sets lastTouched to the correct section', () => {
+    render(<TabTestApp />);
+
+    fireEvent.keyDown(window, {key: '1'});
+    expect(screen.getByTestId('lastTouched')).toHaveTextContent('machine');
+
+    fireEvent.keyDown(window, {key: '2'});
+    expect(screen.getByTestId('lastTouched')).toHaveTextContent('material');
+
+    cleanup();
   });
 });
 

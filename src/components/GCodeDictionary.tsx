@@ -284,7 +284,7 @@ export default function GCodeDictionary({ onClose, theme = 'dark' }: GCodeDictio
         className={`w-full max-w-4xl h-[85vh] rounded-xl border flex flex-col overflow-hidden shadow-2xl transition-all duration-300 ${
           isLight 
             ? 'bg-white border-zinc-200 text-zinc-800' 
-            : 'bg-[#0E0E0E] border-white/10 text-[#E0E0E0]'
+            : 'bg-[#0F0F0F] border-white/10 text-[#E8E8E8]'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -349,7 +349,7 @@ export default function GCodeDictionary({ onClose, theme = 'dark' }: GCodeDictio
               className={`w-full text-xs pl-8.5 pr-3 py-1.5 rounded-lg outline-none transition border ${
                 isLight 
                   ? 'bg-zinc-100/50 border-zinc-200 focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500' 
-                  : 'bg-[#151515] border-white/10 focus:bg-black focus:ring-1 focus:ring-red-500 focus:border-red-550'
+                  : 'bg-[#1A1A1A] border-white/10 focus:bg-black focus:ring-1 focus:ring-red-500 focus:border-red-550'
               }`}
             />
           </div>
@@ -469,7 +469,7 @@ export default function GCodeDictionary({ onClose, theme = 'dark' }: GCodeDictio
                   <div className={`p-3.5 rounded-lg font-mono text-xs flex justify-between items-center border ${
                     isLight 
                       ? 'bg-zinc-100 border-zinc-200 text-indigo-700' 
-                      : 'bg-[#151515] border-white/5 text-emerald-400/95'
+                      : 'bg-[#1A1A1A] border-white/5 text-emerald-400/95'
                   }`}>
                     <span>{selectedEntry.example}</span>
                     <CornerDownRight className={`w-3.5 h-3.5 ${isLight ? 'text-zinc-300' : 'text-[#333]'}`} />

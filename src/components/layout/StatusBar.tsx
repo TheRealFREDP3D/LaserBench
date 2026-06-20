@@ -39,7 +39,7 @@ export default function StatusBar({
   }
 
   return (
-    <footer className="h-8 bg-[#0E0E0E] border-t border-white/8 flex items-center px-4 gap-4 text-[10px] font-mono shrink-0 fixed bottom-0 inset-x-0 z-40">
+    <footer className="h-8 bg-[#0F0F0F] border-t border-white/8 flex items-center px-4 gap-4 text-[10px] font-mono shrink-0 fixed bottom-0 inset-x-0 z-40">
       {/* Connection status — clickable to connect/disconnect */}
       <button
         onClick={() => { if (isConnected) onDisconnect?.(); else onConnect?.(); }}
@@ -58,7 +58,7 @@ export default function StatusBar({
       </span>
 
       {/* Firmware */}
-      <span className="text-[#888] shrink-0" data-testid="firmware">{firmware.toUpperCase()}</span>
+      <span className="text-[#707070] shrink-0" data-testid="firmware">{firmware.toUpperCase()}</span>
 
       {/* Material name */}
       <span className="truncate max-w-[120px]" title={materialName} data-testid="material-name">
@@ -66,7 +66,7 @@ export default function StatusBar({
       </span>
 
       {/* Estimated burn time */}
-      <span className="text-[#888] shrink-0" data-testid="burn-time">
+      <span className="text-[#707070] shrink-0" data-testid="burn-time">
         {estimatedTimeStr ?? '—'}
       </span>
 

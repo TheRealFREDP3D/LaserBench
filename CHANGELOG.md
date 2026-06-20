@@ -6,6 +6,42 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.5.0] — 2026-06-19
+
+### Changed
+- **2-row layout** — config panels (Machine, Material, Pattern) on top at 42% height, output (SVG Preview + G-Code/Operate tabs) on bottom. UI no longer scrolls; everything fits on screen
+- **SVGVisualizer simulation controls** moved to a compact single-row toolbar above the canvas (Enable Sim, Reset, Play/Pause, Step±, scrubber, speed, live step info). Old multi-row panel below canvas removed
+- **SVGVisualizer header** compacted — smaller text, tighter spacing, zoom buttons reduced
+- **SVGVisualizer legend** compacted — single-row wrapping layout, smaller text
+- **MainCanvas** reduced from 3 views to 2 (`code` | `operate`). Preview tab removed since SVGVisualizer is always visible in the left panel. Children array contract changed from `[SVGVisualizer, GCodeOutput, PrinterConsole]` to `[GCodeOutput, PrinterConsole]`
+- **Keyboard shortcuts** updated — keys `1`/`2` scroll to machine/material cards, key `4` switches to code view (matching WorkflowStepper "Preview" step), key `3` closes preset flyout, keys `5`/`6` switch code/operate
+- **WorkflowStepper** navigation now scrolls to the relevant card section instead of setting sidebarTab
+- **MachineSelector** compacted — reduced padding (`p-5`→`p-3`), tighter spacing, smaller empty state hint
+- **MaterialDatabase** compacted — single-column layout, full material names visible (no truncation), tighter category tabs
+- **PatternConfigurator** compacted — smaller pattern cards, tighter parameter form, reduced padding
+- **Version string** in header updated from `v1.4-ui` to `v0.4.3`
+
+### Removed
+- **LeftSidebar** component — replaced by inline config panels in the 2-row layout
+- **CenterPanel** component — preset flyout now rendered inline in Pattern column header
+- **Mobile hamburger sidebar** — `sidebarOpen` state and hamburger button removed (no sidebar to toggle)
+- **`sidebarTab` state** — no longer needed; machine/material sections are always visible in the top row
+- Unused imports: `Play`, `ChevronRight` from PatternConfigurator; `Menu` from App.tsx
+
+### Fixed
+- **SVGVisualizer preview controls hidden** — simulation controls (Reset, Play, Stop, Speed) were below the visible area due to SVG canvas consuming all parent space. Moved to top toolbar with `shrink-0` so they're always visible
+- **MainCanvas contract violation** — children array now matches the 2-view structure
+- **Duplicate skip-to-content links** — consolidated to single link
+- **Stale keyboard shortcut comments** — cleaned up duplicate old/new mapping
+- **Redundant ternary** in `onViewChange` — `v === 'code' ? 'burn' : 'burn'` simplified to `setLastTouched('burn')`
+
+### Tests
+- **layoutShell.test.tsx** — rewritten for 2-view MainCanvas contract (`code` | `operate`)
+- **keyboardShortcuts.test.tsx** — updated harness to match new shortcuts (scroll-to-section, no sidebarTab)
+- **machineSelector.test.tsx** — removed Property 2 (sidebarTab invariance) tests and unused imports
+
+---
+
 ## [0.4.3] — 2026-06-19
 
 ### Added

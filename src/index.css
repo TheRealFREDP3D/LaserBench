@@ -1,39 +1,57 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 @import "tailwindcss";
 
 
 @theme {
   --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-heading: "Space Grotesk", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* ── Dark theme color tokens ─────────────────────────────────────── */
+:root {
+  --color-bg: #080808;
+  --color-surface: #0F0F0F;
+  --color-elevated: #1A1A1A;
+  --color-overlay: #252525;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-strong: rgba(255, 255, 255, 0.10);
+  --color-text-primary: #E8E8E8;
+  --color-text-secondary: #9A9A9A;
+  --color-text-muted: #606060;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: #0A0A0A;
-  color: #E0E0E0;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Custom design definitions from Elegant Dark */
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+}
+
+/* Custom design definitions — token-based */
 .elegant-bg {
-  background-color: #0A0A0A;
+  background-color: var(--color-bg);
 }
 
 .elegant-panel {
-  background-color: #0E0E0E;
-  border-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .elegant-border {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-border);
 }
 
 .elegant-input {
-  background-color: #151515;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #E0E0E0;
+  background-color: var(--color-elevated);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-primary);
   transition: all 0.2s ease-in-out;
 }
 
@@ -60,7 +78,7 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #737373;
+  color: var(--color-text-muted);
 }
 
 /* Custom scrollbars for code boxes and panels to keep clean aesthetic */
@@ -70,16 +88,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A0A0A; 
+  background: var(--color-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(30, 30, 30); 
+  background: var(--color-elevated);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(50, 50, 50); 
+  background: var(--color-overlay);
 }
 
 /* High Contrast Light Theme Overrides (For Bright Workshops) */
@@ -110,46 +128,39 @@ body {
 }
 
 /* Card panels */
-.theme-light .bg-\[\#0E0E0E\],
-.theme-light .bg-\[\#0e0e0e\],
-.theme-light .bg-[#0E0E0E],
-.theme-light .bg-[#0e0e0e],
+.theme-light .bg-\[\#0F0F0F\],
+.theme-light .bg-[#0F0F0F],
 .theme-light .bg-slate-900 {
   background-color: #FFFFFF !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
   color: #18181B !important;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
 }
-.theme-light .bg-\[\#0E0E0E\] h2,
-.theme-light .bg-\[\#0e0e0e\] h2,
+.theme-light .bg-\[\#0F0F0F\] h2,
 .theme-light .bg-slate-900 h2 {
   color: #18181B !important;
 }
 
 /* Section elements and forms */
-.theme-light .bg-\[\#151515\],
-.theme-light .bg-[#151515],
+.theme-light .bg-\[\#1A1A1A\],
+.theme-light .bg-[#1A1A1A],
 .theme-light .bg-slate-950\/80 {
   background-color: #F4F4F5 !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
 }
-.theme-light .bg-\[\#151515\] h3,
-.theme-light .bg-\[\#151515\] span {
+.theme-light .bg-\[\#1A1A1A\] h3,
+.theme-light .bg-\[\#1A1A1A\] span {
   color: #18181B !important;
 }
 
 /* Correcting near-black layout cards and indicators to light theme */
-.theme-light .bg-\[\#0A0A0A\],
-.theme-light .bg-\[\#0a0a0a\],
-.theme-light .bg-[#0A0A0A],
-.theme-light .bg-[#0a0a0a] {
+.theme-light .bg-\[\#080808\],
+.theme-light .bg-[#080808] {
   background-color: #FFFFFF !important;
   border-color: rgba(0, 0, 0, 0.12) !important;
 }
-.theme-light span.bg-\[\#0A0A0A\],
-.theme-light span.bg-\[\#0a0a0a\],
-.theme-light span.bg-[#0A0A0A],
-.theme-light span.bg-[#0a0a0a] {
+.theme-light span.bg-\[\#080808\],
+.theme-light span.bg-[#080808] {
   background-color: #E4E4E7 !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
   color: #18181B !important;
@@ -165,17 +176,17 @@ body {
 }
 
 /* Primary and secondary buttons / toggles */
-.theme-light .bg-\[\#222\],
+.theme-light .bg-\[\#252525\],
 .theme-light .bg-slate-800 {
   background-color: #E4E4E7 !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
   color: #18181B !important;
 }
-.theme-light .bg-\[\#222\]:hover,
+.theme-light .bg-\[\#252525\]:hover,
 .theme-light .bg-slate-800:hover {
   background-color: #D4D4D8 !important;
 }
-.theme-light .bg-\[\#333\],
+.theme-light .bg-\[\#333333\],
 .theme-light .bg-slate-700 {
   background-color: #D4D4D8 !important;
   color: #18181B !important;
@@ -254,15 +265,13 @@ body {
 }
 
 /* Dynamic slider track background adjustments */
-.theme-light .bg-\[\#222\][type="range"] {
+.theme-light .bg-\[\#252525\][type="range"] {
   background-color: #E4E4E7 !important;
 }
 
 /* Text selections & colors */
-.theme-light .text-\[\#E0E0E0\],
-.theme-light .text-\[\#e0e0e0\],
-.theme-light .text-[#E0E0E0],
-.theme-light .text-[#e0e0e0],
+.theme-light .text-\[\#E8E8E8\],
+.theme-light .text-[#E8E8E8],
 .theme-light .text-slate-100,
 .theme-light .text-slate-200 {
   color: #18181B !important;
@@ -270,21 +279,19 @@ body {
 .theme-light .text-white {
   color: #18181B !important;
 }
-.theme-light .text-\[\#AAA\],
-.theme-light .text-\[\#aaa\],
-.theme-light .text-[#AAA],
-.theme-light .text-[#aaa],
+.theme-light .text-\[\#9A9A9A\],
+.theme-light .text-[#9A9A9A],
 .theme-light .text-slate-300 {
   color: #27272A !important;
 }
-.theme-light .text-\[\#888\],
-.theme-light .text-[#888],
+.theme-light .text-\[\#707070\],
+.theme-light .text-[#707070],
 .theme-light .text-slate-500,
 .theme-light .text-slate-400 {
   color: #52525B !important;
 }
-.theme-light .text-\[\#666\],
-.theme-light .text-[#666] {
+.theme-light .text-\[\#505050\],
+.theme-light .text-[#505050] {
   color: #71717A !important;
 }
 .theme-light .text-\[\#64748b\] {
@@ -442,20 +449,18 @@ body {
 /* Hover-background light theme overrides */
 .theme-light .hover\:bg-\[\#1A1A1A\]:hover,
 .theme-light .hover\:bg-[#1A1A1A]:hover,
-.theme-light .hover\:bg-\[\#151515\]:hover,
-.theme-light .hover\:bg-[#151515]:hover,
-.theme-light .hover\:bg-\[\#333\]:hover,
-.theme-light .hover\:bg-[#333]:hover,
-.theme-light .hover\:bg-\[\#222\]:hover,
-.theme-light .hover\:bg-[#222]:hover {
+.theme-light .hover\:bg-\[\#333333\]:hover,
+.theme-light .hover\:bg-[#333333]:hover,
+.theme-light .hover\:bg-\[\#252525\]:hover,
+.theme-light .hover\:bg-[#252525]:hover {
   background-color: #E4E4E7 !important;
   color: #18181B !important;
 }
 
 /* Hover-text override so text never turns white/invisible on light background */
 .theme-light .hover\:text-white:hover,
-.theme-light .hover\:text-\[\#E0E0E0\]:hover,
-.theme-light .hover\:text-[#E0E0E0]:hover {
+.theme-light .hover\:text-\[\#E8E8E8\]:hover,
+.theme-light .hover\:text-[#E8E8E8]:hover {
   color: #18181B !important;
 }
 
