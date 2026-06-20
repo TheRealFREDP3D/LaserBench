@@ -790,9 +790,9 @@ export default memo(function SVGVisualizer({
         }`}>
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-semibold text-neutral-400 whitespace-nowrap">Speed Heatmap:</span>
-            <span className="font-mono text-violet-500 font-bold">Slow {paths.filter(p=>p.isLaserOn).length > 0 ? Math.min(...paths.filter(p=>p.isLaserOn).map(p=>p.speed)) : 100} mm/m</span>
+            <span className="font-mono text-violet-500 font-bold">Slow {laserPathCount > 0 ? laserSpeedMin : 100} mm/m</span>
             <div className="w-28 h-1.5 rounded bg-gradient-to-r from-[#8b5cf6] via-[#f97316] to-[#06b6d4]" />
-            <span className="font-mono text-cyan-500 font-bold">Fast {paths.filter(p=>p.isLaserOn).length > 0 ? Math.max(...paths.filter(p=>p.isLaserOn).map(p=>p.speed)) : machine.travelSpeed} mm/m</span>
+            <span className="font-mono text-cyan-500 font-bold">Fast {laserPathCount > 0 ? laserSpeedMax : machine.travelSpeed} mm/m</span>
           </div>
           <div className="flex items-center gap-1 text-neutral-500">
             <span className="w-3 h-px border-t border-dashed border-neutral-600 inline-block"></span>

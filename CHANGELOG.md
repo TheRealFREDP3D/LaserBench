@@ -13,7 +13,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **SVGVisualizer simulation controls** moved to a compact single-row toolbar above the canvas (Enable Sim, Reset, Play/Pause, Step±, scrubber, speed, live step info). Old multi-row panel below canvas removed
 - **SVGVisualizer header** compacted — smaller text, tighter spacing, zoom buttons reduced
 - **SVGVisualizer legend** compacted — single-row wrapping layout, smaller text
-- **MainCanvas** reduced from 3 views to 2 (`code` | `operate`). Preview tab removed since SVGVisualizer is always visible in the left panel. Children contract changed from `[SVGVisualizer, GCodeOutput, PrinterConsole]` to `[GCodeOutput, PrinterConsole]`
+- **MainCanvas** reduced from 3 views to 2 (`code` | `operate`). Preview tab removed since SVGVisualizer is always visible in the left panel. Children array contract changed from `[SVGVisualizer, GCodeOutput, PrinterConsole]` to `[GCodeOutput, PrinterConsole]`
 - **Keyboard shortcuts** updated — keys `1`/`2` scroll to machine/material cards, key `4` switches to code view (matching WorkflowStepper "Preview" step), key `3` closes preset flyout, keys `5`/`6` switch code/operate
 - **WorkflowStepper** navigation now scrolls to the relevant card section instead of setting sidebarTab
 - **MachineSelector** compacted — reduced padding (`p-5`→`p-3`), tighter spacing, smaller empty state hint
