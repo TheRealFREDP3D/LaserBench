@@ -464,6 +464,12 @@ export default memo(function SVGVisualizer({
     );
   };
 
+  // Reset simulation when paths change (new pattern generated)
+  useEffect(() => {
+    setSimStep(0);
+    setIsPlaying(false);
+  }, [paths]);
+
   const finalTransform = `translate(${panX}, ${panY}) scale(${zoom}) scale(1, -1)`;
 
   return (
