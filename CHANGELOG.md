@@ -21,6 +21,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 - **`@google/genai` dependency** — unused, added ~400 KB of transitive packages. Removed from `package.json`, `pnpm-workspace.yaml` allowBuilds, and `AGENTS.md`
+- **`dotenv` dependency** — Node.js library with no effect in Vite browser bundles. Vite handles env vars via `import.meta.env` natively
 
 ### Fixed
 - **Serial disconnect error recovery** — `readLoop` catch block now resets `isConnected`, `isPrinting`, and `connectionState`, and drains pending buffer waiters. A cable pull mid-print no longer leaves the UI stuck in "printing" state
