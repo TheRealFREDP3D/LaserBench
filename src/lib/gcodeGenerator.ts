@@ -95,6 +95,9 @@ export function generatePatternPaths(
   const speedSteps = config.speedSteps ?? 5;
   const blockSize = config.blockSize ?? 12;
 
+  const textSize = Math.max(2, blockSize * 0.4);
+  const textLetterSpacing = textSize * 0.3;
+
   const zMin = config.zMin ?? (machine.workZ - 3);
   const zMax = config.zMax ?? (machine.workZ + 3);
   const zSteps = config.zSteps ?? 5;
@@ -153,8 +156,9 @@ export function generatePatternPaths(
     const spacing = Math.round(blockSize * 0.5);
     const steps = powerSteps;
 
+    const titleAreaH = Math.round(textSize * 4);
     patternWidth = steps * swatchW + (steps - 1) * spacing;
-    patternHeight = swatchH + 15;
+    patternHeight = swatchH + titleAreaH;
 
     const offset = getCenterOffset(machine, patternWidth, patternHeight);
 
@@ -164,7 +168,7 @@ export function generatePatternPaths(
         : powerMax;
 
       const x = offset.x + i * (swatchW + spacing);
-      const y = offset.y + 15;
+      const y = offset.y + titleAreaH;
 
       const rectPaths = createHatchedRectangle(x, y, swatchW, swatchH, 1.0);
       for (const stroke of rectPaths) {
@@ -172,25 +176,27 @@ export function generatePatternPaths(
       }
 
       const text = `P${powerVal}`;
-      const textPaths = renderTextPath(text, x + 1, offset.y + 4, 5, 1.0);
+      const textPaths = renderTextPath(text, x + 1, offset.y + textSize, textSize, textLetterSpacing);
       for (const stroke of textPaths) {
         addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
       }
     }
 
-    const titlePaths = renderTextPath(`POWER RAMP (F${material.engrave.speed})`, offset.x, offset.y + swatchH + 20, 5, 1.2);
+    const titlePaths = renderTextPath(`POWER RAMP (F${material.engrave.speed})`, offset.x, offset.y + swatchH + titleAreaH * 0.6, textSize, textLetterSpacing * 1.2);
     for (const stroke of titlePaths) {
       addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
     }
-    patternHeight += 12;
+    patternHeight += titleAreaH;
 
   } else if (patternType === 'speed_ramp') {
     const lineW = blockSize * 4;
     const steps = speedSteps;
     const lineSpacing = blockSize;
 
-    patternWidth = lineW + 35;
-    patternHeight = steps * lineSpacing + 20;
+    const labelColW = Math.round(textSize * 10);
+    const titleAreaH = Math.round(textSize * 4);
+    patternWidth = lineW + labelColW;
+    patternHeight = steps * lineSpacing + titleAreaH;
 
     const offset = getCenterOffset(machine, patternWidth, patternHeight);
 
@@ -200,7 +206,7 @@ export function generatePatternPaths(
         : speedMax;
 
       const lx = offset.x;
-      const ly = offset.y + i * lineSpacing + 10;
+      const ly = offset.y + i * lineSpacing + titleAreaH * 0.4;
 
       addSegment([[lx, ly], [lx + lineW, ly]], material.engrave.power, speedVal, machine.workZ, true);
       addSegment([[lx, ly + 2], [lx + lineW, ly + 2]], material.engrave.power, speedVal, machine.workZ, true);
@@ -208,13 +214,13 @@ export function generatePatternPaths(
       addSegment([[lx + lineW, ly], [lx + lineW, ly + 2]], material.engrave.power, speedVal, machine.workZ, true);
 
       const text = `F${speedVal}`;
-      const textPaths = renderTextPath(text, lx + lineW + 3, ly - 1, 5, 1.0);
+      const textPaths = renderTextPath(text, lx + lineW + textSize * 0.5, ly - 1, textSize, textLetterSpacing);
       for (const stroke of textPaths) {
         addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
       }
     }
 
-    const titlePaths = renderTextPath(`SPEED RAMP (P${material.engrave.power})`, offset.x, offset.y + patternHeight - 5, 5, 1.2);
+    const titlePaths = renderTextPath(`SPEED RAMP (P${material.engrave.power})`, offset.x, offset.y + patternHeight - titleAreaH * 0.3, textSize, textLetterSpacing * 1.2);
     for (const stroke of titlePaths) {
       addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
     }
@@ -228,10 +234,11 @@ export function generatePatternPaths(
     const spacingW = Math.max(4, Math.round(blockSize * 0.65));
     const spacingH = Math.max(4, Math.round(blockSize * 0.65));
 
-    const labelColumnW = 28;
+    const labelColumnW = Math.round(textSize * 7);
+    const titleAreaH = Math.round(textSize * 4);
 
     patternWidth = pSteps * cellW + (pSteps - 1) * spacingW + labelColumnW + 10;
-    patternHeight = sSteps * cellH + (sSteps - 1) * spacingH + 33;
+    patternHeight = sSteps * cellH + (sSteps - 1) * spacingH + titleAreaH;
 
     const offset = getCenterOffset(machine, patternWidth, patternHeight);
 
@@ -245,8 +252,8 @@ export function generatePatternPaths(
       speedList.push(sSteps > 1 ? Math.round(speedMin + (r * (speedMax - speedMin)) / (sSteps - 1)) : speedMax);
     }
 
-    const powerTitleColX = offset.x + labelColumnW + (pSteps * cellW + (pSteps - 1) * spacingW) / 2 - 15;
-    const powerTitlePaths = renderTextPath("POWER", powerTitleColX, offset.y + patternHeight - 8, 5, 1.2);
+    const powerTitleColX = offset.x + labelColumnW + (pSteps * cellW + (pSteps - 1) * spacingW) / 2 - textSize * 3;
+    const powerTitlePaths = renderTextPath("POWER", powerTitleColX, offset.y + patternHeight - titleAreaH * 0.3, textSize, textLetterSpacing * 1.2);
     for (const stroke of powerTitlePaths) {
       addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
     }
@@ -255,13 +262,13 @@ export function generatePatternPaths(
       const pow = powerList[c];
       const cx = offset.x + labelColumnW + c * (cellW + spacingW);
       const numLabel = `P${pow}`;
-      const textPaths = renderTextPath(numLabel, cx, offset.y + sSteps * (cellH + spacingH) + 2, 4, 0.8);
+      const textPaths = renderTextPath(numLabel, cx, offset.y + sSteps * (cellH + spacingH) + textSize * 0.4, textSize * 0.8, textLetterSpacing * 0.8);
       for (const stroke of textPaths) {
         addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
       }
     }
 
-    const speedTitlePaths = renderTextPath("SPEED", offset.x, offset.y + patternHeight - 8, 5, 1.2);
+    const speedTitlePaths = renderTextPath("SPEED", offset.x, offset.y + patternHeight - titleAreaH * 0.3, textSize, textLetterSpacing * 1.2);
     for (const stroke of speedTitlePaths) {
       addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
     }
@@ -271,7 +278,7 @@ export function generatePatternPaths(
       const ry = offset.y + r * (cellH + spacingH);
 
       const sText = `F${speed}`;
-      const speedLabelPaths = renderTextPath(sText, offset.x, ry + cellH / 2 - 2, 4.5, 0.8);
+      const speedLabelPaths = renderTextPath(sText, offset.x, ry + cellH / 2 - textSize * 0.3, textSize * 0.9, textLetterSpacing * 0.8);
       for (const stroke of speedLabelPaths) {
         addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
       }
@@ -289,10 +296,11 @@ export function generatePatternPaths(
   } else if (patternType === 'focus_ladder') {
     const steps = zSteps;
     const lineH = Math.round(blockSize * 2.5);
-    const spacing = Math.round(blockSize * 1.15);
+    const spacing = Math.max(textSize * 3, Math.round(blockSize * 1.15));
 
+    const titleAreaH = Math.round(textSize * 4);
     patternWidth = steps * 2 + (steps - 1) * spacing + 15;
-    patternHeight = lineH + 20;
+    patternHeight = lineH + titleAreaH;
 
     const offset = getCenterOffset(machine, patternWidth, patternHeight);
 
@@ -302,7 +310,7 @@ export function generatePatternPaths(
         : Number(machine.workZ.toFixed(1));
 
       const cx = offset.x + i * spacing + 5;
-      const cy = offset.y + 15;
+      const cy = offset.y + titleAreaH;
 
       addSegment([[cx, cy], [cx, cy + lineH]], material.engrave.power, material.engrave.speed, zVal, true);
       addSegment([[cx - 3, cy + lineH], [cx + 3, cy + lineH]], material.engrave.power, material.engrave.speed, zVal, true);
@@ -310,13 +318,13 @@ export function generatePatternPaths(
       addSegment([[cx - 2, cy + lineH / 2], [cx + 2, cy + lineH / 2]], material.engrave.power, material.engrave.speed, zVal, true);
 
       const zLabel = `Z${zVal >= 0 ? '+' : ''}${zVal}`;
-      const textPaths = renderTextPath(zLabel, cx - 6, offset.y + 4, 4, 0.8);
+      const textPaths = renderTextPath(zLabel, cx - textSize * 1.5, offset.y + textSize, textSize * 0.8, textLetterSpacing * 0.8);
       for (const stroke of textPaths) {
         addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
       }
     }
 
-    const titlePaths = renderTextPath(`FOCUS LADDER (P${material.engrave.power} F${material.engrave.speed})`, offset.x, offset.y + patternHeight - 5, 4.5, 1.0);
+    const titlePaths = renderTextPath(`FOCUS LADDER (P${material.engrave.power} F${material.engrave.speed})`, offset.x, offset.y + patternHeight - titleAreaH * 0.3, textSize, textLetterSpacing);
     for (const stroke of titlePaths) {
       addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
     }
@@ -329,12 +337,13 @@ export function generatePatternPaths(
     const plateH = Math.round(blockSize * 2.1);
     const numSlots = offsets.length;
 
+    const titleAreaH = Math.round(textSize * 5);
     patternWidth = plateW + 10;
-    patternHeight = plateH + 20;
+    patternHeight = plateH + titleAreaH;
 
     const offset = getCenterOffset(machine, patternWidth, patternHeight);
     const px = offset.x;
-    const py = offset.y + 10;
+    const py = offset.y + titleAreaH;
 
     const outerFrame: [number, number][] = [
       [px, py],
@@ -365,14 +374,14 @@ export function generatePatternPaths(
       addSegment(slotPath, material.cut.power, material.cut.speed, machine.workZ, true);
 
       const signLabel = currentOffset >= 0 ? `+${currentOffset.toFixed(2)}` : `${currentOffset.toFixed(2)}`;
-      const labelPaths = renderTextPath(signLabel, sx - 4, py + slotH + 2, 3.5, 0.7);
+      const labelPaths = renderTextPath(signLabel, sx - textSize, py + slotH + textSize * 0.4, textSize * 0.7, textLetterSpacing * 0.7);
       for (const stroke of labelPaths) {
         addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
       }
     }
 
     const titleText = `KERF TEST (T:${nominal.toFixed(1)}MM)`;
-    const kerfLabelPaths = renderTextPath(titleText, px + 3, py + plateH - 6, 4.0, 0.8);
+    const kerfLabelPaths = renderTextPath(titleText, px + 3, py - titleAreaH * 0.4, textSize * 0.8, textLetterSpacing * 0.8);
     for (const stroke of kerfLabelPaths) {
       addSegment(stroke, labelPower, labelSpeed, machine.workZ, true);
     }
