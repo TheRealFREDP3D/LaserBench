@@ -360,7 +360,7 @@ export default function App() {
           <div className="w-8 h-8 bg-red-600 flex items-center justify-center rounded-sm font-bold text-black font-sans select-none">LB</div>
           <h1 className="text-base font-medium tracking-tight text-white flex items-center gap-1.5">
             LaserBench
-            <span className="text-[#505050] font-normal italic text-xs">v0.4.3</span>
+            <span className="text-[#505050] font-normal italic text-xs">v{__APP_VERSION__}</span>
           </h1>
         </div>
         <div className="flex items-center gap-6">

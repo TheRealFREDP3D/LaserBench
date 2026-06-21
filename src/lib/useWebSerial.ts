@@ -79,6 +79,14 @@ export function useWebSerial() {
       }
     } catch (error) {
       console.error('Read error:', error);
+      keepReadingRef.current = false;
+      setIsConnected(false);
+      setConnectionState('offline');
+      setIsPrinting(false);
+      addMessage('received', 'Connection lost: ' + (error as Error).message);
+      bufferSlotsRef.current = BUFFER_SIZE;
+      for (const resolve of bufferResolveRef.current) resolve();
+      bufferResolveRef.current = [];
     } finally {
       readerRef.current.releaseLock();
     }

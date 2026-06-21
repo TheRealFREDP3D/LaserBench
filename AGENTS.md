@@ -23,7 +23,7 @@ No eslint, prettier, or biome. `pnpm lint` (tsc) is the only static check.
 
 ## Package manager
 
-Use `pnpm`. The `pnpm-workspace.yaml` only sets build allowlists (`@google/genai`, `esbuild`, `protobufjs`) — it is NOT a monorepo.
+Use `pnpm`. The `pnpm-workspace.yaml` only sets build allowlists (`esbuild`, `protobufjs`) — it is NOT a monorepo.
 
 ## Path alias
 
