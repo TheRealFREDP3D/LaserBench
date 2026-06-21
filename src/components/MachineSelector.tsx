@@ -94,6 +94,7 @@ export default memo(function MachineSelector({
       originX: 0,
       originY: 0,
       acceleration: 1000,
+      baudRate: 250000,
       isDelta: false,
     };
     onCreateMachine(newMachine);
@@ -237,8 +238,8 @@ export default memo(function MachineSelector({
               isLight ? 'border-zinc-200 text-zinc-800' : 'border-white/8 text-slate-300'
             }`}
           >
-            {/* Name / Firmware / PWM — outside collapsible sections */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* Name / Firmware / PWM / Baud Rate — outside collapsible sections */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <label className="block mb-1 label-caps">Rename Profile</label>
                 <input
@@ -278,6 +279,18 @@ export default memo(function MachineSelector({
                   max="10000"
                   value={activeMachine.pwmMax}
                     onChange={(e) => handleFieldChange('pwmMax', parseInt(e.target.value, 10) || 255)}
+                  className="w-full elegant-input rounded-md px-2 py-1.5"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 label-caps">Baud Rate</label>
+                <input
+                  id="machine-baudrate-input"
+                  type="number"
+                  min="9600"
+                  step="1"
+                  value={activeMachine.baudRate}
+                  onChange={(e) => handleFieldChange('baudRate', parseInt(e.target.value, 10) || 250000)}
                   className="w-full elegant-input rounded-md px-2 py-1.5"
                 />
               </div>

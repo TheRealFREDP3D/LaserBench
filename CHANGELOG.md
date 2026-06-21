@@ -6,6 +6,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.6.0] — 2026-06-21
+
+### Added
+- **`baudRate` field on `MachineProfile`** — serial baud rate is now a per-machine setting (default 250000). Users can configure 115200, 57600, etc. from the Machine Selector editor without editing code
+- **`usePatternParams` hook** — extracts 13 pattern config state variables, setters, and `loadPreset()` from App.tsx
+- **`useMachineStore` hook** — extracts machine CRUD, selection, and localStorage persistence from App.tsx
+- **`useMaterialStore` hook** — extracts material CRUD, selection, and localStorage persistence from App.tsx
+
+### Changed
+- **App.tsx refactored** from 695 → 602 lines. State management delegated to three custom hooks; App.tsx now owns only UI chrome, generation effects, keyboard shortcuts, and JSX layout
+- **Version string** derived from `package.json` via Vite `define` (`__APP_VERSION__`) — single source of truth, no more hardcoded version in the header
+- **MachineSelector editor** grid expanded from 3 to 4 columns to accommodate the new Baud Rate field
+
+### Removed
+- **`@google/genai` dependency** — unused, added ~400 KB of transitive packages. Removed from `package.json`, `pnpm-workspace.yaml` allowBuilds, and `AGENTS.md`
+
+### Fixed
+- **Serial disconnect error recovery** — `readLoop` catch block now resets `isConnected`, `isPrinting`, and `connectionState`, and drains pending buffer waiters. A cable pull mid-print no longer leaves the UI stuck in "printing" state
+
+---
+
 ## [0.5.0] — 2026-06-19
 
 ### Changed

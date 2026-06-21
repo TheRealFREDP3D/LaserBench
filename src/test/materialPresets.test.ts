@@ -101,6 +101,7 @@ describe('materialPresets localStorage', () => {
         originX: 0,
         originY: 0,
         acceleration: 1000,
+        baudRate: 250000,
         isDelta: false,
       }];
       localStorage.setItem('laserbench_machines', JSON.stringify(custom));

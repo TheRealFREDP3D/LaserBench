@@ -24,6 +24,7 @@ const mockMachine: MachineProfile = {
   originX: 0,
   originY: 0,
   acceleration: 1000,
+  baudRate: 250000,
   isDelta: false,
 };
 

@@ -12,7 +12,7 @@ const mockMachine: MachineProfile = {
   laserOn: 'M3 S{power}', laserOff: 'M5', pwmMax: 1000,
   safeZ: 5, workZ: 0, travelSpeed: 5000, bedShape: 'rectangular',
   bedWidth: 300, bedHeight: 300, originX: 0, originY: 0,
-  acceleration: 1000, isDelta: false,
+  acceleration: 1000, baudRate: 250000, isDelta: false,
 };
 
 const mockMaterial: MaterialProfile = {

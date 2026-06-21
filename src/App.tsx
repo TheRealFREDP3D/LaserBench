@@ -1,16 +1,12 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { MachineProfile, MaterialProfile, PatternType, CalibrationHistoryEntry } from './types';
-import {
-  getStoredMachines,
-  getStoredMaterials,
-  saveStoredMachines,
-  saveStoredMaterials,
-  INITIAL_MATERIALS,
-  INITIAL_MACHINES
-} from './lib/materialPresets';
+import { MachineProfile, MaterialProfile, CalibrationHistoryEntry } from './types';
 import { generatePatternPaths, GeneratedData } from './lib/gcodeGenerator';
 import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
 import { downloadGCode, makeGCodeFilename } from './lib/downloadGCode';
+
+import { useMachineStore } from './hooks/useMachineStore';
+import { useMaterialStore } from './hooks/useMaterialStore';
+import { usePatternParams } from './hooks/usePatternParams';
 
 import MachineSelector from './components/MachineSelector';
 import MaterialDatabase from './components/MaterialDatabase';
@@ -33,24 +29,22 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const {
-    isConnected,
-    connectionState,
-    messages,
-    isPrinting,
-    progress,
-    connect,
-    disconnect,
-    send,
-    printGCode,
-    abortPrint,
-    clearMessages
+    isConnected, connectionState, messages, isPrinting, progress,
+    connect, disconnect, send, printGCode, abortPrint, clearMessages,
   } = useWebSerial();
 
-  const [machines, setMachines] = useState<MachineProfile[]>([]);
-  const [materials, setMaterials] = useState<MaterialProfile[]>([]);
-  const [selectedMachineId, setSelectedMachineId] = useState<string>('');
-  const [selectedMaterialId, setSelectedMaterialId] = useState<string>('');
-  const [selectedPattern, setSelectedPattern] = useState<PatternType>('matrix');
+  const {
+    machines, selectedMachineId, setSelectedMachineId,
+    handleUpdateMachine, handleCreateMachine, handleDeleteMachine,
+  } = useMachineStore();
+
+  const {
+    materials, selectedMaterialId, setSelectedMaterialId,
+    handleUpdateMaterial, handleCreateMaterial, handleDeleteMaterial,
+  } = useMaterialStore();
+
+  const pattern = usePatternParams();
+
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try {
       const stored = localStorage.getItem('laserbench_theme');
@@ -70,21 +64,6 @@ export default function App() {
     }
   };
 
-  const [powerMin, setPowerMin] = useState<number>(50);
-  const [powerMax, setPowerMax] = useState<number>(255);
-  const [speedMin, setSpeedMin] = useState<number>(500);
-  const [speedMax, setSpeedMax] = useState<number>(2500);
-  const [powerSteps, setPowerSteps] = useState<number>(5);
-  const [speedSteps, setSpeedSteps] = useState<number>(5);
-  const [blockSize, setBlockSize] = useState<number>(12);
-
-  const [nominalThickness, setNominalThickness] = useState<number>(3.0);
-  const [kerfValues, setKerfValues] = useState<number[]>([0.05, 0.10, 0.15, 0.20, 0.25]);
-
-  const [zMin, setZMin] = useState<number>(-43.0);
-  const [zMax, setZMax] = useState<number>(-37.0);
-  const [zSteps, setZSteps] = useState<number>(5);
-
   const [generatedResults, setGeneratedResults] = useState<GeneratedData | null>(null);
   const [hoveredPathIndex, setHoveredPathIndex] = useState<number | null>(null);
   const [showDictionary, setShowDictionary] = useState<boolean>(false);
@@ -102,15 +81,6 @@ export default function App() {
 
   // Preset flyout ref for outside-click detection
   const presetFlyoutRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const loadedMachines = getStoredMachines();
-    const loadedMaterials = getStoredMaterials();
-    setMachines(loadedMachines);
-    setMaterials(loadedMaterials);
-    if (loadedMachines.length > 0) setSelectedMachineId(loadedMachines[0].id);
-    if (loadedMaterials.length > 0) setSelectedMaterialId(loadedMaterials[0].id);
-  }, []);
 
   // Close preset flyout on outside click
   useEffect(() => {
@@ -135,36 +105,38 @@ export default function App() {
 
   useEffect(() => {
     if (activeMachine) {
-      setPowerMin(Math.round(activeMachine.pwmMax * 0.2));
-      setPowerMax(activeMachine.pwmMax);
-      setZMin(activeMachine.workZ - 3.0);
-      setZMax(activeMachine.workZ + 3.0);
+      pattern.setPowerMin(Math.round(activeMachine.pwmMax * 0.2));
+      pattern.setPowerMax(activeMachine.pwmMax);
+      pattern.setZMin(activeMachine.workZ - 3.0);
+      pattern.setZMax(activeMachine.workZ + 3.0);
     }
     if (activeMaterial) {
-      setNominalThickness(activeMaterial.thickness);
+      pattern.setNominalThickness(activeMaterial.thickness);
     }
   }, [selectedMachineId, selectedMaterialId, activeMachine, activeMaterial]);
 
   // Reset dismissed warnings when pattern or machine changes
   useEffect(() => {
     setDismissedDeltaWarnings(false);
-  }, [selectedMachineId, selectedPattern, blockSize, powerSteps, speedSteps]);
+  }, [selectedMachineId, pattern.selectedPattern, pattern.blockSize, pattern.powerSteps, pattern.speedSteps]);
 
   useEffect(() => {
     if (!activeMachine || !activeMaterial) return;
-    const res = generatePatternPaths(selectedPattern, activeMachine, activeMaterial, {
-      powerMin, powerMax, speedMin, speedMax,
-      powerSteps, speedSteps, blockSize,
-      nominalThickness, kerfValues,
-      zMin, zMax, zSteps,
+    const res = generatePatternPaths(pattern.selectedPattern, activeMachine, activeMaterial, {
+      powerMin: pattern.powerMin, powerMax: pattern.powerMax,
+      speedMin: pattern.speedMin, speedMax: pattern.speedMax,
+      powerSteps: pattern.powerSteps, speedSteps: pattern.speedSteps,
+      blockSize: pattern.blockSize,
+      nominalThickness: pattern.nominalThickness, kerfValues: pattern.kerfValues,
+      zMin: pattern.zMin, zMax: pattern.zMax, zSteps: pattern.zSteps,
     });
     setGeneratedResults(res);
   }, [
-    selectedPattern, selectedMachineId, selectedMaterialId,
-    powerMin, powerMax, speedMin, speedMax,
-    powerSteps, speedSteps, blockSize,
-    nominalThickness, kerfValues,
-    zMin, zMax, zSteps,
+    pattern.selectedPattern, selectedMachineId, selectedMaterialId,
+    pattern.powerMin, pattern.powerMax, pattern.speedMin, pattern.speedMax,
+    pattern.powerSteps, pattern.speedSteps, pattern.blockSize,
+    pattern.nominalThickness, pattern.kerfValues,
+    pattern.zMin, pattern.zMax, pattern.zSteps,
     machines, materials,
   ]);
 
@@ -220,69 +192,14 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [showDictionary, showQuickLogModal, presetFlyoutOpen]);
 
-  // ── Machine / Material CRUD (unchanged) ────────────────────────────
-  const handleUpdateMachine = useCallback((updated: MachineProfile) => {
-    setMachines((prev) => {
-      const updatedList = prev.map((m) => (m.id === updated.id ? updated : m));
-      saveStoredMachines(updatedList);
-      return updatedList;
-    });
-  }, []);
-
-  const handleCreateMachine = useCallback((created: MachineProfile) => {
-    setMachines((prev) => {
-      const updatedList = [...prev, created];
-      saveStoredMachines(updatedList);
-      return updatedList;
-    });
-  }, []);
-
-  const handleDeleteMachine = useCallback((id: string) => {
-    setMachines((prev) => {
-      const updatedList = prev.filter((m) => m.id !== id);
-      saveStoredMachines(updatedList);
-      if (selectedMachineId === id && updatedList.length > 0) {
-        setSelectedMachineId(updatedList[0].id);
-      }
-      return updatedList;
-    });
-  }, [selectedMachineId]);
-
-  const handleUpdateMaterial = useCallback((updated: MaterialProfile) => {
-    setMaterials((prev) => {
-      const updatedList = prev.map((m) => (m.id === updated.id ? updated : m));
-      saveStoredMaterials(updatedList);
-      return updatedList;
-    });
-  }, []);
-
-  const handleCreateMaterial = useCallback((created: MaterialProfile) => {
-    setMaterials((prev) => {
-      const updatedList = [...prev, created];
-      saveStoredMaterials(updatedList);
-      return updatedList;
-    });
-  }, []);
-
-  const handleDeleteMaterial = useCallback((id: string) => {
-    setMaterials((prev) => {
-      const updatedList = prev.filter((m) => m.id !== id);
-      saveStoredMaterials(updatedList);
-      if (selectedMaterialId === id && updatedList.length > 0) {
-        setSelectedMaterialId(updatedList[0].id);
-      }
-      return updatedList;
-    });
-  }, [selectedMaterialId]);
-
   // ── Download / Print / Log handlers ────────────────────────────────
   const handleDownloadGCode = useCallback(() => {
     if (!generatedResults) return;
-    const filename = makeGCodeFilename(selectedPattern, activeMaterial ? activeMaterial.name : 'material');
+    const filename = makeGCodeFilename(pattern.selectedPattern, activeMaterial ? activeMaterial.name : 'material');
     downloadGCode(generatedResults.gcode, filename);
     setCanvasView('code');
     setLastTouched('burn');
-  }, [generatedResults, selectedPattern, activeMaterial]);
+  }, [generatedResults, pattern.selectedPattern, activeMaterial]);
 
   const handlePrint = useCallback(() => {
     if (!generatedResults) return;
@@ -495,34 +412,22 @@ export default function App() {
                       className="absolute right-0 top-full mt-1 w-[340px] max-w-[90vw] bg-[#0F0F0F] border border-white/10 rounded-md shadow-2xl z-50 max-h-[50vh] overflow-y-auto"
                     >
                       <PresetManager
-                        currentPattern={selectedPattern}
-                        powerMin={powerMin}
-                        powerMax={powerMax}
-                        speedMin={speedMin}
-                        speedMax={speedMax}
-                        powerSteps={powerSteps}
-                        speedSteps={speedSteps}
-                        blockSize={blockSize}
-                        nominalThickness={nominalThickness}
-                        kerfValues={kerfValues}
-                        zMin={zMin}
-                        zMax={zMax}
-                        zSteps={zSteps}
+                        currentPattern={pattern.selectedPattern}
+                        powerMin={pattern.powerMin}
+                        powerMax={pattern.powerMax}
+                        speedMin={pattern.speedMin}
+                        speedMax={pattern.speedMax}
+                        powerSteps={pattern.powerSteps}
+                        speedSteps={pattern.speedSteps}
+                        blockSize={pattern.blockSize}
+                        nominalThickness={pattern.nominalThickness}
+                        kerfValues={pattern.kerfValues}
+                        zMin={pattern.zMin}
+                        zMax={pattern.zMax}
+                        zSteps={pattern.zSteps}
                         pwmMax={activeMachine ? activeMachine.pwmMax : 255}
                         onLoadPreset={(preset) => {
-                          setSelectedPattern(preset.patternType);
-                          setPowerMin(preset.powerMin);
-                          setPowerMax(preset.powerMax);
-                          setSpeedMin(preset.speedMin);
-                          setSpeedMax(preset.speedMax);
-                          setPowerSteps(preset.powerSteps);
-                          setSpeedSteps(preset.speedSteps);
-                          setBlockSize(preset.blockSize);
-                          setNominalThickness(preset.nominalThickness);
-                          setKerfValues(preset.kerfValues);
-                          setZMin(preset.zMin);
-                          setZMax(preset.zMax);
-                          setZSteps(preset.zSteps);
+                          pattern.loadPreset(preset);
                           setPresetFlyoutOpen(false);
                           setLastTouched('pattern');
                         }}
@@ -534,33 +439,33 @@ export default function App() {
               </div>
             </div>
             <PatternConfigurator
-              selectedPattern={selectedPattern}
-              onSelectPattern={(p) => { setSelectedPattern(p); setLastTouched('pattern'); }}
-              powerMin={powerMin}
-              powerMax={powerMax}
-              speedMin={speedMin}
-              speedMax={speedMax}
-              powerSteps={powerSteps}
-              speedSteps={speedSteps}
-              blockSize={blockSize}
-              nominalThickness={nominalThickness}
-              kerfValues={kerfValues}
-              zMin={zMin}
-              zMax={zMax}
-              zSteps={zSteps}
+              selectedPattern={pattern.selectedPattern}
+              onSelectPattern={(p) => { pattern.setSelectedPattern(p); setLastTouched('pattern'); }}
+              powerMin={pattern.powerMin}
+              powerMax={pattern.powerMax}
+              speedMin={pattern.speedMin}
+              speedMax={pattern.speedMax}
+              powerSteps={pattern.powerSteps}
+              speedSteps={pattern.speedSteps}
+              blockSize={pattern.blockSize}
+              nominalThickness={pattern.nominalThickness}
+              kerfValues={pattern.kerfValues}
+              zMin={pattern.zMin}
+              zMax={pattern.zMax}
+              zSteps={pattern.zSteps}
               pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-              onSetPowerMin={(v) => { setPowerMin(v); setLastTouched('pattern'); }}
-              onSetPowerMax={(v) => { setPowerMax(v); setLastTouched('pattern'); }}
-              onSetSpeedMin={(v) => { setSpeedMin(v); setLastTouched('pattern'); }}
-              onSetSpeedMax={(v) => { setSpeedMax(v); setLastTouched('pattern'); }}
-              onSetPowerSteps={(v) => { setPowerSteps(v); setLastTouched('pattern'); }}
-              onSetSpeedSteps={(v) => { setSpeedSteps(v); setLastTouched('pattern'); }}
-              onSetNominalThickness={(v) => { setNominalThickness(v); setLastTouched('pattern'); }}
-              onSetKerfValues={(v) => { setKerfValues(v); setLastTouched('pattern'); }}
-              onSetZMin={(v) => { setZMin(v); setLastTouched('pattern'); }}
-              onSetZMax={(v) => { setZMax(v); setLastTouched('pattern'); }}
-              onSetZSteps={(v) => { setZSteps(v); setLastTouched('pattern'); }}
-              onSetBlockSize={(v) => { setBlockSize(v); setLastTouched('pattern'); }}
+              onSetPowerMin={(v) => { pattern.setPowerMin(v); setLastTouched('pattern'); }}
+              onSetPowerMax={(v) => { pattern.setPowerMax(v); setLastTouched('pattern'); }}
+              onSetSpeedMin={(v) => { pattern.setSpeedMin(v); setLastTouched('pattern'); }}
+              onSetSpeedMax={(v) => { pattern.setSpeedMax(v); setLastTouched('pattern'); }}
+              onSetPowerSteps={(v) => { pattern.setPowerSteps(v); setLastTouched('pattern'); }}
+              onSetSpeedSteps={(v) => { pattern.setSpeedSteps(v); setLastTouched('pattern'); }}
+              onSetNominalThickness={(v) => { pattern.setNominalThickness(v); setLastTouched('pattern'); }}
+              onSetKerfValues={(v) => { pattern.setKerfValues(v); setLastTouched('pattern'); }}
+              onSetZMin={(v) => { pattern.setZMin(v); setLastTouched('pattern'); }}
+              onSetZMax={(v) => { pattern.setZMax(v); setLastTouched('pattern'); }}
+              onSetZSteps={(v) => { pattern.setZSteps(v); setLastTouched('pattern'); }}
+              onSetBlockSize={(v) => { pattern.setBlockSize(v); setLastTouched('pattern'); }}
               theme={theme}
             />
           </div>
@@ -575,7 +480,7 @@ export default function App() {
                 svgPaths={generatedResults.svgPaths}
                 machine={activeMachine}
                 material={activeMaterial}
-                patternType={selectedPattern}
+                patternType={pattern.selectedPattern}
                 paths={generatedResults.paths}
                 theme={theme}
                 hoveredPathIndex={hoveredPathIndex}
@@ -606,7 +511,7 @@ export default function App() {
               {generatedResults ? (
                 <GCodeOutput
                   gcode={generatedResults.gcode}
-                  patternType={selectedPattern}
+                  patternType={pattern.selectedPattern}
                   machine={activeMachine}
                   material={activeMaterial}
                   paths={generatedResults.paths}
@@ -627,7 +532,7 @@ export default function App() {
                 messages={messages}
                 isPrinting={isPrinting}
                 progress={progress}
-                onConnect={() => connect(250000)}
+                onConnect={() => connect(activeMachine?.baudRate)}
                 onDisconnect={disconnect}
                 onSend={send}
                 onClear={clearMessages}
@@ -661,7 +566,7 @@ export default function App() {
         deltaPrintRadius={activeMachine?.deltaPrintRadius}
         isPrinting={isPrinting}
         progress={progress}
-        onConnect={() => connect(250000)}
+        onConnect={() => connect(activeMachine?.baudRate)}
         onDisconnect={disconnect}
       />
 
@@ -671,10 +576,12 @@ export default function App() {
         onClose={() => setShowQuickLogModal(false)}
         activeMaterial={activeMaterial}
         activeMachineName={activeMachine?.name ?? ''}
-        patternType={selectedPattern}
+        patternType={pattern.selectedPattern}
         pwmMax={activeMachine ? activeMachine.pwmMax : 255}
         paramSnapshot={{
-          powerMin, powerMax, speedMin, speedMax, zMin, zMax, blockSize,
+          powerMin: pattern.powerMin, powerMax: pattern.powerMax,
+          speedMin: pattern.speedMin, speedMax: pattern.speedMax,
+          zMin: pattern.zMin, zMax: pattern.zMax, blockSize: pattern.blockSize,
         }}
         onSave={handleQuickLogSave}
         theme={theme}

@@ -16,6 +16,8 @@ export interface MachineProfile {
   originX?: number;
   originY?: number;
   acceleration?: number;
+  // Serial communication
+  baudRate: number;
   // Delta kinematics
   isDelta?: boolean;
   deltaRadius?: number;        // mm, horizontal center-to-tower distance
