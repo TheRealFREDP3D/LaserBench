@@ -56,7 +56,7 @@ export default memo(function MaterialDatabase({
   const [logPattern, setLogPattern] = useState('matrix');
   const [logOptPower, setLogOptPower] = useState<number>(150);
   const [logOptSpeed, setLogOptSpeed] = useState<number>(1000);
-  const [logOptZ, setLogOptZ] = useState<number>(-40);
+  const [logOptZ, setLogOptZ] = useState<number>(0);
 
   const categoryMaterials = materials.filter((m) => m.category === activeCategory);
   const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0] || null;
@@ -87,7 +87,7 @@ export default memo(function MaterialDatabase({
       category: activeCategory,
       thickness: 3.0,
       laser: '5W Diode',
-      focusZ: -40.0,
+      focusZ: 0,
       engrave: {
         power: Math.round(pwmMax * 0.5),
         speed: 1500,
@@ -294,9 +294,10 @@ export default memo(function MaterialDatabase({
                         <input
                           id="edit-material-thickness"
                           type="number"
+                          min="0.1"
                           step="0.1"
                           value={activeMaterial.thickness}
-                          onChange={(e) => handleUpdateField('thickness', null, parseFloat(e.target.value) || 0)}
+                          onChange={(e) => handleUpdateField('thickness', null, Math.max(0.1, parseFloat(e.target.value) || 0.1))}
                           className="w-full elegant-input rounded-md px-2 py-1"
                         />
                       </div>
@@ -315,9 +316,10 @@ export default memo(function MaterialDatabase({
                         <input
                           id="edit-material-focusz"
                           type="number"
+                          min="0"
                           step="0.5"
                           value={activeMaterial.focusZ}
-                          onChange={(e) => handleUpdateField('focusZ', null, parseFloat(e.target.value) || 0)}
+                          onChange={(e) => handleUpdateField('focusZ', null, Math.max(0, parseFloat(e.target.value) || 0))}
                           className="w-full elegant-input rounded-md px-2 py-1"
                         />
                       </div>
@@ -506,9 +508,10 @@ export default memo(function MaterialDatabase({
                           <input
                             id="log-focusz"
                             type="number"
+                            min="0"
                             step="0.5"
                             value={logOptZ}
-                            onChange={(e) => setLogOptZ(parseFloat(e.target.value) || 0)}
+                            onChange={(e) => setLogOptZ(Math.max(0, parseFloat(e.target.value) || 0))}
                             className="w-full elegant-input rounded px-2 py-1"
                           />
                         </div>

@@ -25,6 +25,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - **Serial disconnect error recovery** — `readLoop` catch block now resets `isConnected`, `isPrinting`, and `connectionState`, and drains pending buffer waiters. A cable pull mid-print no longer leaves the UI stuck in "printing" state
+- **Negative parameter values** — all machine and material numeric inputs now enforce `min="0"` (or `min="0.1"` for thickness). Default presets clamped to non-negative. Prevents invalid G-code generation from negative Z/power/speed values
 
 ---
 

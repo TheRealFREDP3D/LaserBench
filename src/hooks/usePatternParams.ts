@@ -28,8 +28,8 @@ export function usePatternParams() {
   const [blockSize, setBlockSize] = useState(12);
   const [nominalThickness, setNominalThickness] = useState(3.0);
   const [kerfValues, setKerfValues] = useState<number[]>([0.05, 0.10, 0.15, 0.20, 0.25]);
-  const [zMin, setZMin] = useState(-43.0);
-  const [zMax, setZMax] = useState(-37.0);
+  const [zMin, setZMin] = useState(0);
+  const [zMax, setZMax] = useState(0);
   const [zSteps, setZSteps] = useState(5);
 
   const loadPreset = useCallback((preset: GeneratorPreset) => {

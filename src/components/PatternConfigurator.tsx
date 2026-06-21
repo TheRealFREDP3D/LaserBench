@@ -401,9 +401,10 @@ export default memo(function PatternConfigurator({
                 <input
                   id="pattern-zmin-input"
                   type="number"
+                  min="0"
                   step="0.5"
                   value={zMin}
-                  onChange={(e) => onSetZMin(parseFloat(e.target.value) || -43)}
+                  onChange={(e) => onSetZMin(Math.max(0, parseFloat(e.target.value) || 0))}
                   className={`w-full elegant-input px-2 py-1 text-xs rounded border ${
                     isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
                   }`}
@@ -415,9 +416,10 @@ export default memo(function PatternConfigurator({
                 <input
                   id="pattern-zmax-input"
                   type="number"
+                  min="0"
                   step="0.5"
                   value={zMax}
-                  onChange={(e) => onSetZMax(parseFloat(e.target.value) || -37)}
+                  onChange={(e) => onSetZMax(Math.max(0, parseFloat(e.target.value) || 0))}
                   className={`w-full elegant-input px-2 py-1 text-xs rounded border ${
                     isLight ? 'bg-white border-zinc-300 text-zinc-800' : ''
                   }`}

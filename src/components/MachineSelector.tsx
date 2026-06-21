@@ -354,14 +354,14 @@ export default memo(function MachineSelector({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <div>
                     <label className="block mb-1 label-caps">Safe Z (mm)</label>
-                    <input id="machine-safez-input" type="number" step="0.5" value={activeMachine.safeZ}
-                      onChange={(e) => handleFieldChange('safeZ', parseFloat(e.target.value) || 0)}
+                    <input id="machine-safez-input" type="number" min="0" step="0.5" value={activeMachine.safeZ}
+                      onChange={(e) => handleFieldChange('safeZ', Math.max(0, parseFloat(e.target.value) || 0))}
                       className="w-full elegant-input rounded-md px-2 py-1.5" />
                   </div>
                   <div>
                     <label className="block mb-1 label-caps">Work Z (mm)</label>
-                    <input id="machine-workz-input" type="number" step="0.5" value={activeMachine.workZ}
-                      onChange={(e) => handleFieldChange('workZ', parseFloat(e.target.value) || 0)}
+                    <input id="machine-workz-input" type="number" min="0" step="0.5" value={activeMachine.workZ}
+                      onChange={(e) => handleFieldChange('workZ', Math.max(0, parseFloat(e.target.value) || 0))}
                       className="w-full elegant-input rounded-md px-2 py-1.5" />
                   </div>
                   <div>
@@ -432,14 +432,14 @@ export default memo(function MachineSelector({
                 <div className={`grid grid-cols-2 gap-2 ${isLight ? 'border-zinc-200' : 'border-white/8'}`}>
                   <div>
                     <label className="block mb-1 label-caps">Origin X Coord (mm)</label>
-                    <input id="machine-originx-input" type="number" placeholder="0" value={activeMachine.originX ?? 0}
-                      onChange={(e) => handleFieldChange('originX', parseInt(e.target.value, 10) || 0)}
+                    <input id="machine-originx-input" type="number" min="0" placeholder="0" value={activeMachine.originX ?? 0}
+                      onChange={(e) => handleFieldChange('originX', Math.max(0, parseInt(e.target.value, 10) || 0))}
                       className="w-full elegant-input rounded-md px-2 py-1.5" />
                   </div>
                   <div>
                     <label className="block mb-1 label-caps">Origin Y Coord (mm)</label>
-                    <input id="machine-originy-input" type="number" placeholder="0" value={activeMachine.originY ?? 0}
-                      onChange={(e) => handleFieldChange('originY', parseInt(e.target.value, 10) || 0)}
+                    <input id="machine-originy-input" type="number" min="0" placeholder="0" value={activeMachine.originY ?? 0}
+                      onChange={(e) => handleFieldChange('originY', Math.max(0, parseInt(e.target.value, 10) || 0))}
                       className="w-full elegant-input rounded-md px-2 py-1.5" />
                   </div>
                   <p className={`col-span-2 text-[10px] leading-snug italic pt-1 ${isLight ? 'text-zinc-500' : 'text-neutral-500'}`}>
