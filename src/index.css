@@ -129,7 +129,6 @@ h1, h2, h3, h4 {
 
 /* Card panels */
 .theme-light .bg-\[\#0F0F0F\],
-.theme-light .bg-[#0F0F0F],
 .theme-light .bg-slate-900 {
   background-color: #FFFFFF !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
@@ -143,7 +142,6 @@ h1, h2, h3, h4 {
 
 /* Section elements and forms */
 .theme-light .bg-\[\#1A1A1A\],
-.theme-light .bg-[#1A1A1A],
 .theme-light .bg-slate-950\/80 {
   background-color: #F4F4F5 !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
@@ -154,13 +152,11 @@ h1, h2, h3, h4 {
 }
 
 /* Correcting near-black layout cards and indicators to light theme */
-.theme-light .bg-\[\#080808\],
-.theme-light .bg-[#080808] {
+.theme-light .bg-\[\#080808\] {
   background-color: #FFFFFF !important;
   border-color: rgba(0, 0, 0, 0.12) !important;
 }
-.theme-light span.bg-\[\#080808\],
-.theme-light span.bg-[#080808] {
+.theme-light span.bg-\[\#080808\] {
   background-color: #E4E4E7 !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
   color: #18181B !important;
@@ -271,7 +267,6 @@ h1, h2, h3, h4 {
 
 /* Text selections & colors */
 .theme-light .text-\[\#E8E8E8\],
-.theme-light .text-[#E8E8E8],
 .theme-light .text-slate-100,
 .theme-light .text-slate-200 {
   color: #18181B !important;
@@ -280,18 +275,15 @@ h1, h2, h3, h4 {
   color: #18181B !important;
 }
 .theme-light .text-\[\#9A9A9A\],
-.theme-light .text-[#9A9A9A],
 .theme-light .text-slate-300 {
   color: #27272A !important;
 }
 .theme-light .text-\[\#707070\],
-.theme-light .text-[#707070],
 .theme-light .text-slate-500,
 .theme-light .text-slate-400 {
   color: #52525B !important;
 }
-.theme-light .text-\[\#505050\],
-.theme-light .text-[#505050] {
+.theme-light .text-\[\#505050\] {
   color: #71717A !important;
 }
 .theme-light .text-\[\#64748b\] {
@@ -448,19 +440,15 @@ h1, h2, h3, h4 {
 
 /* Hover-background light theme overrides */
 .theme-light .hover\:bg-\[\#1A1A1A\]:hover,
-.theme-light .hover\:bg-[#1A1A1A]:hover,
 .theme-light .hover\:bg-\[\#333333\]:hover,
-.theme-light .hover\:bg-[#333333]:hover,
-.theme-light .hover\:bg-\[\#252525\]:hover,
-.theme-light .hover\:bg-[#252525]:hover {
+.theme-light .hover\:bg-\[\#252525\]:hover {
   background-color: #E4E4E7 !important;
   color: #18181B !important;
 }
 
 /* Hover-text override so text never turns white/invisible on light background */
 .theme-light .hover\:text-white:hover,
-.theme-light .hover\:text-\[\#E8E8E8\]:hover,
-.theme-light .hover\:text-[#E8E8E8]:hover {
+.theme-light .hover\:text-\[\#E8E8E8\]:hover {
   color: #18181B !important;
 }
 
@@ -488,4 +476,53 @@ h1, h2, h3, h4 {
 /* Custom Modal Backplates */
 .theme-light .bg-black\/85 {
   background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Global Contrast Improvements */
+button, select, input {
+  transition: all 0.2s ease !important;
+}
+
+/* Dark mode contrast enhancements */
+:root:not(.theme-light) button:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+:root:not(.theme-light) button:not(:disabled):hover {
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  filter: brightness(1.3);
+}
+
+:root:not(.theme-light) select, 
+:root:not(.theme-light) input[type="text"], 
+:root:not(.theme-light) input[type="number"] {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:root:not(.theme-light) select:focus, 
+:root:not(.theme-light) input:focus {
+  border-color: #DC2626 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.4) !important;
+}
+
+/* Light mode contrast enhancements */
+.theme-light button:not(:disabled) {
+  border-color: rgba(0, 0, 0, 0.3) !important;
+}
+.theme-light button:not(:disabled):hover {
+  border-color: rgba(0, 0, 0, 0.6) !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.theme-light select, 
+.theme-light input[type="text"], 
+.theme-light input[type="number"] {
+  border-color: rgba(0, 0, 0, 0.35) !important;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.theme-light select:focus, 
+.theme-light input:focus {
+  border-color: #B91C1C !important;
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.25) !important;
 }

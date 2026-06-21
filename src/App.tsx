@@ -478,7 +478,7 @@ export default function App() {
         {/* ── Bottom Row: Toolpath Preview | G-Code Output + Operate ── */}
         <div className="flex flex-1 min-h-0">
           {/* SVG Toolpath Preview — always visible */}
-          <div className="flex-1 min-w-0 border-r border-white/8 flex flex-col min-h-0 overflow-y-auto">
+          <div className="flex-1 min-w-0 border-r border-white/8 flex flex-col min-h-0 overflow-hidden">
             {generatedResults && activeMachine && activeMaterial ? (
               <SVGVisualizer
                 svgPaths={generatedResults.svgPaths}

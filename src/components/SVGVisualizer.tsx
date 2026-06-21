@@ -33,7 +33,7 @@ export default memo(function SVGVisualizer({
   const isLight = theme === 'light';
 
   // Viewport transforms
-  const [zoom, setZoom] = useState(1.1);
+  const [zoom, setZoom] = useState(0.95);
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -78,7 +78,7 @@ export default memo(function SVGVisualizer({
   const handleZoomIn = () => setZoom((z) => Math.min(z * 1.3, 10));
   const handleZoomOut = () => setZoom((z) => Math.max(z / 1.3, 0.4));
   const handleFit = () => {
-    setZoom(1.1);
+    setZoom(0.95);
     setPanX(0);
     setPanY(0);
   };
@@ -473,7 +473,7 @@ export default memo(function SVGVisualizer({
   const finalTransform = `translate(${panX}, ${panY}) scale(${zoom}) scale(1, -1)`;
 
   return (
-    <div id="svg-visualizer-container" className={`border rounded-lg p-3 shadow-sm flex flex-col select-none transition-all duration-200 ${
+    <div id="svg-visualizer-container" className={`border rounded-lg p-3 shadow-sm flex flex-col select-none transition-all duration-200 h-full ${
       isLight 
         ? 'bg-white border-zinc-200 text-zinc-800' 
         : 'bg-[#0F0F0F] border-white/10 text-[#E8E8E8]'
