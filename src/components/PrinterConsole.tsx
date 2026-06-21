@@ -11,7 +11,9 @@ import {
   Home,
   Flame,
   ShieldAlert,
-  Send
+  Send,
+  Play,
+  AlertTriangle,
 } from 'lucide-react';
 import { SerialMessage } from '../lib/useWebSerial';
 import { MachineProfile } from '../types';
@@ -26,6 +28,8 @@ interface PrinterConsoleProps {
   onSend: (command: string) => void;
   onClear: () => void;
   onAbortPrint: () => void;
+  onPrint?: () => void;
+  gcode?: string;
   activeMachine: MachineProfile | null;
   theme: 'light' | 'dark';
 }
@@ -40,10 +44,13 @@ export const PrinterConsole: FC<PrinterConsoleProps> = memo(({
   onSend,
   onClear,
   onAbortPrint,
+  onPrint,
+  gcode,
   activeMachine,
   theme,
 }) => {
   const [command, setCommand] = useState('');
+  const [showHomingWarning, setShowHomingWarning] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
   const isLight = theme === 'light';
 
@@ -69,6 +76,16 @@ export const PrinterConsole: FC<PrinterConsoleProps> = memo(({
   const handleStopFire = () => {
     if (!activeMachine) return;
     onSend(activeMachine.laserOff);
+  };
+
+  const handleHome = () => {
+    onSend('G28');
+    setShowHomingWarning(false);
+  };
+
+  const handleRunJob = () => {
+    if (!gcode || !onPrint) return;
+    onPrint();
   };
 
   const jog = (axis: 'X' | 'Y' | 'Z', amount: number) => {
@@ -108,7 +125,7 @@ export const PrinterConsole: FC<PrinterConsoleProps> = memo(({
               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition shadow-md"
             >
               <Power className="w-3.5 h-3.5" />
-              Connect (250k)
+              Connect
             </button>
           )}
         </div>
@@ -131,6 +148,36 @@ export const PrinterConsole: FC<PrinterConsoleProps> = memo(({
               className="px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white text-[10px] rounded font-bold transition shadow-sm"
             >
               Abort Print
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Homing Warning */}
+      {showHomingWarning && !isPrinting && (
+        <div className="flex items-center justify-between gap-2 px-3 py-2 bg-amber-950/60 border border-amber-800/50 rounded-lg text-xs">
+          <div className="flex items-center gap-2 text-amber-300">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>Machine should be homed before running a job.</span>
+          </div>
+          <div className="flex gap-1.5 shrink-0">
+            <button
+              onClick={() => { handleHome(); handleRunJob(); }}
+              className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] rounded font-bold transition"
+            >
+              Home &amp; Run
+            </button>
+            <button
+              onClick={handleRunJob}
+              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] rounded font-bold transition"
+            >
+              Run Anyway
+            </button>
+            <button
+              onClick={() => setShowHomingWarning(false)}
+              className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-[10px] rounded font-bold transition"
+            >
+              Cancel
             </button>
           </div>
         </div>
@@ -187,6 +234,23 @@ export const PrinterConsole: FC<PrinterConsoleProps> = memo(({
             <ShieldAlert className="w-3.5 h-3.5" />
             E-STOP
           </button>
+          {onPrint && gcode && (
+            <button
+              onClick={() => {
+                if (!isConnected) return;
+                setShowHomingWarning(true);
+              }}
+              disabled={!isConnected || isPrinting}
+              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition border shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                isPrinting
+                  ? 'bg-zinc-700 border-zinc-600 text-zinc-400'
+                  : 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500/30 text-white'
+              }`}
+            >
+              <Play className="w-3.5 h-3.5" />
+              {isPrinting ? 'Printing...' : 'Run Job'}
+            </button>
+          )}
         </div>
       </div>
 

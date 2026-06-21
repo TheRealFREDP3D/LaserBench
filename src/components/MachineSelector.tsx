@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { MachineProfile, FirmwareType } from '../types';
-import { Plus, Trash2, Cpu, Triangle, ChevronDown, Settings } from 'lucide-react';
+import { Plus, Trash2, Cpu, Triangle, ChevronDown, Settings, Power, PowerOff } from 'lucide-react';
 import { DEFAULT_DELTA_PARAMS } from '../lib/deltaKinematics';
 import { useConfirmModal } from '../hooks/useConfirmModal';
 
@@ -13,6 +13,9 @@ interface MachineSelectorProps {
   onUpdateMachine: (machine: MachineProfile) => void;
   onCreateMachine: (machine: MachineProfile) => void;
   onDeleteMachine: (id: string) => void;
+  isConnected?: boolean;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
   theme?: 'dark' | 'light';
 }
 
@@ -45,6 +48,9 @@ export default memo(function MachineSelector({
   onUpdateMachine,
   onCreateMachine,
   onDeleteMachine,
+  isConnected = false,
+  onConnect,
+  onDisconnect,
   theme = 'dark',
 }: MachineSelectorProps) {
   const isLight = theme === 'light';
@@ -160,6 +166,22 @@ export default memo(function MachineSelector({
                 </option>
               ))}
             </select>
+            {onConnect && (
+              <button
+                id="machine-connect-btn"
+                onClick={() => { if (isConnected) onDisconnect?.(); else onConnect(); }}
+                title={isConnected ? 'Disconnect from printer' : 'Connect to printer'}
+                className={`px-3 py-2 rounded-md text-sm flex items-center justify-center transition cursor-pointer border ${
+                  isConnected
+                    ? 'bg-emerald-600/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30'
+                    : isLight
+                      ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200'
+                      : 'bg-[#252525] text-[#E8E8E8] border-white/10 hover:bg-[#333333]'
+                }`}
+              >
+                {isConnected ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+              </button>
+            )}
             <button
               id="new-machine-btn"
               onClick={handleCreateNew}

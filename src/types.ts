@@ -45,7 +45,7 @@ export interface MaterialProfile {
   category: MaterialCategory;
   thickness: number;
   laser: string;
-  focusZ: number;
+  focusZ?: number;
   engrave: {
     power: number;
     speed: number;

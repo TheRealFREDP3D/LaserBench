@@ -10,6 +10,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - **`baudRate` field on `MachineProfile`** — serial baud rate is now a per-machine setting (default 250000). Users can configure 115200, 57600, etc. from the Machine Selector editor without editing code
+- **Connect button in Machine Selector** — power icon button between machine dropdown and + button. Connect/disconnect directly from the sidebar without scrolling to Operate tab
+- **Homing warning before Run Job** — if machine has `homingEnabled` and user hasn't homed, a banner appears with "Home & Run", "Run Anyway", and "Cancel" options
+- **Material power unit labels** — power sliders now show `PWM (0–1000)` for GRBL machines or `Power % (0–255)` for Marlin machines, clarifying the unit system in use
 - **`usePatternParams` hook** — extracts 13 pattern config state variables, setters, and `loadPreset()` from App.tsx
 - **`useMachineStore` hook** — extracts machine CRUD, selection, and localStorage persistence from App.tsx
 - **`useMaterialStore` hook** — extracts material CRUD, selection, and localStorage persistence from App.tsx
@@ -18,6 +21,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **App.tsx refactored** from 695 → 602 lines. State management delegated to three custom hooks; App.tsx now owns only UI chrome, generation effects, keyboard shortcuts, and JSX layout
 - **Version string** derived from `package.json` via Vite `define` (`__APP_VERSION__`) — single source of truth, no more hardcoded version in the header
 - **MachineSelector editor** grid expanded from 3 to 4 columns to accommodate the new Baud Rate field
+- **Run Job button relocated** from GCodeOutput to PrinterConsole (Operate tab). Operate tab is now the single entry point for running jobs, homing, and jog controls
+- **GCodeOutput** simplified — removed print/serial props (`onPrint`, `isPrinterConnected`, `isPrinting`). Component now focuses solely on G-code viewing, copy, download, and stats
 
 ### Removed
 - **`@google/genai` dependency** — unused, added ~400 KB of transitive packages. Removed from `package.json`, `pnpm-workspace.yaml` allowBuilds, and `AGENTS.md`

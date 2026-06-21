@@ -355,6 +355,9 @@ export default function App() {
               onUpdateMachine={handleUpdateMachine}
               onCreateMachine={handleCreateMachine}
               onDeleteMachine={handleDeleteMachine}
+              isConnected={isConnected}
+              onConnect={() => connect(activeMachine?.baudRate)}
+              onDisconnect={disconnect}
               theme={theme}
             />
           </div>
@@ -365,6 +368,7 @@ export default function App() {
               materials={materials}
               selectedMaterialId={selectedMaterialId}
               pwmMax={activeMachine ? activeMachine.pwmMax : 255}
+              firmware={activeMachine?.firmware ?? 'grbl'}
               onSelectMaterial={(id) => { setSelectedMaterialId(id); setLastTouched('material'); }}
               onUpdateMaterial={handleUpdateMaterial}
               onCreateMaterial={handleCreateMaterial}
@@ -518,9 +522,6 @@ export default function App() {
                   theme={theme}
                   hoveredPathIndex={hoveredPathIndex}
                   onHoverPath={setHoveredPathIndex}
-                  onPrint={handlePrint}
-                  isPrinterConnected={isConnected}
-                  isPrinting={isPrinting}
                 />
               ) : (
                 <div className="flex-1 flex items-center justify-center text-[#505050] text-xs p-4">
@@ -537,6 +538,8 @@ export default function App() {
                 onSend={send}
                 onClear={clearMessages}
                 onAbortPrint={abortPrint}
+                onPrint={handlePrint}
+                gcode={generatedResults?.gcode}
                 activeMachine={activeMachine}
                 theme={theme}
               />

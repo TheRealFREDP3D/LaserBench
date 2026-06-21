@@ -1,5 +1,5 @@
 import { useState, memo, type FormEvent, type FC } from 'react';
-import { MaterialProfile, MaterialCategory, CalibrationHistoryEntry } from '../types';
+import { MaterialProfile, MaterialCategory, CalibrationHistoryEntry, FirmwareType } from '../types';
 import {
   FolderHeart, Plus, Trash2, Calendar, Check,
   TreePine, Beaker, Shirt, Mountain, Hammer, FileText, Package,
@@ -11,6 +11,7 @@ interface MaterialDatabaseProps {
   materials: MaterialProfile[];
   selectedMaterialId: string;
   pwmMax: number;
+  firmware: FirmwareType;
   onSelectMaterial: (id: string) => void;
   onUpdateMaterial: (material: MaterialProfile) => void;
   onCreateMaterial: (material: MaterialProfile) => void;
@@ -38,6 +39,7 @@ export default memo(function MaterialDatabase({
   materials,
   selectedMaterialId,
   pwmMax,
+  firmware,
   onSelectMaterial,
   onUpdateMaterial,
   onCreateMaterial,
@@ -58,24 +60,29 @@ export default memo(function MaterialDatabase({
   const [logOptSpeed, setLogOptSpeed] = useState<number>(1000);
   const [logOptZ, setLogOptZ] = useState<number>(0);
 
+  const powerUnit = firmware === 'grbl' ? `PWM (0–${pwmMax})` : `Power % (0–${pwmMax})`;
+
   const categoryMaterials = materials.filter((m) => m.category === activeCategory);
   const activeMaterial = materials.find((m) => m.id === selectedMaterialId) || materials[0] || null;
 
-  const handleUpdateField = (field: string, subField: string | null, value: string | number) => {
+  const handleUpdateField = (field: string, subField: string | null, value: string | number | undefined) => {
     if (!activeMaterial) return;
     if (subField) {
       onUpdateMaterial({
         ...activeMaterial,
         [field]: {
-          ...(activeMaterial[field as keyof MaterialProfile] as Record<string, string | number>),
+          ...(activeMaterial[field as keyof MaterialProfile] as Record<string, string | number | undefined>),
           [subField]: value,
         },
       });
     } else {
-      onUpdateMaterial({
-        ...activeMaterial,
-        [field]: value,
-      });
+      const update = { ...activeMaterial };
+      if (value === undefined) {
+        delete (update as Record<string, unknown>)[field];
+      } else {
+        (update as Record<string, unknown>)[field] = value;
+      }
+      onUpdateMaterial(update as MaterialProfile);
     }
   };
 
@@ -87,7 +94,6 @@ export default memo(function MaterialDatabase({
       category: activeCategory,
       thickness: 3.0,
       laser: '5W Diode',
-      focusZ: 0,
       engrave: {
         power: Math.round(pwmMax * 0.5),
         speed: 1500,
@@ -318,8 +324,9 @@ export default memo(function MaterialDatabase({
                           type="number"
                           min="0"
                           step="0.5"
-                          value={activeMaterial.focusZ}
-                          onChange={(e) => handleUpdateField('focusZ', null, Math.max(0, parseFloat(e.target.value) || 0))}
+                          placeholder="—"
+                          value={activeMaterial.focusZ ?? ''}
+                          onChange={(e) => handleUpdateField('focusZ', null, e.target.value === '' ? undefined : Math.max(0, parseFloat(e.target.value) || 0))}
                           className="w-full elegant-input rounded-md px-2 py-1"
                         />
                       </div>
@@ -330,7 +337,7 @@ export default memo(function MaterialDatabase({
                         <span className="text-[10px] font-bold text-red-500 block mb-1">ENGRAVING DEFAULT</span>
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
-                            <label className="text-[9px] label-caps block">Power</label>
+                            <label className="text-[9px] label-caps block">{powerUnit}</label>
                             <input
                               id="edit-material-engrave-power"
                               type="number"
@@ -358,7 +365,7 @@ export default memo(function MaterialDatabase({
                         <span className="text-[10px] font-bold text-red-600 block mb-1">CUTTING DEFAULT</span>
                         <div className="grid grid-cols-2 gap-1.5">
                           <div>
-                            <label className="text-[9px] label-caps block">Power</label>
+                            <label className="text-[9px] label-caps block">{powerUnit}</label>
                             <input
                               id="edit-material-cut-power"
                               type="number"
@@ -425,7 +432,7 @@ export default memo(function MaterialDatabase({
                       </span>
                       <span className={isLight ? 'text-zinc-500' : 'text-neutral-400'}>{activeMaterial.thickness}mm</span>
                       <span className="text-neutral-500">|</span>
-                      <span className={isLight ? 'text-zinc-500' : 'text-neutral-400'}>Z: {activeMaterial.focusZ}mm</span>
+                      <span className={isLight ? 'text-zinc-500' : 'text-neutral-400'}>Z: {activeMaterial.focusZ != null ? `${activeMaterial.focusZ}mm` : '—'}</span>
                       <span className="text-neutral-500">|</span>
                       <span className={isLight ? 'text-zinc-500' : 'text-neutral-400'}>{activeMaterial.laser}</span>
                     </div>
@@ -465,7 +472,7 @@ export default memo(function MaterialDatabase({
                           } else {
                             setLogOptPower(activeMaterial.engrave.power);
                             setLogOptSpeed(activeMaterial.engrave.speed);
-                            setLogOptZ(activeMaterial.focusZ);
+                            setLogOptZ(activeMaterial.focusZ ?? 0);
                             setShowLogForm(true);
                           }
                         }}
@@ -519,7 +526,7 @@ export default memo(function MaterialDatabase({
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block mb-0.5 label-caps">Optimal Power (S)</label>
+                          <label className="block mb-0.5 label-caps">Optimal {powerUnit}</label>
                           <input
                             id="log-power"
                             type="number"

@@ -91,40 +91,6 @@ describe('GCodeOutput component', () => {
     expect(document.getElementById('download-gcode-btn')).toBeInTheDocument();
   });
 
-  it('shows Print button with correct label when not printing', () => {
-    render(
-      <GCodeOutput
-        gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial}
-        paths={samplePaths} onPrint={() => {}} isPrinterConnected={true} isPrinting={false}
-      />
-    );
-
-    expect(screen.getByText('Run Job')).toBeInTheDocument();
-  });
-
-  it('shows "Printing..." when isPrinting is true', () => {
-    render(
-      <GCodeOutput
-        gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial}
-        paths={samplePaths} onPrint={() => {}} isPrinterConnected={true} isPrinting={true}
-      />
-    );
-
-    expect(screen.getByText('Printing...')).toBeInTheDocument();
-  });
-
-  it('print button disabled when not connected', () => {
-    render(
-      <GCodeOutput
-        gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial}
-        paths={samplePaths} onPrint={() => {}} isPrinterConnected={false} isPrinting={false}
-      />
-    );
-
-    const btn = document.getElementById('print-gcode-btn')!;
-    expect(btn).toBeDisabled();
-  });
-
   it('renders gcode lines in the viewer', () => {
     render(
       <GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} />

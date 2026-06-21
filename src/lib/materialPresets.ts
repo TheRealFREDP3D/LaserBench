@@ -91,7 +91,6 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     category: 'Wood',
     thickness: 3.0,
     laser: '5W Diode',
-    focusZ: 0,
     engrave: { power: 140, speed: 1800 },
     cut: { power: 255, speed: 150 },
     history: [
@@ -111,7 +110,6 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     category: 'Wood',
     thickness: 6.0,
     laser: '10W Diode',
-    focusZ: 0,
     engrave: { power: 180, speed: 1500 },
     cut: { power: 255, speed: 80 },
     history: []
@@ -122,7 +120,6 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     category: 'Wood',
     thickness: 4.0,
     laser: '5W Diode',
-    focusZ: 0,
     engrave: { power: 110, speed: 2000 },
     cut: { power: 255, speed: 120 },
     history: []
@@ -133,7 +130,6 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     category: 'Wood',
     thickness: 3.0,
     laser: '5W Diode',
-    focusZ: 0,
     engrave: { power: 160, speed: 1400 },
     cut: { power: 255, speed: 100 },
     history: []
@@ -144,7 +140,6 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     category: 'Plastics',
     thickness: 3.0,
     laser: '5W Diode',
-    focusZ: 0,
     engrave: { power: 100, speed: 2400 },
     cut: { power: 255, speed: 140 },
     history: [
@@ -164,7 +159,6 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     category: 'Leather',
     thickness: 2.0,
     laser: '5W Diode',
-    focusZ: 0,
     engrave: { power: 60, speed: 2500 },
     cut: { power: 180, speed: 400 },
     history: []
@@ -175,7 +169,6 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     category: 'Paper/Cardboard',
     thickness: 4.0,
     laser: '5W Diode',
-    focusZ: 0,
     engrave: { power: 50, speed: 3000 },
     cut: { power: 150, speed: 500 },
     history: []
@@ -186,7 +179,6 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     category: 'Stone',
     thickness: 5.0,
     laser: '5W Diode',
-    focusZ: 0,
     engrave: { power: 200, speed: 1200 },
     cut: { power: 255, speed: 0 },
     history: [
