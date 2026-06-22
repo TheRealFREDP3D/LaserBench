@@ -25,6 +25,7 @@ import WorkflowStepper, { WorkflowStage } from './components/layout/WorkflowStep
 
 import { Sun, Moon, BookOpen, AlertTriangle, X, Sliders, FolderOpen, ChevronDown } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -600,6 +601,7 @@ export default function App() {
 
       {/* Vercel Web Analytics */}
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
