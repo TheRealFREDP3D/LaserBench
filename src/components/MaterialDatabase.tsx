@@ -6,6 +6,7 @@ import {
   ChevronDown, Inbox,
 } from 'lucide-react';
 import { useConfirmModal } from '../hooks/useConfirmModal';
+import { useTheme } from '../lib/themeContext';
 
 interface MaterialDatabaseProps {
   materials: MaterialProfile[];
@@ -18,7 +19,6 @@ interface MaterialDatabaseProps {
   onDeleteMaterial: (id: string) => void;
   /** When provided, the 'Log Test Result' button opens the Quick Log modal instead of the inline form */
   onQuickLog?: () => void;
-  theme?: 'dark' | 'light';
 }
 
 const categories: MaterialCategory[] = [
@@ -45,10 +45,10 @@ export default memo(function MaterialDatabase({
   onCreateMaterial,
   onDeleteMaterial,
   onQuickLog,
-  theme = 'dark',
 }: MaterialDatabaseProps) {
+  const { theme } = useTheme();
   const isLight = theme === 'light';
-  const { confirm, ConfirmModalComponent } = useConfirmModal(theme);
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
   const [activeCategory, setActiveCategory] = useState<MaterialCategory>('Wood');
   const [isEditing, setIsEditing] = useState(false);
   const [showLogForm, setShowLogForm] = useState(false);

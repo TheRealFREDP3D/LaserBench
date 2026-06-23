@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { MachineProfile, MaterialProfile, CalibrationHistoryEntry } from './types';
+import { MachineProfile, MaterialProfile, CalibrationHistoryEntry, PatternType } from './types';
 import { generatePatternPaths, GeneratedData } from './lib/gcodeGenerator';
 import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
 import { downloadGCode, makeGCodeFilename } from './lib/downloadGCode';
+import { useTheme } from './lib/themeContext';
 
 import { useMachineStore } from './hooks/useMachineStore';
 import { useMaterialStore } from './hooks/useMaterialStore';
@@ -15,6 +16,7 @@ import PresetManager from './components/PresetManager';
 import SVGVisualizer from './components/SVGVisualizer';
 import GCodeOutput from './components/GCodeOutput';
 import { PrinterConsole } from './components/PrinterConsole';
+import PanelBoundary from './components/PanelBoundary';
 import { useWebSerial } from './lib/useWebSerial';
 import GCodeDictionary from './components/GCodeDictionary';
 import QuickLogModal from './components/QuickLogModal';
@@ -45,25 +47,7 @@ export default function App() {
   } = useMaterialStore();
 
   const pattern = usePatternParams();
-
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    try {
-      const stored = localStorage.getItem('laserbench_theme');
-      return stored === 'light' ? 'light' : 'dark';
-    } catch {
-      return 'dark';
-    }
-  });
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    try {
-      localStorage.setItem('laserbench_theme', nextTheme);
-    } catch (e) {
-      console.warn('Failed to save theme setting', e);
-    }
-  };
+  const { theme, toggleTheme } = useTheme();
 
   const [generatedResults, setGeneratedResults] = useState<GeneratedData | null>(null);
   const [hoveredPathIndex, setHoveredPathIndex] = useState<number | null>(null);
@@ -225,13 +209,13 @@ export default function App() {
 
   // ── Workflow stepper derivation ────────────────────────────────────
   const activeStage: WorkflowStage = lastTouched;
-  const completedStages: WorkflowStage[] = [
+  const completedStages: WorkflowStage[] = useMemo(() => [
     selectedMachineId ? 'machine' : null,
     selectedMaterialId ? 'material' : null,
     generatedResults ? 'pattern' : null,
     generatedResults ? 'preview' : null,
     (activeMaterial?.history?.length ?? 0) > 0 ? 'burn' : null,
-  ].filter(Boolean) as WorkflowStage[];
+  ].filter(Boolean) as WorkflowStage[], [selectedMachineId, selectedMaterialId, generatedResults, activeMaterial]);
 
   const handleStageClick = useCallback((stage: WorkflowStage) => {
     switch (stage) {
@@ -258,6 +242,49 @@ export default function App() {
         break;
     }
   }, []);
+
+  const handleSelectMachine = useCallback((id: string) => {
+    setSelectedMachineId(id);
+    setLastTouched('machine');
+  }, [setSelectedMachineId]);
+
+  const handleConnect = useCallback(() => {
+    connect(activeMachine?.baudRate);
+  }, [connect, activeMachine]);
+
+  const handleSelectMaterial = useCallback((id: string) => {
+    setSelectedMaterialId(id);
+    setLastTouched('material');
+  }, [setSelectedMaterialId]);
+
+  const handleOpenQuickLog = useCallback(() => setShowQuickLogModal(true), []);
+
+  const handleCloseQuickLog = useCallback(() => setShowQuickLogModal(false), []);
+
+  const handleCloseDictionary = useCallback(() => setShowDictionary(false), []);
+
+  const handleViewChange = useCallback((v: CanvasView) => {
+    setCanvasView(v);
+    setLastTouched('burn');
+  }, []);
+
+  const handleSelectPattern = useCallback((p: PatternType) => {
+    pattern.setSelectedPattern(p);
+    setLastTouched('pattern');
+  }, [pattern]);
+
+  const handlePatternChange = useCallback(<T,>(setter: (v: T) => void) => (v: T) => {
+    setter(v);
+    setLastTouched('pattern');
+  }, []);
+
+  const handleLoadPreset = useCallback((preset: Parameters<typeof pattern.loadPreset>[0]) => {
+    pattern.loadPreset(preset);
+    setPresetFlyoutOpen(false);
+    setLastTouched('pattern');
+  }, [pattern]);
+
+  const handleTogglePresetFlyout = useCallback(() => setPresetFlyoutOpen(v => !v), []);
 
   const hasDeltaWarnings =
     !dismissedDeltaWarnings &&
@@ -352,14 +379,13 @@ export default function App() {
             <MachineSelector
               machines={machines}
               selectedMachineId={selectedMachineId}
-              onSelectMachine={(id) => { setSelectedMachineId(id); setLastTouched('machine'); }}
+              onSelectMachine={handleSelectMachine}
               onUpdateMachine={handleUpdateMachine}
               onCreateMachine={handleCreateMachine}
               onDeleteMachine={handleDeleteMachine}
               isConnected={isConnected}
-              onConnect={() => connect(activeMachine?.baudRate)}
+              onConnect={handleConnect}
               onDisconnect={disconnect}
-              theme={theme}
             />
           </div>
 
@@ -370,12 +396,11 @@ export default function App() {
               selectedMaterialId={selectedMaterialId}
               pwmMax={activeMachine ? activeMachine.pwmMax : 255}
               firmware={activeMachine?.firmware ?? 'grbl'}
-              onSelectMaterial={(id) => { setSelectedMaterialId(id); setLastTouched('material'); }}
+              onSelectMaterial={handleSelectMaterial}
               onUpdateMaterial={handleUpdateMaterial}
               onCreateMaterial={handleCreateMaterial}
               onDeleteMaterial={handleDeleteMaterial}
-              onQuickLog={() => setShowQuickLogModal(true)}
-              theme={theme}
+              onQuickLog={handleOpenQuickLog}
             />
           </div>
 
@@ -390,7 +415,7 @@ export default function App() {
                 <button
                   type="button"
                   id="load-preset-btn"
-                  onClick={() => setPresetFlyoutOpen(!presetFlyoutOpen)}
+                  onClick={handleTogglePresetFlyout}
                   aria-expanded={presetFlyoutOpen}
                   aria-controls="preset-flyout"
                   data-testid="load-preset-toggle"
@@ -431,12 +456,7 @@ export default function App() {
                         zMax={pattern.zMax}
                         zSteps={pattern.zSteps}
                         pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-                        onLoadPreset={(preset) => {
-                          pattern.loadPreset(preset);
-                          setPresetFlyoutOpen(false);
-                          setLastTouched('pattern');
-                        }}
-                        theme={theme}
+                        onLoadPreset={handleLoadPreset}
                       />
                     </motion.div>
                   )}
@@ -445,7 +465,7 @@ export default function App() {
             </div>
             <PatternConfigurator
               selectedPattern={pattern.selectedPattern}
-              onSelectPattern={(p) => { pattern.setSelectedPattern(p); setLastTouched('pattern'); }}
+              onSelectPattern={handleSelectPattern}
               powerMin={pattern.powerMin}
               powerMax={pattern.powerMax}
               speedMin={pattern.speedMin}
@@ -459,19 +479,18 @@ export default function App() {
               zMax={pattern.zMax}
               zSteps={pattern.zSteps}
               pwmMax={activeMachine ? activeMachine.pwmMax : 255}
-              onSetPowerMin={(v) => { pattern.setPowerMin(v); setLastTouched('pattern'); }}
-              onSetPowerMax={(v) => { pattern.setPowerMax(v); setLastTouched('pattern'); }}
-              onSetSpeedMin={(v) => { pattern.setSpeedMin(v); setLastTouched('pattern'); }}
-              onSetSpeedMax={(v) => { pattern.setSpeedMax(v); setLastTouched('pattern'); }}
-              onSetPowerSteps={(v) => { pattern.setPowerSteps(v); setLastTouched('pattern'); }}
-              onSetSpeedSteps={(v) => { pattern.setSpeedSteps(v); setLastTouched('pattern'); }}
-              onSetNominalThickness={(v) => { pattern.setNominalThickness(v); setLastTouched('pattern'); }}
-              onSetKerfValues={(v) => { pattern.setKerfValues(v); setLastTouched('pattern'); }}
-              onSetZMin={(v) => { pattern.setZMin(v); setLastTouched('pattern'); }}
-              onSetZMax={(v) => { pattern.setZMax(v); setLastTouched('pattern'); }}
-              onSetZSteps={(v) => { pattern.setZSteps(v); setLastTouched('pattern'); }}
-              onSetBlockSize={(v) => { pattern.setBlockSize(v); setLastTouched('pattern'); }}
-              theme={theme}
+              onSetPowerMin={handlePatternChange(pattern.setPowerMin)}
+              onSetPowerMax={handlePatternChange(pattern.setPowerMax)}
+              onSetSpeedMin={handlePatternChange(pattern.setSpeedMin)}
+              onSetSpeedMax={handlePatternChange(pattern.setSpeedMax)}
+              onSetPowerSteps={handlePatternChange(pattern.setPowerSteps)}
+              onSetSpeedSteps={handlePatternChange(pattern.setSpeedSteps)}
+              onSetNominalThickness={handlePatternChange(pattern.setNominalThickness)}
+              onSetKerfValues={handlePatternChange(pattern.setKerfValues)}
+              onSetZMin={handlePatternChange(pattern.setZMin)}
+              onSetZMax={handlePatternChange(pattern.setZMax)}
+              onSetZSteps={handlePatternChange(pattern.setZSteps)}
+              onSetBlockSize={handlePatternChange(pattern.setBlockSize)}
             />
           </div>
         </div>
@@ -481,16 +500,17 @@ export default function App() {
           {/* SVG Toolpath Preview — always visible */}
           <div className="flex-1 min-w-0 border-r border-white/8 flex flex-col min-h-0 overflow-hidden">
             {generatedResults && activeMachine && activeMaterial ? (
-              <SVGVisualizer
-                svgPaths={generatedResults.svgPaths}
-                machine={activeMachine}
-                material={activeMaterial}
-                patternType={pattern.selectedPattern}
-                paths={generatedResults.paths}
-                theme={theme}
-                hoveredPathIndex={hoveredPathIndex}
-                onHoverPath={setHoveredPathIndex}
-              />
+              <PanelBoundary name="Toolpath Preview">
+                <SVGVisualizer
+                  svgPaths={generatedResults.svgPaths}
+                  machine={activeMachine}
+                  material={activeMaterial}
+                  patternType={pattern.selectedPattern}
+                  paths={generatedResults.paths}
+                  hoveredPathIndex={hoveredPathIndex}
+                  onHoverPath={setHoveredPathIndex}
+                />
+              </PanelBoundary>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 text-[#505050]">
                 <svg className="w-12 h-12 opacity-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -509,7 +529,7 @@ export default function App() {
           <div className="flex-1 min-w-0 flex flex-col">
             <MainCanvas
               canvasView={canvasView}
-              onViewChange={(v) => { setCanvasView(v); setLastTouched('burn'); }}
+              onViewChange={handleViewChange}
               isConnected={isConnected}
               isPrinting={isPrinting}
             >
@@ -520,7 +540,6 @@ export default function App() {
                   machine={activeMachine}
                   material={activeMaterial}
                   paths={generatedResults.paths}
-                  theme={theme}
                   hoveredPathIndex={hoveredPathIndex}
                   onHoverPath={setHoveredPathIndex}
                 />
@@ -529,21 +548,22 @@ export default function App() {
                   <p>G-Code output will appear here once a pattern is generated.</p>
                 </div>
               )}
-              <PrinterConsole
-                isConnected={isConnected}
-                messages={messages}
-                isPrinting={isPrinting}
-                progress={progress}
-                onConnect={() => connect(activeMachine?.baudRate)}
-                onDisconnect={disconnect}
-                onSend={send}
-                onClear={clearMessages}
-                onAbortPrint={abortPrint}
-                onPrint={handlePrint}
-                gcode={generatedResults?.gcode}
-                activeMachine={activeMachine}
-                theme={theme}
-              />
+              <PanelBoundary name="Printer Console">
+                <PrinterConsole
+                  isConnected={isConnected}
+                  messages={messages}
+                  isPrinting={isPrinting}
+                  progress={progress}
+                  onConnect={handleConnect}
+                  onDisconnect={disconnect}
+                  onSend={send}
+                  onClear={clearMessages}
+                  onAbortPrint={abortPrint}
+                  onPrint={handlePrint}
+                  gcode={generatedResults?.gcode}
+                  activeMachine={activeMachine}
+                />
+              </PanelBoundary>
             </MainCanvas>
           </div>
         </div>
@@ -554,7 +574,7 @@ export default function App() {
         disabled={!generatedResults}
         estimatedTimeStr={estimatedTimeStr}
         onClick={handleDownloadGCode}
-        onLogClick={() => setShowQuickLogModal(true)}
+        onLogClick={handleOpenQuickLog}
         logDisabled={!activeMaterial}
       />
 
@@ -570,14 +590,14 @@ export default function App() {
         deltaPrintRadius={activeMachine?.deltaPrintRadius}
         isPrinting={isPrinting}
         progress={progress}
-        onConnect={() => connect(activeMachine?.baudRate)}
+        onConnect={handleConnect}
         onDisconnect={disconnect}
       />
 
       {/* Quick Log Modal — opens from FAB area, Material tab, or 'L' keyboard shortcut */}
       <QuickLogModal
         open={showQuickLogModal}
-        onClose={() => setShowQuickLogModal(false)}
+        onClose={handleCloseQuickLog}
         activeMaterial={activeMaterial}
         activeMachineName={activeMachine?.name ?? ''}
         patternType={pattern.selectedPattern}
@@ -588,14 +608,12 @@ export default function App() {
           zMin: pattern.zMin, zMax: pattern.zMax, blockSize: pattern.blockSize,
         }}
         onSave={handleQuickLogSave}
-        theme={theme}
       />
 
       {/* G-Code Dictionary Modal */}
       {showDictionary && (
         <GCodeDictionary
-          onClose={() => setShowDictionary(false)}
-          theme={theme}
+          onClose={handleCloseDictionary}
         />
       )}
 

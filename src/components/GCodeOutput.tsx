@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useCallback, memo } from 'react';
 import { Copy, FileDown, Check, FileCode, Clock, Compass, Hash } from 'lucide-react';
 import { MachineProfile, MaterialProfile, PatternType } from '../types';
 import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
+import { useTheme } from '../lib/themeContext';
 
 interface GCodeOutputProps {
   gcode: string;
@@ -15,7 +16,6 @@ interface GCodeOutputProps {
     z: number;
     isLaserOn: boolean;
   }[];
-  theme?: 'dark' | 'light';
   hoveredPathIndex?: number | null;
   onHoverPath?: (index: number | null) => void;
 }
@@ -26,10 +26,10 @@ export default memo(function GCodeOutput({
   machine,
   material,
   paths,
-  theme = 'dark',
   hoveredPathIndex,
   onHoverPath,
 }: GCodeOutputProps) {
+  const { theme } = useTheme();
   const isLight = theme === 'light';
   const [copied, setCopied] = useState(false);
   const [showLineNumbers, setShowLineNumbers] = useState(false);
@@ -208,7 +208,7 @@ export default memo(function GCodeOutput({
                 : 'bg-slate-950/60 border-slate-900 text-slate-600'
             }`}
           >
-            {gcode.split('\n').map((_, i) => (
+            {gcodeLines.map((_, i) => (
               <div key={i} className="h-[18px]">
                 {i + 1}
               </div>

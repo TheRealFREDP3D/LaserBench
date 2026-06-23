@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, memo, type MouseEvent as ReactMou
 import { MachineProfile, MaterialProfile, PatternType } from '../types';
 import type { SvgPathElement } from '../lib/gcodeGenerator';
 import { ZoomIn, ZoomOut, Maximize, Crosshair, HelpCircle, Eye } from 'lucide-react';
+import { useTheme } from '../lib/themeContext';
 
 interface SVGVisualizerProps {
   svgPaths: SvgPathElement[];
@@ -15,7 +16,6 @@ interface SVGVisualizerProps {
     z: number;
     isLaserOn: boolean;
   }[];
-  theme?: 'dark' | 'light';
   hoveredPathIndex?: number | null;
   onHoverPath?: (index: number | null) => void;
 }
@@ -26,10 +26,10 @@ export default memo(function SVGVisualizer({
   material,
   patternType,
   paths = [],
-  theme = 'dark',
   hoveredPathIndex = null,
   onHoverPath,
 }: SVGVisualizerProps) {
+  const { theme } = useTheme();
   const isLight = theme === 'light';
 
   // Viewport transforms
@@ -57,13 +57,24 @@ export default memo(function SVGVisualizer({
 
   const svgRef = useRef<SVGSVGElement>(null);
   const dragStart = useRef({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
 
   const laserPaths = useMemo(() => paths.filter(p => p.isLaserOn), [paths]);
   const laserPathCount = laserPaths.length;
-  const laserPowerMin = laserPathCount > 0 ? Math.min(...laserPaths.map(p => p.power)) : 0;
-  const laserPowerMax = laserPathCount > 0 ? Math.max(...laserPaths.map(p => p.power)) : machine.pwmMax;
-  const laserSpeedMin = laserPathCount > 0 ? Math.min(...laserPaths.map(p => p.speed)) : 0;
-  const laserSpeedMax = laserPathCount > 0 ? Math.max(...laserPaths.map(p => p.speed)) : 0;
+
+  const laserStats = useMemo(() => {
+    if (laserPathCount === 0) {
+      return { powerMin: 0, powerMax: machine.pwmMax, speedMin: 0, speedMax: 0 };
+    }
+    let powerMin = Infinity, powerMax = -Infinity, speedMin = Infinity, speedMax = -Infinity;
+    for (const p of laserPaths) {
+      if (p.power < powerMin) powerMin = p.power;
+      if (p.power > powerMax) powerMax = p.power;
+      if (p.speed < speedMin) speedMin = p.speed;
+      if (p.speed > speedMax) speedMax = p.speed;
+    }
+    return { powerMin, powerMax, speedMin, speedMax };
+  }, [laserPaths, laserPathCount, machine.pwmMax]);
 
   // Bed coordinates sizing
   const isCircular = machine.bedShape === 'circular';
@@ -95,14 +106,16 @@ export default memo(function SVGVisualizer({
       setPanY(e.clientY - dragStart.current.y);
     }
 
-    // Coordinate inspection
-    if (svgRef.current) {
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      if (!svgRef.current) return;
       const rect = svgRef.current.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
       const normX = mouseX / rect.width;
-      const normY = 1.0 - (mouseY / rect.height); // Flip Y because beds are Y-up while screen is Y-down
+      const normY = 1.0 - (mouseY / rect.height);
 
       const mmX = minX + normX * width;
       const mmY = minY + normY * height;
@@ -110,7 +123,6 @@ export default memo(function SVGVisualizer({
       if (mmX >= minX && mmX <= minX + width && mmY >= minY && mmY <= minY + height) {
         setHoverPos({ x: parseFloat(mmX.toFixed(1)), y: parseFloat(mmY.toFixed(1)) });
         
-        // Find nearest path segment with laser on for hover stats inspector
         let minDistance = Infinity;
         let selectedPath = null;
 
@@ -137,7 +149,7 @@ export default memo(function SVGVisualizer({
         setHoverPos(null);
         setClosestPath(null);
       }
-    }
+    });
   };
 
   const handleMouseUp = () => {
@@ -296,15 +308,6 @@ export default memo(function SVGVisualizer({
   const renderOverlayPaths = () => {
     if (!paths || paths.length === 0) return null;
 
-    const laserPaths = paths.filter(p => p.isLaserOn);
-    const powers = laserPaths.map(p => p.power);
-    const speeds = laserPaths.map(p => p.speed);
-
-    const minP = powers.length > 0 ? Math.min(...powers) : 0;
-    const maxP = powers.length > 0 ? Math.max(...powers) : machine.pwmMax;
-    const minS = speeds.length > 0 ? Math.min(...speeds) : 100;
-    const maxS = speeds.length > 0 ? Math.max(...speeds) : machine.travelSpeed;
-
     return paths.map((path, idx) => {
       const d = path.points.map((pt, pIdx) => `${pIdx === 0 ? 'M' : 'L'} ${pt[0]} ${pt[1]}`).join(' ');
 
@@ -315,9 +318,9 @@ export default memo(function SVGVisualizer({
 
       if (path.isLaserOn) {
         if (intensityOverlay === 'power') {
-          stroke = getGradientColor(path.power, minP, maxP, false);
+          stroke = getGradientColor(path.power, laserStats.powerMin, laserStats.powerMax, false);
         } else if (intensityOverlay === 'speed') {
-          stroke = getGradientColor(path.speed, minS, maxS, true);
+          stroke = getGradientColor(path.speed, laserStats.speedMin, laserStats.speedMax, true);
         }
       } else {
         stroke = '#475569';
@@ -342,15 +345,6 @@ export default memo(function SVGVisualizer({
   // Render the step simulated paths cleanly
   const renderSimulatedPaths = () => {
     if (!paths || paths.length === 0) return null;
-
-    const laserPaths = paths.filter(p => p.isLaserOn);
-    const powers = laserPaths.map(p => p.power);
-    const speeds = laserPaths.map(p => p.speed);
-
-    const minPower = powers.length > 0 ? Math.min(...powers) : 0;
-    const maxPower = powers.length > 0 ? Math.max(...powers) : machine.pwmMax;
-    const minSpeed = speeds.length > 0 ? Math.min(...speeds) : 100;
-    const maxSpeed = speeds.length > 0 ? Math.max(...speeds) : machine.travelSpeed;
 
     return paths.map((path, idx) => {
       const isPast = idx < simStep;
@@ -387,9 +381,9 @@ export default memo(function SVGVisualizer({
 
       if (path.isLaserOn) {
         if (intensityOverlay === 'power') {
-          stroke = getGradientColor(path.power, minPower, maxPower, false);
+          stroke = getGradientColor(path.power, laserStats.powerMin, laserStats.powerMax, false);
         } else if (intensityOverlay === 'speed') {
-          stroke = getGradientColor(path.speed, minSpeed, maxSpeed, true);
+          stroke = getGradientColor(path.speed, laserStats.speedMin, laserStats.speedMax, true);
         } else {
           const ratio = path.power / machine.pwmMax;
           if (ratio < 0.3) stroke = '#93c5fd';
@@ -781,9 +775,9 @@ export default memo(function SVGVisualizer({
         }`}>
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-semibold text-neutral-400 whitespace-nowrap">Power Heatmap:</span>
-            <span className="font-mono text-blue-500 font-bold">Min S{laserPowerMin}</span>
+            <span className="font-mono text-blue-500 font-bold">Min S{laserStats.powerMin}</span>
             <div className="w-28 h-1.5 rounded bg-gradient-to-r from-[#3b82f6] via-[#06b6d4] via-[#10b981] via-[#eab308] to-[#ef4444]" />
-            <span className="font-mono text-red-500 font-bold">Max S{laserPowerMax}</span>
+            <span className="font-mono text-red-500 font-bold">Max S{laserStats.powerMax}</span>
           </div>
           <div className="flex items-center gap-1 text-neutral-500">
             <span className="w-3 h-px border-t border-dashed border-neutral-600 inline-block"></span>
@@ -796,9 +790,9 @@ export default memo(function SVGVisualizer({
         }`}>
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-semibold text-neutral-400 whitespace-nowrap">Speed Heatmap:</span>
-            <span className="font-mono text-violet-500 font-bold">Slow {laserPathCount > 0 ? laserSpeedMin : 100} mm/m</span>
+            <span className="font-mono text-violet-500 font-bold">Slow {laserPathCount > 0 ? laserStats.speedMin : 100} mm/m</span>
             <div className="w-28 h-1.5 rounded bg-gradient-to-r from-[#8b5cf6] via-[#f97316] to-[#06b6d4]" />
-            <span className="font-mono text-cyan-500 font-bold">Fast {laserPathCount > 0 ? laserSpeedMax : machine.travelSpeed} mm/m</span>
+            <span className="font-mono text-cyan-500 font-bold">Fast {laserPathCount > 0 ? laserStats.speedMax : machine.travelSpeed} mm/m</span>
           </div>
           <div className="flex items-center gap-1 text-neutral-500">
             <span className="w-3 h-px border-t border-dashed border-neutral-600 inline-block"></span>

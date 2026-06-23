@@ -3,6 +3,7 @@ import {useState} from 'react';
 import {render, screen, fireEvent, cleanup} from '@testing-library/react';
 import fc from 'fast-check';
 import MaterialDatabase from '@/src/components/MaterialDatabase';
+import {ThemeProvider} from '@/src/lib/themeContext';
 import type {MaterialProfile, MaterialCategory} from '@/src/types';
 
 afterEach(() => {
@@ -63,13 +64,15 @@ function TestHarness({
 }) {
   const [selectedId, setSelectedId] = useState(initialId);
   return (
-    <MaterialDatabase
-      materials={materials}
-      selectedMaterialId={selectedId}
-      onSelectMaterial={setSelectedId}
-      pwmMax={1000}
-      {...emptyHandlers}
-    />
+    <ThemeProvider>
+      <MaterialDatabase
+        materials={materials}
+        selectedMaterialId={selectedId}
+        onSelectMaterial={setSelectedId}
+        pwmMax={1000}
+        {...emptyHandlers}
+      />
+    </ThemeProvider>
   );
 }
 
@@ -103,13 +106,15 @@ describe('Property 12: MaterialDatabase summary row completeness', () => {
             };
 
             render(
-              <MaterialDatabase
-                materials={[mat]}
-                selectedMaterialId={mat.id}
-                pwmMax={1000}
-                onSelectMaterial={() => {}}
-                {...emptyHandlers}
-              />
+              <ThemeProvider>
+                <MaterialDatabase
+                  materials={[mat]}
+                  selectedMaterialId={mat.id}
+                  pwmMax={1000}
+                  onSelectMaterial={() => {}}
+                  {...emptyHandlers}
+                />
+              </ThemeProvider>
             );
 
             const summary = screen.getByTestId('material-summary');

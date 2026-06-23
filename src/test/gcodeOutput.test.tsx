@@ -1,6 +1,7 @@
 import {describe, expect, it, vi, afterEach} from 'vitest';
 import {render, screen, fireEvent, cleanup, act} from '@testing-library/react';
 import GCodeOutput from '@/src/components/GCodeOutput';
+import {ThemeProvider} from '@/src/lib/themeContext';
 import type {MachineProfile, MaterialProfile} from '@/src/types';
 
 afterEach(() => {
@@ -31,7 +32,7 @@ const samplePaths = [
 describe('GCodeOutput component', () => {
   it('renders stats banner with path count, distances, and duration', () => {
     render(
-      <GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} />
+      <ThemeProvider><GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} /></ThemeProvider>
     );
 
     expect(document.getElementById('gcode-stats-banner')).toBeInTheDocument();
@@ -40,7 +41,7 @@ describe('GCodeOutput component', () => {
 
   it('toggles line numbers on click', () => {
     render(
-      <GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} />
+      <ThemeProvider><GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} /></ThemeProvider>
     );
 
     const btn = document.getElementById('toggle-line-numbers-btn')!;
@@ -61,7 +62,7 @@ describe('GCodeOutput component', () => {
     Object.assign(navigator, {clipboard: {writeText}});
 
     render(
-      <GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} />
+      <ThemeProvider><GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} /></ThemeProvider>
     );
 
     await act(async () => {
@@ -74,7 +75,7 @@ describe('GCodeOutput component', () => {
     Object.assign(navigator, {clipboard: {writeText: vi.fn().mockResolvedValue(undefined)}});
 
     render(
-      <GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} />
+      <ThemeProvider><GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} /></ThemeProvider>
     );
 
     await act(async () => {
@@ -85,7 +86,7 @@ describe('GCodeOutput component', () => {
 
   it('download button is always present', () => {
     render(
-      <GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} />
+      <ThemeProvider><GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} /></ThemeProvider>
     );
 
     expect(document.getElementById('download-gcode-btn')).toBeInTheDocument();
@@ -93,7 +94,7 @@ describe('GCodeOutput component', () => {
 
   it('renders gcode lines in the viewer', () => {
     render(
-      <GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} />
+      <ThemeProvider><GCodeOutput gcode={sampleGcode} patternType="matrix" machine={mockMachine} material={mockMaterial} paths={samplePaths} /></ThemeProvider>
     );
 
     // G90 appears in both header badge and code viewer — use getAllByText

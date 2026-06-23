@@ -1,15 +1,17 @@
+import { memo } from 'react';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useTheme } from '../lib/themeContext';
 
 interface ConfirmModalProps {
   open: boolean;
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
-  theme?: 'dark' | 'light';
 }
 
-export default function ConfirmModal({ open, message, onConfirm, onCancel, theme = 'dark' }: ConfirmModalProps) {
+export default memo(function ConfirmModal({ open, message, onConfirm, onCancel }: ConfirmModalProps) {
+  const { theme } = useTheme();
   const isLight = theme === 'light';
   const trapRef = useFocusTrap<HTMLDivElement>(open);
 
@@ -57,4 +59,4 @@ export default function ConfirmModal({ open, message, onConfirm, onCancel, theme
       </div>
     </div>
   );
-}
+});

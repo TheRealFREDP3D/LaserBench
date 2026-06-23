@@ -1,5 +1,48 @@
 import { MachineProfile, MaterialProfile } from '../types';
 
+function isValidMachineProfile(m: unknown): m is MachineProfile {
+  if (typeof m !== 'object' || m === null) return false;
+  const obj = m as Record<string, unknown>;
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.name === 'string' &&
+    typeof obj.firmware === 'string' &&
+    typeof obj.laserOn === 'string' &&
+    typeof obj.laserOff === 'string' &&
+    typeof obj.pwmMax === 'number' &&
+    typeof obj.safeZ === 'number' &&
+    typeof obj.workZ === 'number' &&
+    typeof obj.travelSpeed === 'number' &&
+    typeof obj.bedShape === 'string' &&
+    typeof obj.bedWidth === 'number' &&
+    typeof obj.bedHeight === 'number' &&
+    typeof obj.baudRate === 'number'
+  );
+}
+
+function isValidMaterialProfile(m: unknown): m is MaterialProfile {
+  if (typeof m !== 'object' || m === null) return false;
+  const obj = m as Record<string, unknown>;
+  if (
+    typeof obj.id !== 'string' ||
+    typeof obj.name !== 'string' ||
+    typeof obj.category !== 'string' ||
+    typeof obj.thickness !== 'number' ||
+    typeof obj.laser !== 'string' ||
+    typeof obj.engrave !== 'object' || obj.engrave === null ||
+    typeof obj.cut !== 'object' || obj.cut === null ||
+    !Array.isArray(obj.history)
+  ) return false;
+  const engrave = obj.engrave as Record<string, unknown>;
+  const cut = obj.cut as Record<string, unknown>;
+  return (
+    typeof engrave.power === 'number' &&
+    typeof engrave.speed === 'number' &&
+    typeof cut.power === 'number' &&
+    typeof cut.speed === 'number'
+  );
+}
+
 export const INITIAL_MACHINES: MachineProfile[] = [
   {
     id: 'flsun_kossel',
@@ -180,7 +223,7 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     thickness: 5.0,
     laser: '5W Diode',
     engrave: { power: 200, speed: 1200 },
-    cut: { power: 255, speed: 0 },
+    cut: { power: 255, speed: 100 },
     history: [
       {
         id: 'h3',
@@ -198,7 +241,11 @@ export function getStoredMaterials(): MaterialProfile[] {
   const data = localStorage.getItem('laserbench_materials');
   if (data) {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.every(isValidMaterialProfile)) {
+        return parsed;
+      }
+      console.error("Invalid materials schema in localStorage, resetting to defaults");
     } catch (e) {
       console.error("Error parsing materials database, resetting to defaults", e);
     }
@@ -223,7 +270,11 @@ export function getStoredMachines(): MachineProfile[] {
   const data = localStorage.getItem('laserbench_machines');
   if (data) {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.every(isValidMachineProfile)) {
+        return parsed;
+      }
+      console.error("Invalid machines schema in localStorage, resetting to defaults");
     } catch (e) {
       console.error("Error parsing machines database, resetting to defaults", e);
     }

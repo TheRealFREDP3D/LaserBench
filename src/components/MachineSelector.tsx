@@ -3,6 +3,7 @@ import { MachineProfile, FirmwareType } from '../types';
 import { Plus, Trash2, Cpu, Triangle, ChevronDown, Settings, Power, PowerOff } from 'lucide-react';
 import { DEFAULT_DELTA_PARAMS } from '../lib/deltaKinematics';
 import { useConfirmModal } from '../hooks/useConfirmModal';
+import { useTheme } from '../lib/themeContext';
 
 export type SectionKey = 'laserCommands' | 'motionZ' | 'bedGeometry' | 'deltaKinematics';
 
@@ -16,7 +17,6 @@ interface MachineSelectorProps {
   isConnected?: boolean;
   onConnect?: () => void;
   onDisconnect?: () => void;
-  theme?: 'dark' | 'light';
 }
 
 const DEFAULT_COLLAPSED: Record<SectionKey, boolean> = {
@@ -25,21 +25,6 @@ const DEFAULT_COLLAPSED: Record<SectionKey, boolean> = {
   bedGeometry: false,
   deltaKinematics: true,
 };
-
-export function applyToggles(
-  initial: Record<SectionKey, boolean>,
-  actions: SectionKey[]
-): Record<SectionKey, boolean> {
-  let state = { ...initial };
-  for (const key of actions) {
-    const next = { ...state, [key]: !state[key] };
-    const anyExpanded = Object.values(next).some(v => !v);
-    if (anyExpanded) {
-      state = next;
-    }
-  }
-  return state;
-}
 
 export default memo(function MachineSelector({
   machines,
@@ -51,10 +36,10 @@ export default memo(function MachineSelector({
   isConnected = false,
   onConnect,
   onDisconnect,
-  theme = 'dark',
 }: MachineSelectorProps) {
+  const { theme } = useTheme();
   const isLight = theme === 'light';
-  const { confirm, ConfirmModalComponent } = useConfirmModal(theme);
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
   const [isEditing, setIsEditing] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<SectionKey, boolean>>({ ...DEFAULT_COLLAPSED });
   const prevEditingRef = useRef(isEditing);

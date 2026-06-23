@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { X, Flame, Calendar, Cpu, Layers, Sliders } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { MaterialProfile, PatternType, CalibrationHistoryEntry } from '../types';
+import { useTheme } from '../lib/themeContext';
 
 interface QuickLogModalProps {
   open: boolean;
@@ -21,7 +22,6 @@ interface QuickLogModalProps {
     blockSize: number;
   };
   onSave: (entry: CalibrationHistoryEntry, optimal: { power: number; speed: number; focusZ: number }) => void;
-  theme: 'dark' | 'light';
 }
 
 const PATTERN_LABELS: Record<PatternType, string> = {
@@ -41,8 +41,8 @@ export default function QuickLogModal({
   pwmMax,
   paramSnapshot,
   onSave,
-  theme,
 }: QuickLogModalProps) {
+  const { theme } = useTheme();
   const isLight = theme === 'light';
 
   // Pre-fill with the midpoint of the calibration ranges — most likely optimal value

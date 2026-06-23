@@ -31,6 +31,13 @@ export default function DebouncedRange({
     setLocalValue(value);
   }, [value]);
 
+  // Cleanup pending timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
   const handleChange = (val: number) => {
     setLocalValue(val);
     if (timerRef.current) clearTimeout(timerRef.current);

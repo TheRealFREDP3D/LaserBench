@@ -47,7 +47,8 @@ export function estimateToolpathTime(
 
       let segmentTime = 0;
       if (distance >= dAccel) {
-        // Can reach full target velocity
+        // Full trapezoid: accelerate to v, cruise, decelerate to 0
+        // Equivalent to: 2*(v/a) + (distance - dAccel)/v
         segmentTime = (v / a) + (distance / v);
       } else {
         // Limited by acceleration (cannot reach full G-code speed)

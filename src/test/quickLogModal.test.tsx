@@ -1,6 +1,7 @@
 import {describe, expect, it, vi, afterEach} from 'vitest';
 import {render, screen, fireEvent, cleanup} from '@testing-library/react';
 import QuickLogModal from '@/src/components/QuickLogModal';
+import {ThemeProvider} from '@/src/lib/themeContext';
 import type {MaterialProfile} from '@/src/types';
 
 afterEach(() => {
@@ -22,11 +23,13 @@ const defaultSnapshot = {
 describe('QuickLogModal component', () => {
   it('does not render when closed', () => {
     render(
-      <QuickLogModal
-        open={false} onClose={() => {}} activeMaterial={mockMaterial}
-        activeMachineName="Test" patternType="matrix" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={() => {}} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={false} onClose={() => {}} activeMaterial={mockMaterial}
+          activeMachineName="Test" patternType="matrix" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={() => {}}
+        />
+      </ThemeProvider>
     );
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -34,11 +37,13 @@ describe('QuickLogModal component', () => {
 
   it('renders dialog with correct attributes when open', () => {
     render(
-      <QuickLogModal
-        open={true} onClose={() => {}} activeMaterial={mockMaterial}
-        activeMachineName="Test" patternType="matrix" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={() => {}} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={true} onClose={() => {}} activeMaterial={mockMaterial}
+          activeMachineName="Test" patternType="matrix" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={() => {}}
+        />
+      </ThemeProvider>
     );
 
     const dialog = screen.getByRole('dialog');
@@ -48,11 +53,13 @@ describe('QuickLogModal component', () => {
 
   it('displays machine name and material name in burn context', () => {
     render(
-      <QuickLogModal
-        open={true} onClose={() => {}} activeMaterial={mockMaterial}
-        activeMachineName="My Laser" patternType="matrix" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={() => {}} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={true} onClose={() => {}} activeMaterial={mockMaterial}
+          activeMachineName="My Laser" patternType="matrix" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={() => {}}
+        />
+      </ThemeProvider>
     );
 
     expect(screen.getByText('My Laser')).toBeInTheDocument();
@@ -61,11 +68,13 @@ describe('QuickLogModal component', () => {
 
   it('displays pattern label for the selected pattern type', () => {
     render(
-      <QuickLogModal
-        open={true} onClose={() => {}} activeMaterial={mockMaterial}
-        activeMachineName="Test" patternType="power_ramp" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={() => {}} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={true} onClose={() => {}} activeMaterial={mockMaterial}
+          activeMachineName="Test" patternType="power_ramp" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={() => {}}
+        />
+      </ThemeProvider>
     );
 
     expect(screen.getByText('Power Ramp')).toBeInTheDocument();
@@ -73,11 +82,13 @@ describe('QuickLogModal component', () => {
 
   it('pre-fills optimal power with midpoint of param range', () => {
     render(
-      <QuickLogModal
-        open={true} onClose={() => {}} activeMaterial={mockMaterial}
-        activeMachineName="Test" patternType="matrix" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={() => {}} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={true} onClose={() => {}} activeMaterial={mockMaterial}
+          activeMachineName="Test" patternType="matrix" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={() => {}}
+        />
+      </ThemeProvider>
     );
 
     const powerInput = document.getElementById('quicklog-power') as HTMLInputElement;
@@ -88,11 +99,13 @@ describe('QuickLogModal component', () => {
     const onSave = vi.fn();
 
     render(
-      <QuickLogModal
-        open={true} onClose={() => {}} activeMaterial={mockMaterial}
-        activeMachineName="Test" patternType="matrix" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={onSave} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={true} onClose={() => {}} activeMaterial={mockMaterial}
+          activeMachineName="Test" patternType="matrix" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={onSave}
+        />
+      </ThemeProvider>
     );
 
     // Fill in the notes
@@ -113,11 +126,13 @@ describe('QuickLogModal component', () => {
     const onClose = vi.fn();
 
     render(
-      <QuickLogModal
-        open={true} onClose={onClose} activeMaterial={mockMaterial}
-        activeMachineName="Test" patternType="matrix" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={() => {}} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={true} onClose={onClose} activeMaterial={mockMaterial}
+          activeMachineName="Test" patternType="matrix" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={() => {}}
+        />
+      </ThemeProvider>
     );
 
     fireEvent.click(screen.getByText('Cancel'));
@@ -128,11 +143,13 @@ describe('QuickLogModal component', () => {
     const onClose = vi.fn();
 
     render(
-      <QuickLogModal
-        open={true} onClose={onClose} activeMaterial={mockMaterial}
-        activeMachineName="Test" patternType="matrix" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={() => {}} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={true} onClose={onClose} activeMaterial={mockMaterial}
+          activeMachineName="Test" patternType="matrix" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={() => {}}
+        />
+      </ThemeProvider>
     );
 
     fireEvent.click(screen.getByTestId('quick-log-modal-backdrop'));
@@ -143,11 +160,13 @@ describe('QuickLogModal component', () => {
     const onClose = vi.fn();
 
     render(
-      <QuickLogModal
-        open={true} onClose={onClose} activeMaterial={mockMaterial}
-        activeMachineName="Test" patternType="matrix" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={() => {}} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={true} onClose={onClose} activeMaterial={mockMaterial}
+          activeMachineName="Test" patternType="matrix" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={() => {}}
+        />
+      </ThemeProvider>
     );
 
     fireEvent.click(screen.getByRole('button', {name: /close/i}));
@@ -156,11 +175,13 @@ describe('QuickLogModal component', () => {
 
   it('user can change power value and it reflects in optimal', () => {
     render(
-      <QuickLogModal
-        open={true} onClose={() => {}} activeMaterial={mockMaterial}
-        activeMachineName="Test" patternType="matrix" pwmMax={1000}
-        paramSnapshot={defaultSnapshot} onSave={() => {}} theme="dark"
-      />
+      <ThemeProvider>
+        <QuickLogModal
+          open={true} onClose={() => {}} activeMaterial={mockMaterial}
+          activeMachineName="Test" patternType="matrix" pwmMax={1000}
+          paramSnapshot={defaultSnapshot} onSave={() => {}}
+        />
+      </ThemeProvider>
     );
 
     const powerInput = document.getElementById('quicklog-power') as HTMLInputElement;

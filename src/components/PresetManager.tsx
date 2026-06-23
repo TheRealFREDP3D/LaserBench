@@ -2,6 +2,7 @@ import { useState, useEffect, memo, type FormEvent, type MouseEvent as ReactMous
 import { Save, FolderOpen, Trash2, Plus, Search, Sparkles, Check, Info, FileSliders } from 'lucide-react';
 import { GeneratorPreset, PatternType } from '../types';
 import { useConfirmModal } from '../hooks/useConfirmModal';
+import { useTheme } from '../lib/themeContext';
 
 interface PresetManagerProps {
   // Current settings parameters to save
@@ -22,7 +23,6 @@ interface PresetManagerProps {
   
   // Callback when user picks a preset to load
   onLoadPreset: (preset: GeneratorPreset) => void;
-  theme?: 'dark' | 'light';
 }
 
 // Built-in presets for a quick, robust calibration startup
@@ -178,10 +178,10 @@ export default memo(function PresetManager({
   zSteps,
   pwmMax,
   onLoadPreset,
-  theme = 'dark',
 }: PresetManagerProps) {
+  const { theme } = useTheme();
   const isLight = theme === 'light';
-  const { confirm, ConfirmModalComponent } = useConfirmModal(theme);
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
   const [customPresets, setCustomPresets] = useState<GeneratorPreset[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [newPresetName, setNewPresetName] = useState('');

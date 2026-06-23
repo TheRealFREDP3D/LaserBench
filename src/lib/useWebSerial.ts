@@ -53,7 +53,7 @@ export function useWebSerial() {
 
   const readLoop = async () => {
     const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = portRef.current.readable.pipeTo(textDecoder.writable);
+    const readableStreamClosed = portRef.current.readable.pipeTo(textDecoder.writable).catch(() => {});
     readerRef.current = textDecoder.readable.getReader();
 
     let buffer = '';
@@ -88,6 +88,7 @@ export function useWebSerial() {
       for (const resolve of bufferResolveRef.current) resolve();
       bufferResolveRef.current = [];
     } finally {
+      await readableStreamClosed;
       readerRef.current.releaseLock();
     }
   };
@@ -105,7 +106,7 @@ export function useWebSerial() {
       setConnectionState('connected');
 
       const encoder = new TextEncoderStream();
-      encoder.readable.pipeTo(port.writable);
+      encoder.readable.pipeTo(port.writable).catch(() => {});
       writerRef.current = encoder.writable.getWriter();
 
       setIsConnected(true);

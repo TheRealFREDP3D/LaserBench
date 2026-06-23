@@ -3,6 +3,7 @@ import { PatternType } from '../types';
 import { Zap, Gauge, Grid3X3, Focus, Sliders, Scissors } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import DebouncedRange from './DebouncedRange';
+import { useTheme } from '../lib/themeContext';
 
 interface PatternConfiguratorProps {
   selectedPattern: PatternType;
@@ -37,7 +38,6 @@ interface PatternConfiguratorProps {
   onSetZMax: (v: number) => void;
   onSetZSteps: (v: number) => void;
   onSetBlockSize: (v: number) => void;
-  theme?: 'dark' | 'light';
 }
 
 export default memo(function PatternConfigurator({
@@ -68,8 +68,8 @@ export default memo(function PatternConfigurator({
   onSetZMax,
   onSetZSteps,
   onSetBlockSize,
-  theme = 'dark',
 }: PatternConfiguratorProps) {
+  const { theme } = useTheme();
   const isLight = theme === 'light';
   const patterns: { type: PatternType; name: string; desc: string; icon: LucideIcon; colorClass: string }[] = [
     {

@@ -1,12 +1,16 @@
 import {describe, expect, it, afterEach} from 'vitest';
 import {render, screen, fireEvent, cleanup} from '@testing-library/react';
+import type {ReactNode} from 'react';
 import fc from 'fast-check';
-import MachineSelector, {applyToggles, SectionKey} from '@/src/components/MachineSelector';
+import MachineSelector, {SectionKey} from '@/src/components/MachineSelector';
+import {ThemeProvider} from '@/src/lib/themeContext';
 import type {MachineProfile} from '@/src/types';
 
 afterEach(() => {
   cleanup();
 });
+
+const wrapper = ({children}: {children: ReactNode}) => <ThemeProvider>{children}</ThemeProvider>;
 
 const mockMachine: MachineProfile = {
   id: 'test-1',
@@ -55,6 +59,21 @@ const DEFAULT_COLLAPSED: Record<SectionKey, boolean> = {
   deltaKinematics: true,
 };
 
+function applyToggles(
+  initial: Record<SectionKey, boolean>,
+  actions: SectionKey[]
+): Record<SectionKey, boolean> {
+  let state = { ...initial };
+  for (const key of actions) {
+    const next = { ...state, [key]: !state[key] };
+    const anyExpanded = Object.values(next).some(v => !v);
+    if (anyExpanded) {
+      state = next;
+    }
+  }
+  return state;
+}
+
 // ─── Property 3: Section collapse invariant ─────────────────────────
 
 describe('Property 3: MachineSelector section collapse invariant', () => {
@@ -101,7 +120,8 @@ describe('Property 4: MachineSelector always-visible header', () => {
         machines={[mockMachine]}
         selectedMachineId={mockMachine.id}
         {...emptyHandlers}
-      />
+      />,
+      {wrapper}
     );
 
     expect(screen.getByTestId('machine-header-name')).toHaveTextContent('Test Laser');
@@ -114,7 +134,8 @@ describe('Property 4: MachineSelector always-visible header', () => {
         machines={[mockDeltaMachine]}
         selectedMachineId={mockDeltaMachine.id}
         {...emptyHandlers}
-      />
+      />,
+      {wrapper}
     );
 
     expect(screen.getByTestId('machine-header-name')).toHaveTextContent('Delta Laser');
@@ -127,7 +148,8 @@ describe('Property 4: MachineSelector always-visible header', () => {
         machines={[mockMachine, mockDeltaMachine]}
         selectedMachineId={mockMachine.id}
         {...emptyHandlers}
-      />
+      />,
+      {wrapper}
     );
 
     expect(screen.getByTestId('machine-header-name')).toHaveTextContent('Test Laser');
@@ -149,7 +171,8 @@ describe('Property 4: MachineSelector always-visible header', () => {
         machines={[mockMachine]}
         selectedMachineId={mockMachine.id}
         {...emptyHandlers}
-      />
+      />,
+      {wrapper}
     );
 
     expect(screen.getByTestId('machine-header-name')).toBeInTheDocument();
@@ -163,7 +186,8 @@ describe('Property 4: MachineSelector always-visible header', () => {
         machines={[mockMachine]}
         selectedMachineId={mockMachine.id}
         {...emptyHandlers}
-      />
+      />,
+      {wrapper}
     );
 
     // Enter edit mode

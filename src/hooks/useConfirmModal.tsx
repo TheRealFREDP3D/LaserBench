@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
 import ConfirmModal from '../components/ConfirmModal';
+import { useTheme } from '../lib/themeContext';
 
-export function useConfirmModal(theme: 'dark' | 'light' = 'dark') {
+export function useConfirmModal() {
+  const { theme } = useTheme();
   const [state, setState] = useState<{ open: boolean; message: string; onConfirm: () => void }>({
     open: false,
     message: '',
@@ -31,7 +33,6 @@ export function useConfirmModal(theme: 'dark' | 'light' = 'dark') {
       message={state.message}
       onConfirm={state.onConfirm}
       onCancel={cancel}
-      theme={theme}
     />
   );
 
