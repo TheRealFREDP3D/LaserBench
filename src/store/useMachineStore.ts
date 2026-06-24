@@ -12,9 +12,11 @@ interface MachineState {
   getActiveMachine: () => MachineProfile | null;
 }
 
+const initialMachines = getStoredMachines();
+
 export const useMachineStore = create<MachineState>((set, get) => ({
-  machines: getStoredMachines(),
-  activeMachineId: getStoredMachines()[0]?.id || null,
+  machines: initialMachines,
+  activeMachineId: initialMachines[0]?.id || null,
   setActiveMachineId: (id) => set({ activeMachineId: id }),
   updateMachine: (updated) => {
     set((state) => {

@@ -30,6 +30,60 @@ interface PrinterConsoleProps {
   activeMachine: MachineProfile | null;
 }
 
+function validateGCode(cmd: string): { level: 'safe' | 'warn' | 'block'; message: string } {
+  const trimmed = cmd.trim().toUpperCase();
+  const letter = trimmed[0];
+
+  if (letter === 'M') {
+    const code = parseInt(trimmed.slice(1), 10);
+    if (code === 112 || code === 81) {
+      return { level: 'safe', message: '' };
+    }
+    if (code === 3 || code === 4) {
+      const sMatch = trimmed.match(/S(\d+(?:\.\d+)?)/);
+      const sValue = sMatch ? parseFloat(sMatch[1]) : 0;
+      if (sValue > 0) {
+        return {
+          level: 'block',
+          message: `This command will fire the laser at power ${Math.round(sValue)}.`,
+        };
+      }
+    }
+    if (code === 80 || code === 240 || code === 241) {
+      return {
+        level: 'warn',
+        message:
+          'This command controls machine power/driver state and may cause unexpected motion.',
+      };
+    }
+    if (code === 92) {
+      return {
+        level: 'warn',
+        message:
+          'This sets the current position as a new origin, which can cause unexpected motion.',
+      };
+    }
+  }
+
+  if (letter === 'G') {
+    const code = parseInt(trimmed.slice(1), 10);
+    if (code === 10) {
+      return {
+        level: 'warn',
+        message: 'This sets work coordinate offsets, which may cause unexpected motion.',
+      };
+    }
+    if (code === 53) {
+      return {
+        level: 'warn',
+        message: 'G53 moves in machine coordinates and may ignore soft limits.',
+      };
+    }
+  }
+
+  return { level: 'safe', message: '' };
+}
+
 const PrinterConsoleComponent = React.memo(function PrinterConsole({
   isConnected,
   messages,
@@ -46,6 +100,11 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
 }: PrinterConsoleProps) {
   const [command, setCommand] = useState('');
   const [showHomingWarning, setShowHomingWarning] = useState(false);
+  const [pendingWarning, setPendingWarning] = useState<{
+    command: string;
+    message: string;
+    level: 'warn' | 'block';
+  } | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
   const isLight = false;
 
@@ -55,10 +114,30 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
 
   const handleManualSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (command.trim()) {
-      onSend(command.trim().toUpperCase());
+    const trimmed = command.trim();
+    if (!trimmed) return;
+
+    const upper = trimmed.toUpperCase();
+    const { level, message } = validateGCode(upper);
+
+    if (level === 'safe') {
+      onSend(upper);
       setCommand('');
+    } else {
+      setPendingWarning({ command: upper, message, level });
     }
+  };
+
+  const handleConfirmSend = () => {
+    if (pendingWarning) {
+      onSend(pendingWarning.command);
+      setCommand('');
+      setPendingWarning(null);
+    }
+  };
+
+  const handleCancelSend = () => {
+    setPendingWarning(null);
   };
 
   const handleRunJob = useCallback(() => {
@@ -150,6 +229,50 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
               </button>
               <button
                 onClick={() => setShowHomingWarning(false)}
+                className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-[10px] rounded font-bold transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {pendingWarning && (
+          <div
+            className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs border ${
+              pendingWarning.level === 'block'
+                ? 'bg-red-950/60 border-red-800/50'
+                : 'bg-amber-950/60 border-amber-800/50'
+            }`}
+          >
+            <div
+              className={`flex items-center gap-2 ${
+                pendingWarning.level === 'block' ? 'text-red-300' : 'text-amber-300'
+              }`}
+            >
+              <AlertTriangle
+                className={`w-4 h-4 shrink-0 ${
+                  pendingWarning.level === 'block' ? 'text-red-400' : 'text-amber-400'
+                }`}
+              />
+              <span>
+                <code className="font-mono font-bold">{pendingWarning.command}</code> —{' '}
+                {pendingWarning.message}
+              </span>
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              <button
+                onClick={handleConfirmSend}
+                className={`px-2 py-1 text-white text-[10px] rounded font-bold transition ${
+                  pendingWarning.level === 'block'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-amber-600 hover:bg-amber-700'
+                }`}
+              >
+                Send Anyway
+              </button>
+              <button
+                onClick={handleCancelSend}
                 className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-[10px] rounded font-bold transition"
               >
                 Cancel
