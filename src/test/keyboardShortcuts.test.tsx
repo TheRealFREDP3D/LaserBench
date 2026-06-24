@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import App from '../App';
+import { ThemeProvider } from '../lib/themeContext';
 
 // Mock Web Serial API
 if (!('serial' in navigator)) {
@@ -12,7 +13,11 @@ if (!('serial' in navigator)) {
 
 describe('App', () => {
   it('renders without crashing', () => {
-    render(<App />);
+    render(
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    );
     expect(document.body).toBeInTheDocument();
   });
 });

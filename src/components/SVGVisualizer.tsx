@@ -35,14 +35,7 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
   }, [bedW, bedH, isCircular]);
 
   // Track relevant machine dimensions for state reset
-  const machineKey = `${machine.id}-${machine.bedWidth}-${machine.bedHeight}-${machine.bedShape}`;
   const [viewBox, setViewBox] = useState(defaultViewBox);
-  const [lastMachineKey, setLastMachineKey] = useState(machineKey);
-
-  if (machineKey !== lastMachineKey) {
-    setLastMachineKey(machineKey);
-    setViewBox(defaultViewBox);
-  }
 
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);

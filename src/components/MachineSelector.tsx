@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MachineProfile, LaserControlMode, FirmwareType } from '../types';
 import { ParameterField } from './ParameterField';
 import { Plus, Trash2, ChevronDown, ChevronUp, Code } from 'lucide-react';
+import { useConfirmModal } from '../hooks/useConfirmModal';
 
 interface MachineSelectorProps {
   machines: MachineProfile[];
@@ -22,6 +23,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
 }) => {
   const activeMachine = machines.find((m) => m.id === selectedId) || machines[0];
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
 
   const handleFieldChange = (
     field: keyof MachineProfile,
@@ -41,10 +43,19 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
     onSelect(newId);
   };
 
+  const handleDelete = async () => {
+    if (!activeMachine) return;
+    const ok = await confirm(
+      `Delete machine profile "${activeMachine.name}"? This cannot be undone.`
+    );
+    if (ok) onDelete(activeMachine.id);
+  };
+
   if (!activeMachine) return null;
 
   return (
     <div className="space-y-6">
+      {ConfirmModalComponent}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 flex items-center gap-2">
@@ -78,7 +89,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
             Settings
           </h3>
           <button
-            onClick={() => onDelete(activeMachine.id)}
+            onClick={handleDelete}
             className="text-neutral-600 hover:text-red-500 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />

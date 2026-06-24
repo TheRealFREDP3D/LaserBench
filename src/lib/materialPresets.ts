@@ -1,23 +1,64 @@
 import { MachineProfile, MaterialProfile } from '../types';
 
+const VALID_FIRMWARES = ['marlin', 'grbl'] as const;
+const VALID_LASER_MODES = ['M3_M5', 'M106_M107', 'M3_M4_M5'] as const;
+const VALID_BED_SHAPES = ['circular', 'rectangular'] as const;
+const VALID_CATEGORIES = [
+  'Wood',
+  'Plastics',
+  'Leather',
+  'Stone',
+  'Metals',
+  'Paper/Cardboard',
+  'Other',
+] as const;
+
 function isValidMachineProfile(m: unknown): m is MachineProfile {
   if (typeof m !== 'object' || m === null) return false;
   const obj = m as Record<string, unknown>;
-  return (
-    typeof obj.id === 'string' &&
-    typeof obj.name === 'string' &&
-    typeof obj.firmware === 'string' &&
-    typeof obj.laserOn === 'string' &&
-    typeof obj.laserOff === 'string' &&
-    typeof obj.pwmMax === 'number' &&
-    typeof obj.safeZ === 'number' &&
-    typeof obj.workZ === 'number' &&
-    typeof obj.travelSpeed === 'number' &&
-    typeof obj.bedShape === 'string' &&
-    typeof obj.bedWidth === 'number' &&
-    typeof obj.bedHeight === 'number' &&
-    typeof obj.baudRate === 'number'
-  );
+  if (
+    typeof obj.id !== 'string' ||
+    typeof obj.name !== 'string' ||
+    !VALID_FIRMWARES.includes(obj.firmware as never) ||
+    !VALID_LASER_MODES.includes(obj.laserMode as never) ||
+    typeof obj.laserOn !== 'string' ||
+    typeof obj.laserOff !== 'string' ||
+    typeof obj.pwmMax !== 'number' ||
+    typeof obj.safeZ !== 'number' ||
+    typeof obj.workZ !== 'number' ||
+    typeof obj.travelSpeed !== 'number' ||
+    !VALID_BED_SHAPES.includes(obj.bedShape as never) ||
+    typeof obj.bedWidth !== 'number' ||
+    typeof obj.bedHeight !== 'number' ||
+    typeof obj.baudRate !== 'number'
+  )
+    return false;
+
+  if (obj.originX !== undefined && typeof obj.originX !== 'number') return false;
+  if (obj.originY !== undefined && typeof obj.originY !== 'number') return false;
+  if (obj.acceleration !== undefined && typeof obj.acceleration !== 'number') return false;
+  if (obj.startGCode !== undefined && typeof obj.startGCode !== 'string') return false;
+  if (obj.endGCode !== undefined && typeof obj.endGCode !== 'string') return false;
+  if (obj.isDelta !== undefined && typeof obj.isDelta !== 'boolean') return false;
+  if (obj.deltaRadius !== undefined && typeof obj.deltaRadius !== 'number') return false;
+  if (obj.deltaArmLength !== undefined && typeof obj.deltaArmLength !== 'number') return false;
+  if (obj.deltaRodLength !== undefined && typeof obj.deltaRodLength !== 'number') return false;
+  if (obj.deltaTowerAngleOffset !== undefined && typeof obj.deltaTowerAngleOffset !== 'number')
+    return false;
+  if (obj.deltaPrintRadius !== undefined && typeof obj.deltaPrintRadius !== 'number') return false;
+
+  return true;
+}
+
+function isValidCalibrationHistoryEntry(e: unknown): boolean {
+  if (typeof e !== 'object' || e === null) return false;
+  const obj = e as Record<string, unknown>;
+  if (typeof obj.id !== 'string' || typeof obj.date !== 'string' || typeof obj.notes !== 'string')
+    return false;
+  if (obj.optimalPower !== undefined && typeof obj.optimalPower !== 'number') return false;
+  if (obj.optimalSpeed !== undefined && typeof obj.optimalSpeed !== 'number') return false;
+  if (obj.optimalFocusZ !== undefined && typeof obj.optimalFocusZ !== 'number') return false;
+  return true;
 }
 
 function isValidMaterialProfile(m: unknown): m is MaterialProfile {
@@ -26,7 +67,7 @@ function isValidMaterialProfile(m: unknown): m is MaterialProfile {
   if (
     typeof obj.id !== 'string' ||
     typeof obj.name !== 'string' ||
-    typeof obj.category !== 'string' ||
+    !VALID_CATEGORIES.includes(obj.category as never) ||
     typeof obj.thickness !== 'number' ||
     typeof obj.laser !== 'string' ||
     typeof obj.engrave !== 'object' ||
@@ -36,14 +77,22 @@ function isValidMaterialProfile(m: unknown): m is MaterialProfile {
     !Array.isArray(obj.history)
   )
     return false;
+
+  if (obj.focusZ !== undefined && typeof obj.focusZ !== 'number') return false;
+
   const engrave = obj.engrave as Record<string, unknown>;
   const cut = obj.cut as Record<string, unknown>;
-  return (
-    typeof engrave.power === 'number' &&
-    typeof engrave.speed === 'number' &&
-    typeof cut.power === 'number' &&
-    typeof cut.speed === 'number'
-  );
+  if (
+    typeof engrave.power !== 'number' ||
+    typeof engrave.speed !== 'number' ||
+    typeof cut.power !== 'number' ||
+    typeof cut.speed !== 'number'
+  )
+    return false;
+
+  if (!obj.history.every(isValidCalibrationHistoryEntry)) return false;
+
+  return true;
 }
 
 export const INITIAL_MACHINES: MachineProfile[] = [

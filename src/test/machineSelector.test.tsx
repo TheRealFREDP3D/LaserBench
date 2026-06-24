@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import MachineSelector from '../components/MachineSelector';
 import { MachineProfile } from '../types';
+import { ThemeProvider } from '../lib/themeContext';
 
 const mockMachines: MachineProfile[] = [
   {
@@ -26,14 +27,16 @@ describe('MachineSelector', () => {
   it('renders correctly', () => {
     const onSelect = vi.fn();
     render(
-      <MachineSelector
-        machines={mockMachines}
-        selectedId="m1"
-        onSelect={onSelect}
-        onUpdate={vi.fn()}
-        onCreate={vi.fn()}
-        onDelete={vi.fn()}
-      />
+      <ThemeProvider>
+        <MachineSelector
+          machines={mockMachines}
+          selectedId="m1"
+          onSelect={onSelect}
+          onUpdate={vi.fn()}
+          onCreate={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      </ThemeProvider>
     );
     expect(screen.getByText('Test Machine')).toBeInTheDocument();
   });

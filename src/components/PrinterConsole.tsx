@@ -28,6 +28,7 @@ interface PrinterConsoleProps {
   onPrint?: (gcode: string) => void;
   gcode?: string;
   activeMachine: MachineProfile | null;
+  onJogRelative: (dx: number, dy: number) => void;
 }
 
 function validateGCode(cmd: string): { level: 'safe' | 'warn' | 'block'; message: string } {
@@ -97,6 +98,7 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
   onPrint,
   gcode,
   activeMachine,
+  onJogRelative,
 }: PrinterConsoleProps) {
   const [command, setCommand] = useState('');
   const [showHomingWarning, setShowHomingWarning] = useState(false);
@@ -150,9 +152,9 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
   const handleHome = () => onSend('G28');
 
   const jog = (axis: string, dist: number) => {
-    onSend('G91');
-    onSend(`G0 ${axis}${dist} F3000`);
-    onSend('G90');
+    const dx = axis === 'X' ? dist : 0;
+    const dy = axis === 'Y' ? dist : 0;
+    onJogRelative(dx, dy);
   };
 
   const handleFire = () => {

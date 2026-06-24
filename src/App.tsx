@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { generatePatternPaths } from './lib/gcodeGenerator';
 import { GeneratedData } from './types';
 import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
@@ -77,12 +77,26 @@ export default function App() {
     if (generatedResults) printGCode(generatedResults.gcode);
   }, [generatedResults, printGCode]);
 
+  const [jogPos, setJogPos] = useState({ x: 0, y: 0 });
+
   const handleJog = useCallback(
     (x: number, y: number) => {
       if (!isConnected) return;
       send(`G0 X${x.toFixed(2)} Y${y.toFixed(2)}`);
+      setJogPos({ x, y });
     },
     [isConnected, send]
+  );
+
+  const handleJogRelative = useCallback(
+    (dx: number, dy: number) => {
+      if (!isConnected) return;
+      const nx = Math.round((jogPos.x + dx) * 100) / 100;
+      const ny = Math.round((jogPos.y + dy) * 100) / 100;
+      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)}`);
+      setJogPos({ x: nx, y: ny });
+    },
+    [isConnected, send, jogPos]
   );
 
   return (
@@ -183,6 +197,7 @@ export default function App() {
           <div className="flex-1 relative w-full h-full">
             {generatedResults && activeMachine && activeMaterial ? (
               <SVGVisualizer
+                key={`${activeMachine.id}-${activeMachine.bedWidth}-${activeMachine.bedHeight}-${activeMachine.bedShape}`}
                 svgPaths={generatedResults.svgPaths}
                 machine={activeMachine}
                 material={activeMaterial}
@@ -212,6 +227,7 @@ export default function App() {
             onPrint={handlePrint}
             gcode={generatedResults?.gcode}
             activeMachine={activeMachine}
+            onJogRelative={handleJogRelative}
           />
         </div>
       </div>

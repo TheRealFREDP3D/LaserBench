@@ -7,6 +7,7 @@ export interface SerialMessage {
 }
 
 const BUFFER_SIZE = 4;
+const MIN_SEND_INTERVAL_MS = 50;
 
 export function useWebSerial() {
   const [isConnected, setIsConnected] = useState(false);
@@ -24,6 +25,7 @@ export function useWebSerial() {
   const abortPrintRef = useRef(false);
   const bufferSlotsRef = useRef(BUFFER_SIZE);
   const bufferResolveRef = useRef<(() => void)[]>([]);
+  const lastSendTimeRef = useRef(0);
 
   const addMessage = useCallback((type: 'sent' | 'received', text: string) => {
     setMessages((prev) => {
@@ -152,6 +154,15 @@ export function useWebSerial() {
   const send = async (command: string, silent = false): Promise<void> => {
     if (!writerRef.current || !isConnected) {
       throw new Error('Not connected to printer');
+    }
+    if (!silent) {
+      const now = Date.now();
+      const elapsed = now - lastSendTimeRef.current;
+      if (elapsed < MIN_SEND_INTERVAL_MS) {
+        await new Promise((r) => setTimeout(r, MIN_SEND_INTERVAL_MS - elapsed));
+      }
+      lastSendTimeRef.current = Date.now();
+      await waitForSlot();
     }
     await writerRef.current.write(command + '\n');
     if (!silent) {

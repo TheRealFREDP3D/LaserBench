@@ -9,6 +9,38 @@ import {
 import { DeltaKinematics } from './deltaKinematics';
 import { renderTextPath } from './vectorFont';
 
+const VALID_GCODE_LETTERS = /^[GMFTSO%N]/i;
+const MAX_LINE_LENGTH = 256;
+
+function sanitizeGCodeLine(line: string): string {
+  let cleaned = '';
+  for (let i = 0; i < line.length; i++) {
+    const code = line.charCodeAt(i);
+    if (code >= 0x20 || code === 0x09) cleaned += line[i];
+  }
+  const commentIdx = cleaned.indexOf(';');
+  if (commentIdx !== -1) cleaned = cleaned.slice(0, commentIdx);
+  cleaned = cleaned.trim();
+  if (cleaned.length === 0) return '';
+  if (cleaned.length > MAX_LINE_LENGTH) cleaned = cleaned.slice(0, MAX_LINE_LENGTH);
+  if (!VALID_GCODE_LETTERS.test(cleaned)) return '';
+  return cleaned;
+}
+
+function sanitizeGCodeBlock(text: string): string {
+  return text
+    .split('\n')
+    .map(sanitizeGCodeLine)
+    .filter((l) => l.length > 0)
+    .join('\n');
+}
+
+function replacePower(template: string, power: number): string {
+  const idx = template.indexOf('{power}');
+  if (idx === -1) return template;
+  return template.slice(0, idx) + power.toString() + template.slice(idx + 7);
+}
+
 const DEFAULT_DELTA_PARAMS = {
   deltaRadius: 105.6,
   deltaArmLength: 217.0,
@@ -421,14 +453,33 @@ export function generatePatternPaths(
     kerfValues,
   };
 
-  if (patternType === 'matrix') generateMatrix(ctx);
-  else if (patternType === 'power_ramp') generatePowerRamp(ctx);
-  else if (patternType === 'speed_ramp') generateSpeedRamp(ctx);
-  else if (patternType === 'focus_ladder') generateFocusLadder(ctx);
-  else if (patternType === 'kerf_test') generateKerfTest(ctx, config.nominalThickness ?? 3.0);
+  let patternWidth = 100;
+  let patternHeight = 100;
+
+  if (patternType === 'matrix') {
+    const r = generateMatrix(ctx);
+    patternWidth = r.patternWidth;
+    patternHeight = r.patternHeight;
+  } else if (patternType === 'power_ramp') {
+    const r = generatePowerRamp(ctx);
+    patternWidth = r.patternWidth;
+    patternHeight = r.patternHeight;
+  } else if (patternType === 'speed_ramp') {
+    const r = generateSpeedRamp(ctx);
+    patternWidth = r.patternWidth;
+    patternHeight = r.patternHeight;
+  } else if (patternType === 'focus_ladder') {
+    const r = generateFocusLadder(ctx);
+    patternWidth = r.patternWidth;
+    patternHeight = r.patternHeight;
+  } else if (patternType === 'kerf_test') {
+    const r = generateKerfTest(ctx, config.nominalThickness ?? 3.0);
+    patternWidth = r.patternWidth;
+    patternHeight = r.patternHeight;
+  }
 
   const gcodeLines: string[] = [];
-  if (machine.startGCode) gcodeLines.push(machine.startGCode);
+  if (machine.startGCode) gcodeLines.push(sanitizeGCodeBlock(machine.startGCode));
   else {
     gcodeLines.push('G21 ; Units mm');
     gcodeLines.push('G90 ; Absolute');
@@ -448,8 +499,8 @@ export function generatePatternPaths(
     let onCmd = '';
     if (machine.laserMode === 'M3_M5') onCmd = `M3 S${g.power}`;
     else if (machine.laserMode === 'M106_M107') onCmd = `M106 S${g.power}`;
-    else if (machine.laserMode === 'M3_M4_M5') onCmd = `M3 S${g.power}`;
-    else onCmd = machine.laserOn.replace('{power}', g.power.toString());
+    else if (machine.laserMode === 'M3_M4_M5') onCmd = `M4 S${g.power}`;
+    else onCmd = replacePower(machine.laserOn, g.power);
 
     gcodeLines.push(onCmd);
 
@@ -465,11 +516,11 @@ export function generatePatternPaths(
     if (machine.laserMode === 'M3_M5') offCmd = 'M5';
     else if (machine.laserMode === 'M106_M107') offCmd = 'M107';
     else if (machine.laserMode === 'M3_M4_M5') offCmd = 'M5';
-    else offCmd = machine.laserOff;
+    else offCmd = sanitizeGCodeLine(machine.laserOff);
     gcodeLines.push(offCmd);
   });
 
-  if (machine.endGCode) gcodeLines.push(machine.endGCode);
+  if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));
   else {
     gcodeLines.push(`G0 Z${machine.safeZ}`);
     gcodeLines.push('G0 X0 Y0');
@@ -502,10 +553,10 @@ export function generatePatternPaths(
     gcode: gcodeLines.join('\n'),
     svgPaths,
     paths: pathGroups,
-    width: 100,
-    height: 100,
-    offsetX: 0,
-    offsetY: 0,
+    width: patternWidth,
+    height: patternHeight,
+    offsetX: pos.x,
+    offsetY: pos.y,
     deltaWarnings: deltaWarnings.length > 0 ? deltaWarnings : undefined,
   };
 }
