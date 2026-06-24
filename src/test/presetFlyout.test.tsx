@@ -1,7 +1,7 @@
-import {describe, expect, it, afterEach} from 'vitest';
-import {render, screen, fireEvent, cleanup, within} from '@testing-library/react';
+import { describe, expect, it, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useState, useEffect, useRef} from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 afterEach(() => {
   cleanup();
@@ -29,7 +29,11 @@ function PresetFlyoutHarness() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
-      const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target as HTMLElement).isContentEditable;
+      const isEditable =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        (e.target as HTMLElement).isContentEditable;
       if (isEditable) return;
       if (e.key === '3' && presetFlyoutOpen) {
         setPresetFlyoutOpen(false);

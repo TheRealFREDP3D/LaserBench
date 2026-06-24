@@ -10,7 +10,13 @@ interface GenerateFABProps {
   logDisabled?: boolean;
 }
 
-export default function GenerateFAB({ disabled, estimatedTimeStr, onClick, onLogClick, logDisabled = false }: GenerateFABProps) {
+export default function GenerateFAB({
+  disabled,
+  estimatedTimeStr,
+  onClick,
+  onLogClick,
+  logDisabled = false,
+}: GenerateFABProps) {
   const handleClick = () => {
     if (disabled) return;
     onClick();
@@ -32,9 +38,10 @@ export default function GenerateFAB({ disabled, estimatedTimeStr, onClick, onLog
           onClick={handleLogClick}
           data-testid="log-burn-fab"
           className={`rounded-full min-h-[40px] px-4 py-2 text-[10px] font-bold uppercase tracking-wider transition-all duration-200 select-none outline-none flex items-center gap-1.5 border
-            ${logDisabled
-              ? 'opacity-40 cursor-not-allowed pointer-events-none bg-[#1A1A1A] text-neutral-600 border-white/8'
-              : 'bg-[#0F0F0F] text-red-300 border-red-900/50 hover:bg-[#1A1A1A] hover:text-red-200 hover:border-red-700 active:scale-95 cursor-pointer shadow-md'
+            ${
+              logDisabled
+                ? 'opacity-40 cursor-not-allowed pointer-events-none bg-[#1A1A1A] text-neutral-600 border-white/8'
+                : 'bg-[#0F0F0F] text-red-300 border-red-900/50 hover:bg-[#1A1A1A] hover:text-red-200 hover:border-red-700 active:scale-95 cursor-pointer shadow-md'
             }`}
           title="Log the optimal settings from your last burn"
         >
@@ -51,9 +58,10 @@ export default function GenerateFAB({ disabled, estimatedTimeStr, onClick, onLog
         onClick={handleClick}
         data-testid="generate-fab"
         className={`rounded-full min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-5 py-3 text-xs font-bold uppercase tracking-wider transition-all duration-200 select-none outline-none
-          ${disabled
-            ? 'opacity-50 cursor-not-allowed pointer-events-none bg-red-800 text-red-300'
-            : 'bg-red-600 text-black shadow-[0_0_12px_rgba(220,38,38,0.4)] hover:bg-red-500 hover:shadow-[0_0_16px_rgba(220,38,38,0.6)] active:scale-95 cursor-pointer'
+          ${
+            disabled
+              ? 'opacity-50 cursor-not-allowed pointer-events-none bg-red-800 text-red-300'
+              : 'bg-red-600 text-black shadow-[0_0_12px_rgba(220,38,38,0.4)] hover:bg-red-500 hover:shadow-[0_0_16px_rgba(220,38,38,0.6)] active:scale-95 cursor-pointer'
           }`}
       >
         <span className="flex items-center gap-1.5">
@@ -61,7 +69,10 @@ export default function GenerateFAB({ disabled, estimatedTimeStr, onClick, onLog
           Download G-Code
         </span>
         {estimatedTimeStr !== null && (
-          <span data-testid="fab-estimated-time" className="text-[9px] font-mono font-medium opacity-80 leading-tight">
+          <span
+            data-testid="fab-estimated-time"
+            className="text-[9px] font-mono font-medium opacity-80 leading-tight"
+          >
             {estimatedTimeStr}
           </span>
         )}

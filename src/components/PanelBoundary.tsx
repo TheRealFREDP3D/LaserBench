@@ -1,4 +1,4 @@
-import {Component, type ReactNode, type ErrorInfo} from 'react';
+import { Component, type ReactNode, type ErrorInfo } from 'react';
 
 interface PanelBoundaryProps {
   name: string;
@@ -7,10 +7,10 @@ interface PanelBoundaryProps {
 
 export default class PanelBoundary extends Component<PanelBoundaryProps> {
   declare props: PanelBoundaryProps;
-  state = {hasError: false, error: null as Error | null};
+  state = { hasError: false, error: null as Error | null };
 
   static getDerivedStateFromError(error: Error) {
-    return {hasError: true, error};
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {

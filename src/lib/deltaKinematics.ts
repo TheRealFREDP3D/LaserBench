@@ -5,11 +5,11 @@
  */
 
 export interface DeltaParams {
-  deltaRadius: number;       // Horizontal distance from center to tower (mm)
-  deltaArmLength: number;    // Diagonal rod length (mm)
-  deltaRodLength: number;    // Effective rod length (mm)
+  deltaRadius: number; // Horizontal distance from center to tower (mm)
+  deltaArmLength: number; // Diagonal rod length (mm)
+  deltaRodLength: number; // Effective rod length (mm)
   deltaTowerAngleOffset: number; // Tower angular offset in degrees (default 0)
-  printRadius: number;       // Max printable radius from center (mm)
+  printRadius: number; // Max printable radius from center (mm)
 }
 
 export const DEFAULT_DELTA_PARAMS: DeltaParams = {
@@ -87,4 +87,4 @@ export class DeltaKinematics {
     if (a === null || b === null || c === null) return null;
     return { a, b, c };
   }
-}
+}

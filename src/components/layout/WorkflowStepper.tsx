@@ -1,71 +1,84 @@
 import { Cpu, Layers, Sliders, Eye, Flame } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useUIStore, WorkflowStep } from '../../store/useUIStore';
+import { usePatternStore } from '../../store/usePatternStore';
 
-export type WorkflowStage = 'machine' | 'material' | 'pattern' | 'preview' | 'burn';
-
-interface WorkflowStepperProps {
-  activeStage: WorkflowStage;
-  completedStages: WorkflowStage[];
-  onStageClick: (stage: WorkflowStage) => void;
-}
-
-const STAGES: { key: WorkflowStage; label: string; icon: LucideIcon; shortcut: string }[] = [
-  { key: 'machine',  label: 'Machine',  icon: Cpu,     shortcut: '1' },
-  { key: 'material', label: 'Material', icon: Layers,  shortcut: '2' },
-  { key: 'pattern',  label: 'Pattern',  icon: Sliders, shortcut: '3' },
-  { key: 'preview',  label: 'Preview',  icon: Eye,     shortcut: '4' },
-  { key: 'burn',     label: 'Burn & Log', icon: Flame, shortcut: '6' },
+const STAGES: { key: WorkflowStep; label: string; icon: LucideIcon; shortcut: string }[] = [
+  { key: 'machine', label: 'Machine', icon: Cpu, shortcut: '1' },
+  { key: 'material', label: 'Material', icon: Layers, shortcut: '2' },
+  { key: 'pattern', label: 'Pattern', icon: Sliders, shortcut: '3' },
+  { key: 'preview', label: 'Preview', icon: Eye, shortcut: '4' },
+  { key: 'operate', label: 'Operate', icon: Flame, shortcut: '6' },
 ];
 
-export default function WorkflowStepper({ activeStage, completedStages, onStageClick }: WorkflowStepperProps) {
+export default function WorkflowStepper() {
+  const { currentStep, setStep } = useUIStore();
+  const { isMachineStepComplete, isMaterialStepComplete, isPatternStepComplete } =
+    usePatternStore();
+
+  const isStepComplete = (step: WorkflowStep) => {
+    switch (step) {
+      case 'machine':
+        return isMachineStepComplete;
+      case 'material':
+        return isMaterialStepComplete;
+      case 'pattern':
+        return isPatternStepComplete;
+      case 'preview':
+        return isPatternStepComplete; // Preview depends on pattern
+      default:
+        return false;
+    }
+  };
+
   return (
     <div
-      className="h-10 bg-[#0F0F0F] border-b border-white/8 flex items-center px-4 gap-1 shrink-0 select-none"
+      className="h-12 bg-[#0A0A0A] border-b border-white/8 flex items-center px-4 gap-1 shrink-0 select-none"
       role="navigation"
       aria-label="Workflow progress"
-      data-testid="workflow-stepper"
     >
       {STAGES.map((stage, idx) => {
         const Icon = stage.icon;
-        const isActive = activeStage === stage.key;
-        const isComplete = completedStages.includes(stage.key);
+        const isActive = currentStep === stage.key;
+        const isComplete = isStepComplete(stage.key);
         const isLast = idx === STAGES.length - 1;
-
-        const circleClass = isActive
-          ? 'bg-red-600 text-black border-red-500 shadow-[0_0_8px_rgba(220,38,38,0.5)]'
-          : isComplete
-            ? 'bg-red-950/60 text-red-300 border-red-900/50'
-            : 'bg-[#1A1A1A] text-neutral-500 border-white/10';
-
-        const labelClass = isActive
-          ? 'text-white font-semibold'
-          : isComplete
-            ? 'text-red-300/80'
-            : 'text-neutral-500';
 
         return (
           <div key={stage.key} className="flex items-center flex-1 min-w-0">
             <button
               type="button"
-              onClick={() => onStageClick(stage.key)}
-              className={`flex items-center gap-2 px-2 py-1 rounded transition-all duration-200 cursor-pointer outline-none hover:bg-white/5 ${isActive ? 'bg-white/5' : ''}`}
-              aria-current={isActive ? 'step' : undefined}
-              aria-label={`Workflow step ${idx + 1}: ${stage.label}${isComplete ? ' (completed)' : ''}${isActive ? ' (active)' : ''}`}
-              data-testid={`workflow-step-${stage.key}`}
+              onClick={() => setStep(stage.key)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 cursor-pointer outline-none hover:bg-white/5 ${isActive ? 'bg-white/5 shadow-inner' : ''}`}
             >
-              <span className={`flex items-center justify-center w-6 h-6 rounded-full border transition-all duration-200 font-mono text-[10px] font-bold ${circleClass}`}>
-                {isComplete && !isActive ? '✓' : idx + 1}
-              </span>
-              <span className={`hidden md:flex items-center gap-1 text-[11px] uppercase tracking-wider transition-colors ${labelClass}`}>
-                <Icon className="w-3 h-3" />
+              <div className="relative">
+                <div
+                  className={`flex items-center justify-center w-7 h-7 rounded-full border transition-all duration-300 font-mono text-[11px] font-bold ${
+                    isActive
+                      ? 'bg-red-600 text-black border-red-500 shadow-[0_0_12px_rgba(220,38,38,0.4)]'
+                      : 'bg-[#151515] text-neutral-500 border-white/10'
+                  }`}
+                >
+                  {idx + 1}
+                </div>
+                {isComplete && (
+                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border border-[#0A0A0A] rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
+                )}
+              </div>
+              <span
+                className={`hidden sm:flex items-center gap-1.5 text-[11px] uppercase tracking-widest transition-colors ${
+                  isActive ? 'text-white font-bold' : 'text-neutral-500'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-red-500' : ''}`} />
                 {stage.label}
               </span>
-              <kbd className={`hidden lg:inline-block text-[9px] font-mono px-1 py-0.5 rounded border ${isActive ? 'border-red-500/40 text-red-300 bg-red-950/30' : 'border-white/10 text-neutral-600 bg-[#080808]'}`}>
-                {stage.shortcut}
-              </kbd>
             </button>
             {!isLast && (
-              <div className={`flex-1 h-px mx-1.5 transition-colors duration-300 ${isComplete ? 'bg-red-900/40' : 'bg-white/8'}`} />
+              <div
+                className={`flex-1 h-[1px] mx-2 transition-colors duration-500 ${
+                  isComplete ? 'bg-green-900/30' : 'bg-white/5'
+                }`}
+              />
             )}
           </div>
         );
