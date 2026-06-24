@@ -1,5 +1,11 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { MachineProfile, MaterialProfile, PatternType, SvgPathElement, PathSegment } from '../types';
+import {
+  MachineProfile,
+  MaterialProfile,
+  PatternType,
+  SvgPathElement,
+  PathSegment,
+} from '../types';
 import { usePatternStore } from '../store/usePatternStore';
 import { Crosshair, Move, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 
@@ -28,12 +34,13 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
     return { x: -20, y: -20, w: bedW + 40, h: bedH + 40 };
   }, [bedW, bedH, isCircular]);
 
-  // Use a key to reset internal state when machine changes, instead of useEffect
+  // Track relevant machine dimensions for state reset
+  const machineKey = `${machine.id}-${machine.bedWidth}-${machine.bedHeight}-${machine.bedShape}`;
   const [viewBox, setViewBox] = useState(defaultViewBox);
-  const [lastMachineId, setLastMachineId] = useState(machine.id);
+  const [lastMachineKey, setLastMachineKey] = useState(machineKey);
 
-  if (machine.id !== lastMachineId) {
-    setLastMachineId(machine.id);
+  if (machineKey !== lastMachineKey) {
+    setLastMachineKey(machineKey);
     setViewBox(defaultViewBox);
   }
 

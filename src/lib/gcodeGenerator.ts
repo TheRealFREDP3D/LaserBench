@@ -4,6 +4,7 @@ import {
   PatternType,
   GeneratedData,
   SvgPathElement,
+  PathSegment,
 } from '../types';
 import { DeltaKinematics } from './deltaKinematics';
 import { renderTextPath } from './vectorFont';
@@ -119,7 +120,6 @@ function generatePowerRamp(ctx: PatternContext) {
     powerMin,
     powerMax,
     speedMin,
-    speedMax,
     blockSize,
     machine,
     labelPower,
@@ -182,11 +182,9 @@ function generateSpeedRamp(ctx: PatternContext) {
   const {
     addSegment,
     powerMin,
-    powerMax,
     speedMin,
     speedMax,
     speedSteps,
-    blockSize,
     machine,
     labelPower,
     labelSpeed,

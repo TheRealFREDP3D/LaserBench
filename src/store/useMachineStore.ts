@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { MachineProfile } from '../types';
-import { getStoredMachines, saveStoredMachines } from '../lib/materialPresets';
+import { getStoredMachines, saveStoredMachines, INITIAL_MACHINES } from '../lib/materialPresets';
 
 interface MachineState {
   machines: MachineProfile[];
@@ -32,10 +32,13 @@ export const useMachineStore = create<MachineState>((set, get) => ({
   },
   deleteMachine: (id) => {
     set((state) => {
-      const newMachines = state.machines.filter((m) => m.id !== id);
+      let newMachines = state.machines.filter((m) => m.id !== id);
+      if (newMachines.length === 0) {
+        newMachines = [...INITIAL_MACHINES];
+      }
       saveStoredMachines(newMachines);
       let nextId = state.activeMachineId;
-      if (nextId === id) {
+      if (nextId === id || !newMachines.find((m) => m.id === nextId)) {
         nextId = newMachines[0]?.id || null;
       }
       return { machines: newMachines, activeMachineId: nextId };
@@ -43,6 +46,6 @@ export const useMachineStore = create<MachineState>((set, get) => ({
   },
   getActiveMachine: () => {
     const { machines, activeMachineId } = get();
-    return machines.find((m) => m.id === activeMachineId) || null;
+    return machines.find((m) => m.id === activeMachineId) || machines[0] || null;
   },
 }));

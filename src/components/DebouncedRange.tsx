@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 
 interface DebouncedRangeProps {
   id?: string;
@@ -24,19 +24,14 @@ export default function DebouncedRange({
   ariaLabel,
 }: DebouncedRangeProps) {
   const [localValue, setLocalValue] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync from parent when value changes externally
-  useEffect(() => {
+  // Sync from parent when value changes externally (during render)
+  if (value !== prevValue) {
+    setPrevValue(value);
     setLocalValue(value);
-  }, [value]);
-
-  // Cleanup pending timer on unmount
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+  }
 
   const handleChange = (val: number) => {
     setLocalValue(val);
@@ -52,7 +47,7 @@ export default function DebouncedRange({
       max={max}
       step={step}
       value={localValue}
-      onChange={(e) => handleChange(parseInt(e.target.value) || min)}
+      onChange={(e) => handleChange(parseInt(e.target.value, 10) || min)}
       aria-label={ariaLabel}
       className={className}
     />

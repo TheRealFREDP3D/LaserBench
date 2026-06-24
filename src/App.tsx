@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { generatePatternPaths } from './lib/gcodeGenerator';
 import { GeneratedData } from './types';
 import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
@@ -59,36 +59,19 @@ export default function App() {
   const activeMachine = getActiveMachine();
   const activeMaterial = getActiveMaterial();
 
-  const [generatedResults, setGeneratedResults] = useState<GeneratedData | null>(null);
+  // Deriving results using useMemo instead of useEffect+useState to avoid cascading renders
+  const generatedResults = useMemo<GeneratedData | null>(() => {
+    if (!activeMachine || !activeMaterial) return null;
+    return generatePatternPaths(pattern.selectedPattern, activeMachine, activeMaterial, {
+      ...pattern,
+      patternPosition: pattern.patternPosition,
+    });
+  }, [pattern, activeMachine, activeMaterial]);
 
   const estimatedTimeStr = useMemo(() => {
     if (!generatedResults || !activeMachine) return null;
     return formatEstimatedTime(estimateToolpathTime(generatedResults.paths, activeMachine));
   }, [generatedResults, activeMachine]);
-
-  // Real-time generation
-  useEffect(() => {
-    if (!activeMachine || !activeMaterial) return;
-    const res = generatePatternPaths(pattern.selectedPattern, activeMachine, activeMaterial, {
-      ...pattern,
-      patternPosition: pattern.patternPosition,
-    });
-    setGeneratedResults(res);
-    pattern.setStepComplete('pattern', true);
-  }, [
-    pattern.selectedPattern,
-    pattern.powerMin,
-    pattern.powerMax,
-    pattern.speedMin,
-    pattern.speedMax,
-    pattern.powerSteps,
-    pattern.speedSteps,
-    pattern.blockSize,
-    pattern.patternPosition,
-    activeMachine,
-    activeMaterial,
-    pattern.setStepComplete,
-  ]);
 
   const handlePrint = useCallback(() => {
     if (generatedResults) printGCode(generatedResults.gcode);

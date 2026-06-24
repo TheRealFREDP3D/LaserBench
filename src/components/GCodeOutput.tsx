@@ -1,20 +1,26 @@
 import React, { useMemo } from 'react';
-import { MachineProfile, MaterialProfile } from '../types';
+import { MachineProfile, MaterialProfile, PathSegment } from '../types';
 import { FileCode, Copy, Download } from 'lucide-react';
+import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
 
 interface GCodeOutputProps {
   gcode: string;
   patternType: string;
   machine: MachineProfile;
   material: MaterialProfile;
-  paths: any[];
+  paths: PathSegment[];
 }
 
-const GCodeOutput: React.FC<GCodeOutputProps> = ({ gcode }) => {
+const GCodeOutput: React.FC<GCodeOutputProps> = ({ gcode, patternType, material }) => {
   const lines = useMemo(() => gcode.split('\n'), [gcode]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(gcode);
+  };
+
+  const handleDownload = () => {
+    const filename = makeGCodeFilename(patternType, material.name);
+    downloadGCode(gcode, filename);
   };
 
   return (
@@ -35,6 +41,7 @@ const GCodeOutput: React.FC<GCodeOutputProps> = ({ gcode }) => {
             <Copy className="w-3.5 h-3.5" />
           </button>
           <button
+            onClick={handleDownload}
             className="p-1.5 hover:bg-white/5 rounded text-neutral-500 hover:text-white transition-colors"
             title="Download File"
           >

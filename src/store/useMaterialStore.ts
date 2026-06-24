@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { MaterialProfile } from '../types';
-import { getStoredMaterials, saveStoredMaterials } from '../lib/materialPresets';
+import { getStoredMaterials, saveStoredMaterials, INITIAL_MATERIALS } from '../lib/materialPresets';
 
 interface MaterialState {
   materials: MaterialProfile[];
@@ -32,10 +32,13 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
   },
   deleteMaterial: (id) => {
     set((state) => {
-      const newMaterials = state.materials.filter((m) => m.id !== id);
+      let newMaterials = state.materials.filter((m) => m.id !== id);
+      if (newMaterials.length === 0) {
+        newMaterials = [...INITIAL_MATERIALS];
+      }
       saveStoredMaterials(newMaterials);
       let nextId = state.activeMaterialId;
-      if (nextId === id) {
+      if (nextId === id || !newMaterials.find((m) => m.id === nextId)) {
         nextId = newMaterials[0]?.id || null;
       }
       return { materials: newMaterials, activeMaterialId: nextId };
@@ -43,6 +46,6 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
   },
   getActiveMaterial: () => {
     const { materials, activeMaterialId } = get();
-    return materials.find((m) => m.id === activeMaterialId) || null;
+    return materials.find((m) => m.id === activeMaterialId) || materials[0] || null;
   },
 }));
