@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { MachineProfile, MaterialProfile, PathSegment } from '../types';
+import { MachineProfile, MaterialProfile } from '../types';
 import { FileCode, Copy, Download } from 'lucide-react';
+import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
 import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
 
 interface GCodeOutputProps {
