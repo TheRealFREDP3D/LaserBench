@@ -10,7 +10,9 @@ const BUFFER_SIZE = 4;
 
 export function useWebSerial() {
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionState, setConnectionState] = useState<'connected' | 'offline' | 'connecting'>('offline');
+  const [connectionState, setConnectionState] = useState<'connected' | 'offline' | 'connecting'>(
+    'offline'
+  );
   const [messages, setMessages] = useState<SerialMessage[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -53,7 +55,9 @@ export function useWebSerial() {
 
   const readLoop = async () => {
     const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = portRef.current.readable.pipeTo(textDecoder.writable).catch(() => {});
+    const readableStreamClosed = portRef.current.readable
+      .pipeTo(textDecoder.writable)
+      .catch(() => {});
     readerRef.current = textDecoder.readable.getReader();
 
     let buffer = '';
@@ -175,11 +179,11 @@ export function useWebSerial() {
     try {
       const lines = gcode
         .split('\n')
-        .map(line => {
+        .map((line) => {
           const stripped = line.split(';')[0].trim();
           return stripped;
         })
-        .filter(line => {
+        .filter((line) => {
           if (line.length === 0) return false;
           if (line.toUpperCase().startsWith('M30')) return false;
           return true;
@@ -221,5 +225,17 @@ export function useWebSerial() {
     }
   };
 
-  return { isConnected, connectionState, messages, isPrinting, progress, connect, disconnect, send, printGCode, abortPrint, clearMessages };
+  return {
+    isConnected,
+    connectionState,
+    messages,
+    isPrinting,
+    progress,
+    connect,
+    disconnect,
+    send,
+    printGCode,
+    abortPrint,
+    clearMessages,
+  };
 }

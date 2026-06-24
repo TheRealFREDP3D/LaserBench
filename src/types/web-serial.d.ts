@@ -7,7 +7,9 @@ interface SerialPort {
 }
 
 interface Serial {
-  requestPort(options?: { filters?: { usbVendorId?: number; usbProductId?: number }[] }): Promise<SerialPort>;
+  requestPort(options?: {
+    filters?: { usbVendorId?: number; usbProductId?: number }[];
+  }): Promise<SerialPort>;
   getPorts(): Promise<SerialPort[]>;
 }
 

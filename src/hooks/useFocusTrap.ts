@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function useFocusTrap<T extends HTMLElement>(active: boolean): RefObject<T | null> {
   const ref = useRef<T | null>(null);
