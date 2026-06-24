@@ -10,18 +10,15 @@ interface PathSegment {
  * Estimates the total laser burn and transit time in seconds based on
  * generated paths, machine feed limits, and acceleration profiles.
  */
-export function estimateToolpathTime(
-  paths: PathSegment[],
-  machine: MachineProfile
-): number {
+export function estimateToolpathTime(paths: PathSegment[], machine: MachineProfile): number {
   if (!paths || paths.length === 0) return 0;
 
   let totalSeconds = 0;
-  
+
   // Dynamic acceleration from machine profile (default: 1000 mm/s²)
   const acceleration = machine.acceleration ?? 1000;
   const a = Math.max(10, acceleration); // Safeguard against zero or negative values
-  
+
   // Travel speed from machine profile (mm/min)
   const travelSpeed = machine.travelSpeed ?? 4000;
 
@@ -49,7 +46,7 @@ export function estimateToolpathTime(
       if (distance >= dAccel) {
         // Full trapezoid: accelerate to v, cruise, decelerate to 0
         // Equivalent to: 2*(v/a) + (distance - dAccel)/v
-        segmentTime = (v / a) + (distance / v);
+        segmentTime = v / a + distance / v;
       } else {
         // Limited by acceleration (cannot reach full G-code speed)
         segmentTime = 2 * Math.sqrt(distance / a);

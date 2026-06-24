@@ -10,7 +10,12 @@ interface ConfirmModalProps {
   onCancel: () => void;
 }
 
-export default memo(function ConfirmModal({ open, message, onConfirm, onCancel }: ConfirmModalProps) {
+export default memo(function ConfirmModal({
+  open,
+  message,
+  onConfirm,
+  onCancel,
+}: ConfirmModalProps) {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const trapRef = useFocusTrap<HTMLDivElement>(open);
@@ -38,7 +43,11 @@ export default memo(function ConfirmModal({ open, message, onConfirm, onCancel }
           <X className="w-4 h-4" />
         </button>
 
-        <p className={`text-sm leading-relaxed pr-6 ${isLight ? 'text-zinc-700' : 'text-[#E0E0E0]'}`}>{message}</p>
+        <p
+          className={`text-sm leading-relaxed pr-6 ${isLight ? 'text-zinc-700' : 'text-[#E0E0E0]'}`}
+        >
+          {message}
+        </p>
 
         <div className="flex justify-end gap-2">
           <button

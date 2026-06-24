@@ -1,9 +1,11 @@
-export type FirmwareType = 'marlin' | 'marlin_v1' | 'grbl';
+export type FirmwareType = 'marlin' | 'grbl';
+export type LaserControlMode = 'M3_M5' | 'M106_M107' | 'M3_M4_M5';
 
 export interface MachineProfile {
   id: string;
   name: string;
   firmware: FirmwareType;
+  laserMode: LaserControlMode;
   laserOn: string;
   laserOff: string;
   pwmMax: number;
@@ -16,18 +18,25 @@ export interface MachineProfile {
   originX?: number;
   originY?: number;
   acceleration?: number;
-  // Serial communication
+  startGCode?: string;
+  endGCode?: string;
   baudRate: number;
-  // Delta kinematics
   isDelta?: boolean;
-  deltaRadius?: number;        // mm, horizontal center-to-tower distance
-  deltaArmLength?: number;     // mm, diagonal arm length
-  deltaRodLength?: number;     // mm, effective rod length
-  deltaTowerAngleOffset?: number; // degrees
-  deltaPrintRadius?: number;   // mm, max reachable radius from center
+  deltaRadius?: number;
+  deltaArmLength?: number;
+  deltaRodLength?: number;
+  deltaTowerAngleOffset?: number;
+  deltaPrintRadius?: number;
 }
 
-export type MaterialCategory = 'Wood' | 'Plastics' | 'Leather' | 'Stone' | 'Metals' | 'Paper/Cardboard' | 'Other';
+export type MaterialCategory =
+  | 'Wood'
+  | 'Plastics'
+  | 'Leather'
+  | 'Stone'
+  | 'Metals'
+  | 'Paper/Cardboard'
+  | 'Other';
 
 export interface CalibrationHistoryEntry {
   id: string;
@@ -57,17 +66,12 @@ export interface MaterialProfile {
   history: CalibrationHistoryEntry[];
 }
 
-export interface Vector2D {
-  x: number;
-  y: number;
-}
-
-export interface PathElement {
-  type: 'move' | 'line';
-  x: number;
-  y: number;
-  power?: number;
-  speed?: number;
+export interface PathSegment {
+  points: [number, number][];
+  power: number;
+  speed: number;
+  z: number;
+  isLaserOn: boolean;
 }
 
 export type PatternType = 'power_ramp' | 'speed_ramp' | 'matrix' | 'focus_ladder' | 'kerf_test';
@@ -90,6 +94,26 @@ export interface GeneratorPreset {
   zMin: number;
   zMax: number;
   zSteps: number;
+}
+
+export interface SvgPathElement {
+  d: string;
+  fill: string;
+  stroke: string;
+  strokeWidth: string;
+  strokeLinecap: string;
+  strokeLinejoin?: string;
+}
+
+export interface GeneratedData {
+  gcode: string;
+  svgPaths: SvgPathElement[];
+  paths: PathSegment[];
+  width: number;
+  height: number;
+  offsetX: number;
+  offsetY: number;
+  deltaWarnings?: string[];
 }
 
 export interface Pattern {

@@ -29,10 +29,13 @@ function isValidMaterialProfile(m: unknown): m is MaterialProfile {
     typeof obj.category !== 'string' ||
     typeof obj.thickness !== 'number' ||
     typeof obj.laser !== 'string' ||
-    typeof obj.engrave !== 'object' || obj.engrave === null ||
-    typeof obj.cut !== 'object' || obj.cut === null ||
+    typeof obj.engrave !== 'object' ||
+    obj.engrave === null ||
+    typeof obj.cut !== 'object' ||
+    obj.cut === null ||
     !Array.isArray(obj.history)
-  ) return false;
+  )
+    return false;
   const engrave = obj.engrave as Record<string, unknown>;
   const cut = obj.cut as Record<string, unknown>;
   return (
@@ -48,6 +51,7 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     id: 'flsun_kossel',
     name: 'FLSUN Kossel Laser (Delta)',
     firmware: 'marlin',
+    laserMode: 'M106_M107',
     baudRate: 250000,
     laserOn: 'M106 S{power}',
     laserOff: 'M107',
@@ -61,7 +65,6 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     originX: 0,
     originY: 0,
     acceleration: 1200,
-    // Delta kinematics — FLSun Kossel Mini defaults
     isDelta: true,
     deltaRadius: 105.6,
     deltaArmLength: 217.0,
@@ -73,6 +76,7 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     id: 'grbl_generic',
     name: 'Generic GRBL Engraver',
     firmware: 'grbl',
+    laserMode: 'M3_M5',
     baudRate: 250000,
     laserOn: 'M3 S{power}',
     laserOff: 'M5',
@@ -92,6 +96,7 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     id: 'xtool_d1_pro',
     name: 'xTool D1 Pro (20W)',
     firmware: 'grbl',
+    laserMode: 'M3_M5',
     baudRate: 250000,
     laserOn: 'M3 S{power}',
     laserOff: 'M5',
@@ -111,6 +116,7 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     id: 'marlin_custom',
     name: 'Marlin CNC (Cartesian)',
     firmware: 'marlin',
+    laserMode: 'M106_M107',
     baudRate: 250000,
     laserOn: 'M106 S{power}',
     laserOff: 'M107',
@@ -124,7 +130,7 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     originX: 0,
     originY: 0,
     isDelta: false,
-  }
+  },
 ];
 
 export const INITIAL_MATERIALS: MaterialProfile[] = [
@@ -143,9 +149,9 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
         patternType: 'matrix',
         optimalPower: 150,
         optimalSpeed: 1600,
-        notes: 'Clean raster with very minimal soot edges. Air assist enabled.'
-      }
-    ]
+        notes: 'Clean raster with very minimal soot edges. Air assist enabled.',
+      },
+    ],
   },
   {
     id: 'mat_birch_6mm',
@@ -155,7 +161,7 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     laser: '10W Diode',
     engrave: { power: 180, speed: 1500 },
     cut: { power: 255, speed: 80 },
-    history: []
+    history: [],
   },
   {
     id: 'mat_basswood',
@@ -165,7 +171,7 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     laser: '5W Diode',
     engrave: { power: 110, speed: 2000 },
     cut: { power: 255, speed: 120 },
-    history: []
+    history: [],
   },
   {
     id: 'mat_mdf',
@@ -175,7 +181,7 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     laser: '5W Diode',
     engrave: { power: 160, speed: 1400 },
     cut: { power: 255, speed: 100 },
-    history: []
+    history: [],
   },
   {
     id: 'mat_acrylic_black',
@@ -192,9 +198,9 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
         patternType: 'power_ramp',
         optimalPower: 90,
         optimalSpeed: 2400,
-        notes: 'Extremely shiny engraving finish at 90 power. No bubble melt.'
-      }
-    ]
+        notes: 'Extremely shiny engraving finish at 90 power. No bubble melt.',
+      },
+    ],
   },
   {
     id: 'mat_leather_veg',
@@ -204,7 +210,7 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     laser: '5W Diode',
     engrave: { power: 60, speed: 2500 },
     cut: { power: 180, speed: 400 },
-    history: []
+    history: [],
   },
   {
     id: 'mat_cardboard_double',
@@ -214,7 +220,7 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
     laser: '5W Diode',
     engrave: { power: 50, speed: 3000 },
     cut: { power: 150, speed: 500 },
-    history: []
+    history: [],
   },
   {
     id: 'mat_slate',
@@ -231,10 +237,10 @@ export const INITIAL_MATERIALS: MaterialProfile[] = [
         patternType: 'matrix',
         optimalPower: 220,
         optimalSpeed: 1000,
-        notes: 'Beautiful frosty-white engraving contrast on the grey slate. Repeatable.'
-      }
-    ]
-  }
+        notes: 'Beautiful frosty-white engraving contrast on the grey slate. Repeatable.',
+      },
+    ],
+  },
 ];
 
 export function getStoredMaterials(): MaterialProfile[] {
@@ -245,9 +251,9 @@ export function getStoredMaterials(): MaterialProfile[] {
       if (Array.isArray(parsed) && parsed.every(isValidMaterialProfile)) {
         return parsed;
       }
-      console.error("Invalid materials schema in localStorage, resetting to defaults");
+      console.error('Invalid materials schema in localStorage, resetting to defaults');
     } catch (e) {
-      console.error("Error parsing materials database, resetting to defaults", e);
+      console.error('Error parsing materials database, resetting to defaults', e);
     }
   }
   try {
@@ -274,9 +280,9 @@ export function getStoredMachines(): MachineProfile[] {
       if (Array.isArray(parsed) && parsed.every(isValidMachineProfile)) {
         return parsed;
       }
-      console.error("Invalid machines schema in localStorage, resetting to defaults");
+      console.error('Invalid machines schema in localStorage, resetting to defaults');
     } catch (e) {
-      console.error("Error parsing machines database, resetting to defaults", e);
+      console.error('Error parsing machines database, resetting to defaults', e);
     }
   }
   try {

@@ -1,5 +1,21 @@
-import { useState, useEffect, memo, type FormEvent, type MouseEvent as ReactMouseEvent } from 'react';
-import { Save, FolderOpen, Trash2, Plus, Search, Sparkles, Check, Info, FileSliders } from 'lucide-react';
+import {
+  useState,
+  useEffect,
+  memo,
+  type FormEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
+import {
+  Save,
+  FolderOpen,
+  Trash2,
+  Plus,
+  Search,
+  Sparkles,
+  Check,
+  Info,
+  FileSliders,
+} from 'lucide-react';
 import { GeneratorPreset, PatternType } from '../types';
 import { useConfirmModal } from '../hooks/useConfirmModal';
 import { useTheme } from '../lib/themeContext';
@@ -20,7 +36,7 @@ interface PresetManagerProps {
   zMax: number;
   zSteps: number;
   pwmMax: number;
-  
+
   // Callback when user picks a preset to load
   onLoadPreset: (preset: GeneratorPreset) => void;
 }
@@ -41,7 +57,7 @@ const FACTORY_PRESETS: GeneratorPreset[] = [
     speedSteps: 5,
     blockSize: 12,
     nominalThickness: 3.0,
-    kerfValues: [0.05, 0.10, 0.15, 0.20, 0.25],
+    kerfValues: [0.05, 0.1, 0.15, 0.2, 0.25],
     zMin: 0,
     zMax: 3.0,
     zSteps: 5,
@@ -60,7 +76,7 @@ const FACTORY_PRESETS: GeneratorPreset[] = [
     speedSteps: 4,
     blockSize: 14,
     nominalThickness: 4.0,
-    kerfValues: [0.10, 0.15, 0.20, 0.25, 0.30],
+    kerfValues: [0.1, 0.15, 0.2, 0.25, 0.3],
     zMin: 0,
     zMax: 4.0,
     zSteps: 5,
@@ -68,7 +84,8 @@ const FACTORY_PRESETS: GeneratorPreset[] = [
   {
     id: 'factory-leather-engrave',
     name: 'Ultra-Fine Leather Engraving Matrix',
-    description: 'High speed and delicate low power to avoid deep branding char on Veg-Tan leather.',
+    description:
+      'High speed and delicate low power to avoid deep branding char on Veg-Tan leather.',
     patternType: 'matrix',
     isCustom: false,
     powerMin: 20,
@@ -79,7 +96,7 @@ const FACTORY_PRESETS: GeneratorPreset[] = [
     speedSteps: 5,
     blockSize: 10,
     nominalThickness: 1.5,
-    kerfValues: [0.05, 0.10, 0.15, 0.20],
+    kerfValues: [0.05, 0.1, 0.15, 0.2],
     zMin: 0,
     zMax: 1.5,
     zSteps: 5,
@@ -98,7 +115,7 @@ const FACTORY_PRESETS: GeneratorPreset[] = [
     speedSteps: 5,
     blockSize: 15,
     nominalThickness: 3.0,
-    kerfValues: [0.10, 0.20],
+    kerfValues: [0.1, 0.2],
     zMin: 0,
     zMax: 3.0,
     zSteps: 5,
@@ -117,7 +134,7 @@ const FACTORY_PRESETS: GeneratorPreset[] = [
     speedSteps: 8,
     blockSize: 12,
     nominalThickness: 3.0,
-    kerfValues: [0.10, 0.20],
+    kerfValues: [0.1, 0.2],
     zMin: 0,
     zMax: 3.0,
     zSteps: 5,
@@ -125,7 +142,8 @@ const FACTORY_PRESETS: GeneratorPreset[] = [
   {
     id: 'factory-comb-joint-standard',
     name: 'Precision Kerf Comb joints',
-    description: 'Creates tight press-fit slot models with 0.05mm step tolerances to test kerf clearance.',
+    description:
+      'Creates tight press-fit slot models with 0.05mm step tolerances to test kerf clearance.',
     patternType: 'kerf_test',
     isCustom: false,
     powerMin: 150,
@@ -136,7 +154,7 @@ const FACTORY_PRESETS: GeneratorPreset[] = [
     speedSteps: 5,
     blockSize: 12,
     nominalThickness: 3.0,
-    kerfValues: [0.05, 0.10, 0.15, 0.20, 0.25],
+    kerfValues: [0.05, 0.1, 0.15, 0.2, 0.25],
     zMin: 0,
     zMax: 3.0,
     zSteps: 5,
@@ -237,7 +255,7 @@ export default memo(function PresetManager({
     const updated = [newPreset, ...customPresets];
     setCustomPresets(updated);
     saveToLocalStorage(updated);
-    
+
     // UI feedback
     setNewPresetName('');
     setNewPresetDesc('');
@@ -267,7 +285,7 @@ export default memo(function PresetManager({
       adjustedPreset.powerMax = Math.min(preset.powerMax, pwmMax);
       adjustedPreset.powerMin = Math.min(preset.powerMin, Math.max(1, pwmMax - 50));
     }
-    
+
     onLoadPreset(adjustedPreset);
     setLoadedPresetId(preset.id);
   };
@@ -287,63 +305,95 @@ export default memo(function PresetManager({
 
   const getPatternBadgeLabel = (type: PatternType) => {
     switch (type) {
-      case 'matrix': return 'Matrix Column-Row';
-      case 'power_ramp': return 'Power Ramp';
-      case 'speed_ramp': return 'Speed Lines';
-      case 'focus_ladder': return 'Focus Z-test';
-      case 'kerf_test': return 'Kerf Joint';
+      case 'matrix':
+        return 'Matrix Column-Row';
+      case 'power_ramp':
+        return 'Power Ramp';
+      case 'speed_ramp':
+        return 'Speed Lines';
+      case 'focus_ladder':
+        return 'Focus Z-test';
+      case 'kerf_test':
+        return 'Kerf Joint';
     }
   };
 
   const getPatternBadgeColor = (type: PatternType) => {
     switch (type) {
-      case 'matrix': return 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20';
-      case 'power_ramp': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
-      case 'speed_ramp': return 'text-sky-500 bg-sky-500/10 border-sky-500/20';
-      case 'focus_ladder': return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
-      case 'kerf_test': return 'text-rose-500 bg-rose-500/10 border-rose-500/20';
+      case 'matrix':
+        return 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20';
+      case 'power_ramp':
+        return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
+      case 'speed_ramp':
+        return 'text-sky-500 bg-sky-500/10 border-sky-500/20';
+      case 'focus_ladder':
+        return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
+      case 'kerf_test':
+        return 'text-rose-500 bg-rose-500/10 border-rose-500/20';
     }
   };
 
   return (
-    <div id="preset-manager-card" className={`border rounded-lg p-5 shadow-sm space-y-5 transition-all duration-200 ${
-      isLight 
-        ? 'bg-white border-zinc-200 text-zinc-800' 
-        : 'bg-[#0F0F0F] border-white/10 text-[#E8E8E8]'
-    }`}>
+    <div
+      id="preset-manager-card"
+      className={`border rounded-lg p-5 shadow-sm space-y-5 transition-all duration-200 ${
+        isLight
+          ? 'bg-white border-zinc-200 text-zinc-800'
+          : 'bg-[#0F0F0F] border-white/10 text-[#E8E8E8]'
+      }`}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FileSliders className="text-indigo-500 w-5 h-5 shrink-0" />
-          <h2 className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}>
+          <h2
+            className={`text-sm font-semibold tracking-wide uppercase font-sans ${isLight ? 'text-zinc-800' : 'text-white'}`}
+          >
             Generator Presets
           </h2>
         </div>
-        <span className={`text-[10px] uppercase tracking-widest font-mono text-right p-1 rounded font-bold ${
-          isLight ? 'bg-zinc-100 text-zinc-500' : 'bg-white/5 text-zinc-400'
-        }`}>
+        <span
+          className={`text-[10px] uppercase tracking-widest font-mono text-right p-1 rounded font-bold ${
+            isLight ? 'bg-zinc-100 text-zinc-500' : 'bg-white/5 text-zinc-400'
+          }`}
+        >
           {filteredPresets.length} loaded
         </span>
       </div>
 
-      <p className={`text-[11px] leading-relaxed -mt-1 ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}>
-        Choose a pre-calibrated factory profile or save your current slider configuration as a quick-recall preset. Keys are clamped automatically inside active firmware PWM levels.
+      <p
+        className={`text-[11px] leading-relaxed -mt-1 ${isLight ? 'text-zinc-500' : 'text-neutral-400'}`}
+      >
+        Choose a pre-calibrated factory profile or save your current slider configuration as a
+        quick-recall preset. Keys are clamped automatically inside active firmware PWM levels.
       </p>
 
       {/* Preset Saving Mini-Form */}
-      <form onSubmit={handleSavePreset} id="save-preset-form" className={`p-4 rounded border ${
-        isLight ? 'bg-zinc-50/55 border-zinc-200' : 'bg-[#1A1A1A] border-white/5'
-      } space-y-3`}>
+      <form
+        onSubmit={handleSavePreset}
+        id="save-preset-form"
+        className={`p-4 rounded border ${
+          isLight ? 'bg-zinc-50/55 border-zinc-200' : 'bg-[#1A1A1A] border-white/5'
+        } space-y-3`}
+      >
         <div className="flex items-center justify-between">
-          <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-zinc-650' : 'text-zinc-400'}`}>
+          <span
+            className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? 'text-zinc-650' : 'text-zinc-400'}`}
+          >
             Save Current State
           </span>
-          <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider float-right font-mono border ${
-            currentPattern === 'matrix' ? 'text-indigo-500 border-indigo-500/20 bg-indigo-500/5' :
-            currentPattern === 'power_ramp' ? 'text-yellow-500 border-yellow-500/20 bg-yellow-500/5' :
-            currentPattern === 'speed_ramp' ? 'text-sky-500 border-sky-500/20 bg-sky-500/5' :
-            currentPattern === 'focus_ladder' ? 'text-purple-500 border-purple-500/20 bg-purple-500/5' :
-            'text-rose-500 border-rose-500/20 bg-rose-500/5'
-          }`}>
+          <span
+            className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider float-right font-mono border ${
+              currentPattern === 'matrix'
+                ? 'text-indigo-500 border-indigo-500/20 bg-indigo-500/5'
+                : currentPattern === 'power_ramp'
+                  ? 'text-yellow-500 border-yellow-500/20 bg-yellow-500/5'
+                  : currentPattern === 'speed_ramp'
+                    ? 'text-sky-500 border-sky-500/20 bg-sky-500/5'
+                    : currentPattern === 'focus_ladder'
+                      ? 'text-purple-500 border-purple-500/20 bg-purple-500/5'
+                      : 'text-rose-500 border-rose-500/20 bg-rose-500/5'
+            }`}
+          >
             Target: {getPatternBadgeLabel(currentPattern)}
           </span>
         </div>
@@ -357,7 +407,9 @@ export default memo(function PresetManager({
             required
             onChange={(e) => setNewPresetName(e.target.value)}
             className={`w-full elegant-input px-2.5 py-1.5 text-xs rounded border outline-none ${
-              isLight ? 'bg-white border-zinc-300 text-zinc-800 focus:border-indigo-500' : 'bg-[#080808] border-white/10 text-white focus:border-indigo-900/60'
+              isLight
+                ? 'bg-white border-zinc-300 text-zinc-800 focus:border-indigo-500'
+                : 'bg-[#080808] border-white/10 text-white focus:border-indigo-900/60'
             }`}
           />
           <input
@@ -367,7 +419,9 @@ export default memo(function PresetManager({
             value={newPresetDesc}
             onChange={(e) => setNewPresetDesc(e.target.value)}
             className={`w-full elegant-input px-2.5 py-1.5 text-xs rounded border outline-none ${
-              isLight ? 'bg-white border-zinc-300 text-zinc-800 focus:border-indigo-500' : 'bg-[#080808] border-white/10 text-neutral-300 focus:border-indigo-900/60'
+              isLight
+                ? 'bg-white border-zinc-300 text-zinc-800 focus:border-indigo-500'
+                : 'bg-[#080808] border-white/10 text-neutral-300 focus:border-indigo-900/60'
             }`}
           />
         </div>
@@ -408,19 +462,24 @@ export default memo(function PresetManager({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={`w-full pl-8 pr-3 py-1.5 text-xs rounded border outline-none transition-all duration-150 ${
-              isLight 
-                ? 'bg-zinc-50 border-zinc-200 text-zinc-800 focus:bg-white focus:border-indigo-500' 
+              isLight
+                ? 'bg-zinc-50 border-zinc-200 text-zinc-800 focus:bg-white focus:border-indigo-500'
                 : 'bg-[#080808] border-white/10 text-neutral-300 focus:border-indigo-900/60'
             }`}
           />
         </div>
 
         {/* Scrollable Presets Deck */}
-        <div id="presets-scroller-viewport" className="space-y-2 max-h-[290px] overflow-y-auto pr-1">
+        <div
+          id="presets-scroller-viewport"
+          className="space-y-2 max-h-[290px] overflow-y-auto pr-1"
+        >
           {filteredPresets.length === 0 ? (
-            <div className={`p-6 text-center border border-dashed rounded-lg ${
-              isLight ? 'border-zinc-200 text-zinc-400' : 'border-white/5 text-neutral-500'
-            }`}>
+            <div
+              className={`p-6 text-center border border-dashed rounded-lg ${
+                isLight ? 'border-zinc-200 text-zinc-400' : 'border-white/5 text-neutral-500'
+              }`}
+            >
               <Info className="w-5 h-5 mx-auto mb-1.5 text-neutral-600" />
               <p className="text-xs">No presets match research terms.</p>
             </div>
@@ -445,7 +504,9 @@ export default memo(function PresetManager({
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 pr-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className={`text-xs font-bold leading-tight ${isLoaded ? 'text-indigo-400' : ''}`}>
+                        <h4
+                          className={`text-xs font-bold leading-tight ${isLoaded ? 'text-indigo-400' : ''}`}
+                        >
                           {preset.name}
                         </h4>
                         {preset.isCustom ? (
@@ -458,9 +519,11 @@ export default memo(function PresetManager({
                           </span>
                         )}
                       </div>
-                      <p className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
-                        isLight ? 'text-zinc-500' : 'text-neutral-400'
-                      }`}>
+                      <p
+                        className={`text-[10px] mt-1 leading-snug line-clamp-2 ${
+                          isLight ? 'text-zinc-500' : 'text-neutral-400'
+                        }`}
+                      >
                         {preset.description}
                       </p>
                     </div>
@@ -468,13 +531,17 @@ export default memo(function PresetManager({
                     {/* Delete action / Loaded check badge */}
                     <div className="flex items-center gap-1 shrink-0">
                       {isLoaded && (
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold tracking-wider ${
-                          isLight ? 'bg-indigo-100 text-indigo-700' : 'bg-indigo-950 text-indigo-300'
-                        }`}>
+                        <span
+                          className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold tracking-wider ${
+                            isLight
+                              ? 'bg-indigo-100 text-indigo-700'
+                              : 'bg-indigo-950 text-indigo-300'
+                          }`}
+                        >
                           LOADED
                         </span>
                       )}
-                      
+
                       {preset.isCustom && (
                         <button
                           onClick={(e) => handleDeletePreset(preset.id, e)}
@@ -489,49 +556,75 @@ export default memo(function PresetManager({
                   </div>
 
                   {/* Summary pills block */}
-                  <div className={`mt-2 flex flex-wrap gap-1.5 pt-2 border-t ${
-                    isLight ? 'border-zinc-200/60' : 'border-white/5'
-                  }`}>
+                  <div
+                    className={`mt-2 flex flex-wrap gap-1.5 pt-2 border-t ${
+                      isLight ? 'border-zinc-200/60' : 'border-white/5'
+                    }`}
+                  >
                     {/* Pattern indicator */}
-                    <span className={`text-[9px] font-mono border px-1.5 py-0.5 rounded leading-none shrink-0 ${getPatternBadgeColor(preset.patternType)}`}>
+                    <span
+                      className={`text-[9px] font-mono border px-1.5 py-0.5 rounded leading-none shrink-0 ${getPatternBadgeColor(preset.patternType)}`}
+                    >
                       {getPatternBadgeLabel(preset.patternType)}
                     </span>
-                    
+
                     {/* Block Size */}
-                    <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
-                      isLight ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650' : 'bg-white/5 border-white/8 text-zinc-400'
-                    }`}>
+                    <span
+                      className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
+                        isLight
+                          ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650'
+                          : 'bg-white/5 border-white/8 text-zinc-400'
+                      }`}
+                    >
                       Size: {preset.blockSize}mm
                     </span>
-                    
+
                     {/* Settings specifics */}
-                    {(preset.patternType === 'matrix' || preset.patternType === 'power_ramp' || preset.patternType === 'speed_ramp') && (
+                    {(preset.patternType === 'matrix' ||
+                      preset.patternType === 'power_ramp' ||
+                      preset.patternType === 'speed_ramp') && (
                       <>
-                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
-                          isLight ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650' : 'bg-white/5 border-white/8 text-zinc-400'
-                        }`}>
+                        <span
+                          className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
+                            isLight
+                              ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650'
+                              : 'bg-white/5 border-white/8 text-zinc-400'
+                          }`}
+                        >
                           S{preset.powerMin}-S{preset.powerMax} ({preset.powerSteps} cols)
                         </span>
-                        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
-                          isLight ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650' : 'bg-white/5 border-white/8 text-zinc-400'
-                        }`}>
+                        <span
+                          className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
+                            isLight
+                              ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650'
+                              : 'bg-white/5 border-white/8 text-zinc-400'
+                          }`}
+                        >
                           F{preset.speedMin}-F{preset.speedMax} ({preset.speedSteps} rows)
                         </span>
                       </>
                     )}
 
                     {preset.patternType === 'focus_ladder' && (
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
-                        isLight ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650' : 'bg-white/5 border-white/8 text-zinc-400'
-                      }`}>
+                      <span
+                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
+                          isLight
+                            ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650'
+                            : 'bg-white/5 border-white/8 text-zinc-400'
+                        }`}
+                      >
                         Z{preset.zMin} to Z{preset.zMax} ({preset.zSteps} steps)
                       </span>
                     )}
 
                     {preset.patternType === 'kerf_test' && (
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
-                        isLight ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650' : 'bg-white/5 border-white/8 text-zinc-400'
-                      }`}>
+                      <span
+                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded leading-none border shrink-0 ${
+                          isLight
+                            ? 'bg-zinc-100 border-zinc-200/80 text-zinc-650'
+                            : 'bg-white/5 border-white/8 text-zinc-400'
+                        }`}
+                      >
                         Thickness: {preset.nominalThickness}mm ({preset.kerfValues.length} slots)
                       </span>
                     )}
