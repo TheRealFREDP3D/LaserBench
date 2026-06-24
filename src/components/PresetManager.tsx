@@ -7,9 +7,7 @@ import {
 } from 'react';
 import {
   Save,
-  FolderOpen,
   Trash2,
-  Plus,
   Search,
   Sparkles,
   Check,

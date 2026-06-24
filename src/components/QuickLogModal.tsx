@@ -1,5 +1,5 @@
-import React, { useState, useEffect, FormEvent } from 'react';
-import { X, Flame, Cpu, Layers, Sliders, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import { X, Flame, Cpu, Layers, Sliders } from 'lucide-react';
 import type { CalibrationHistoryEntry, MaterialProfile, PatternType } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
@@ -51,18 +51,15 @@ export default function QuickLogModal({
   const [optSpeed, setOptSpeed] = useState(midSpeed);
   const [optZ, setOptZ] = useState(midZ);
   const [notes, setNotes] = useState('');
-  const [lastOpen, setLastOpen] = useState(false);
 
-  // Sync when modal opens
-  if (open && !lastOpen) {
-    setLastOpen(true);
-    setOptPower(midPower);
-    setOptSpeed(midSpeed);
-    setOptZ(midZ);
-    setNotes('');
-  } else if (!open && lastOpen) {
-    setLastOpen(false);
-  }
+  useEffect(() => {
+    if (open) {
+      setOptPower(midPower);
+      setOptSpeed(midSpeed);
+      setOptZ(midZ);
+      setNotes('');
+    }
+  }, [open, midPower, midSpeed, midZ]);
 
   const trapRef = useFocusTrap<HTMLDivElement>(open);
 
@@ -93,6 +90,10 @@ export default function QuickLogModal({
   return (
     <div
       ref={trapRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Log Burn Result"
+      data-testid="quick-log-modal-backdrop"
       className="fixed inset-0 bg-black/85 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-fade-in"
       onClick={onClose}
     >
@@ -102,6 +103,7 @@ export default function QuickLogModal({
       >
         <button
           onClick={onClose}
+          aria-label="Close"
           className="absolute top-3 right-3 text-neutral-500 hover:text-white transition"
         >
           <X className="w-4 h-4" />
@@ -126,6 +128,10 @@ export default function QuickLogModal({
               <Layers className="w-3 h-3 text-red-400" />
               <span className="text-neutral-300">{activeMaterial?.name ?? '—'}</span>
             </div>
+            <div className="flex items-center gap-1.5">
+              <Sliders className="w-3 h-3 text-red-400" />
+              <span className="text-neutral-300">{PATTERN_LABELS[patternType] ?? patternType}</span>
+            </div>
           </div>
         </div>
 
@@ -136,6 +142,7 @@ export default function QuickLogModal({
                 Power (S)
               </label>
               <input
+                id="quicklog-power"
                 type="number"
                 value={optPower}
                 onChange={(e) => setOptPower(parseInt(e.target.value, 10) || 0)}
@@ -148,6 +155,7 @@ export default function QuickLogModal({
                 Speed (F)
               </label>
               <input
+                id="quicklog-speed"
                 type="number"
                 value={optSpeed}
                 onChange={(e) => setOptSpeed(parseInt(e.target.value, 10) || 0)}
@@ -159,6 +167,7 @@ export default function QuickLogModal({
                 Focus Z
               </label>
               <input
+                id="quicklog-z"
                 type="number"
                 step="0.1"
                 value={optZ}
@@ -173,6 +182,7 @@ export default function QuickLogModal({
               Observations
             </label>
             <textarea
+              id="quicklog-notes"
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -190,6 +200,7 @@ export default function QuickLogModal({
               Cancel
             </button>
             <button
+              id="quicklog-save-btn"
               type="submit"
               className="bg-red-600 hover:bg-red-500 text-black px-4 py-1.5 rounded font-bold text-xs shadow-[0_0_10px_rgba(220,38,38,0.3)] transition"
             >

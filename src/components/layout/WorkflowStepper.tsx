@@ -33,7 +33,7 @@ export default function WorkflowStepper() {
 
   return (
     <div
-      className="h-12 bg-[#0A0A0A] border-b border-white/8 flex items-center px-4 gap-1 shrink-0 select-none"
+      className="h-full w-full flex items-center px-4 gap-1 select-none"
       role="navigation"
       aria-label="Workflow progress"
     >
@@ -65,7 +65,7 @@ export default function WorkflowStepper() {
                 )}
               </div>
               <span
-                className={`hidden sm:flex items-center gap-1.5 text-[11px] uppercase tracking-widest transition-colors ${
+                className={`flex items-center gap-1.5 text-[11px] uppercase tracking-widest transition-colors ${
                   isActive ? 'text-white font-bold' : 'text-neutral-500'
                 }`}
               >

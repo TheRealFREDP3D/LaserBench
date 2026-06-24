@@ -87,7 +87,9 @@ export default function App() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-[#050505] text-[#E0E0E0] font-sans selection:bg-red-500/30 overflow-hidden">
-      <WorkflowStepper />
+      <header className="shrink-0 h-12 bg-[#0A0A0A] border-b border-white/8">
+        <WorkflowStepper />
+      </header>
 
       <div className="flex-1 flex min-h-0">
         <div className="w-[400px] border-r border-white/8 flex flex-col bg-[#0A0A0A] overflow-y-auto">
@@ -177,8 +179,8 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 bg-[#000]">
-          <div className="flex-1 relative">
+        <div className="flex-1 flex flex-col min-w-0 bg-[#000] items-center justify-center">
+          <div className="flex-1 relative w-full h-full">
             {generatedResults && activeMachine && activeMaterial ? (
               <SVGVisualizer
                 svgPaths={generatedResults.svgPaths}

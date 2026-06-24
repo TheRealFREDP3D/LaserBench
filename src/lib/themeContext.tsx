@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 
 type Theme = 'dark' | 'light';
 
@@ -30,6 +30,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    const root = document.getElementById('root');
+    if (root) {
+      root.id = 'laserbench-root';
+      if (theme === 'light') {
+        root.classList.add('theme-light');
+      } else {
+        root.classList.remove('theme-light');
+      }
+    }
+  }, [theme]);
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }

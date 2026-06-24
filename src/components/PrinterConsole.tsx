@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import type { SerialMessage } from '../lib/useWebSerial';
 import type { MachineProfile } from '../types';
-import PanelBoundary from './PanelBoundary';
 
 interface PrinterConsoleProps {
   isConnected: boolean;
