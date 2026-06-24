@@ -13,7 +13,7 @@ const VALID_CATEGORIES = [
   'Other',
 ] as const;
 
-function isValidMachineProfile(m: unknown): m is MachineProfile {
+export function isValidMachineProfile(m: unknown): m is MachineProfile {
   if (typeof m !== 'object' || m === null) return false;
   const obj = m as Record<string, unknown>;
   if (
@@ -41,7 +41,6 @@ function isValidMachineProfile(m: unknown): m is MachineProfile {
   if (obj.endGCode !== undefined && typeof obj.endGCode !== 'string') return false;
   if (obj.isDelta !== undefined && typeof obj.isDelta !== 'boolean') return false;
   if (obj.deltaRadius !== undefined && typeof obj.deltaRadius !== 'number') return false;
-  if (obj.deltaArmLength !== undefined && typeof obj.deltaArmLength !== 'number') return false;
   if (obj.deltaRodLength !== undefined && typeof obj.deltaRodLength !== 'number') return false;
   if (obj.deltaTowerAngleOffset !== undefined && typeof obj.deltaTowerAngleOffset !== 'number')
     return false;
@@ -61,7 +60,7 @@ function isValidCalibrationHistoryEntry(e: unknown): boolean {
   return true;
 }
 
-function isValidMaterialProfile(m: unknown): m is MaterialProfile {
+export function isValidMaterialProfile(m: unknown): m is MaterialProfile {
   if (typeof m !== 'object' || m === null) return false;
   const obj = m as Record<string, unknown>;
   if (
@@ -116,7 +115,6 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     acceleration: 1200,
     isDelta: true,
     deltaRadius: 105.6,
-    deltaArmLength: 217.0,
     deltaRodLength: 217.0,
     deltaTowerAngleOffset: 0,
     deltaPrintRadius: 85,

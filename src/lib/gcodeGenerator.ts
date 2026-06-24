@@ -43,7 +43,6 @@ function replacePower(template: string, power: number): string {
 
 const DEFAULT_DELTA_PARAMS = {
   deltaRadius: 105.6,
-  deltaArmLength: 217.0,
   deltaRodLength: 217.0,
   deltaTowerAngleOffset: 0,
   printRadius: 85,
@@ -399,7 +398,6 @@ export function generatePatternPaths(
   if (machine.isDelta) {
     deltaKin = new DeltaKinematics({
       deltaRadius: machine.deltaRadius ?? DEFAULT_DELTA_PARAMS.deltaRadius,
-      deltaArmLength: machine.deltaArmLength ?? DEFAULT_DELTA_PARAMS.deltaArmLength,
       deltaRodLength: machine.deltaRodLength ?? DEFAULT_DELTA_PARAMS.deltaRodLength,
       deltaTowerAngleOffset:
         machine.deltaTowerAngleOffset ?? DEFAULT_DELTA_PARAMS.deltaTowerAngleOffset,

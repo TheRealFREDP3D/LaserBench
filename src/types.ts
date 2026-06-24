@@ -23,7 +23,6 @@ export interface MachineProfile {
   baudRate: number;
   isDelta?: boolean;
   deltaRadius?: number;
-  deltaArmLength?: number;
   deltaRodLength?: number;
   deltaTowerAngleOffset?: number;
   deltaPrintRadius?: number;

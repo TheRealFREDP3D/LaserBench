@@ -8,6 +8,7 @@ export interface SerialMessage {
 
 const BUFFER_SIZE = 4;
 const MIN_SEND_INTERVAL_MS = 50;
+const SLOT_TIMEOUT_MS = 10_000;
 
 export function useWebSerial() {
   const [isConnected, setIsConnected] = useState(false);
@@ -25,6 +26,7 @@ export function useWebSerial() {
   const abortPrintRef = useRef(false);
   const bufferSlotsRef = useRef(BUFFER_SIZE);
   const bufferResolveRef = useRef<(() => void)[]>([]);
+  const bufferTimeoutRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const lastSendTimeRef = useRef(0);
 
   const addMessage = useCallback((type: 'sent' | 'received', text: string) => {
@@ -41,13 +43,27 @@ export function useWebSerial() {
       bufferSlotsRef.current--;
       return Promise.resolve();
     }
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
+      const idx = bufferResolveRef.current.length;
       bufferResolveRef.current.push(resolve);
+      const timer = setTimeout(() => {
+        bufferResolveRef.current.splice(idx, 1);
+        bufferTimeoutRef.current.splice(bufferTimeoutRef.current.indexOf(timer), 1);
+        reject(new Error('Timed out waiting for printer response'));
+      }, SLOT_TIMEOUT_MS);
+      bufferTimeoutRef.current.push(timer);
     });
+  };
+
+  const clearPendingTimeouts = () => {
+    for (const t of bufferTimeoutRef.current) clearTimeout(t);
+    bufferTimeoutRef.current = [];
   };
 
   const releaseSlot = () => {
     const resolve = bufferResolveRef.current.shift();
+    const timer = bufferTimeoutRef.current.shift();
+    if (timer) clearTimeout(timer);
     if (resolve) {
       resolve();
     } else {
@@ -90,6 +106,7 @@ export function useWebSerial() {
       setConnectionState('offline');
       setIsPrinting(false);
       addMessage('received', 'Connection lost: ' + (error as Error).message);
+      clearPendingTimeouts();
       bufferSlotsRef.current = BUFFER_SIZE;
       for (const resolve of bufferResolveRef.current) resolve();
       bufferResolveRef.current = [];
@@ -145,6 +162,7 @@ export function useWebSerial() {
       portRef.current = null;
       setIsConnected(false);
       setConnectionState('offline');
+      clearPendingTimeouts();
       bufferSlotsRef.current = BUFFER_SIZE;
       bufferResolveRef.current = [];
       addMessage('sent', '--- Disconnected ---');
@@ -207,7 +225,16 @@ export function useWebSerial() {
         if (!keepReadingRef.current || abortPrintRef.current) break;
 
         const line = lines[i];
-        await waitForSlot();
+        try {
+          await waitForSlot();
+        } catch (e) {
+          if (e instanceof Error && e.message.includes('Timed out')) {
+            addMessage('received', 'Printer not responding — aborting print.');
+            abortPrintRef.current = true;
+            break;
+          }
+          throw e;
+        }
         if (!keepReadingRef.current || abortPrintRef.current) break;
         await send(line);
 
@@ -229,6 +256,7 @@ export function useWebSerial() {
       console.error('Printing failed:', error);
       addMessage('received', 'Print error: ' + (error as Error).message);
     } finally {
+      clearPendingTimeouts();
       setIsPrinting(false);
       abortPrintRef.current = false;
       bufferSlotsRef.current = BUFFER_SIZE;

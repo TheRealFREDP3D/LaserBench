@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { MaterialProfile, MaterialCategory } from '../types';
 import { ParameterField } from './ParameterField';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Download, Upload } from 'lucide-react';
+import {
+  exportAllProfiles,
+  exportSelectedProfile,
+  importMaterialProfilesFromFile,
+} from '../lib/profileExport';
 
 interface MaterialDatabaseProps {
   materials: MaterialProfile[];
@@ -31,6 +36,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
   onCreate,
 }) => {
   const activeMaterial = materials.find((m) => m.id === selectedId) || materials[0];
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFieldChange = (
     field: keyof MaterialProfile,
@@ -59,6 +65,35 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
     onSelect(newId);
   };
 
+  const handleExportAll = () => {
+    exportAllProfiles('material');
+  };
+
+  const handleExportSelected = () => {
+    if (!activeMaterial) return;
+    exportSelectedProfile(activeMaterial, 'material');
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+      const result = await importMaterialProfilesFromFile(file, materials);
+      if (result.profiles.length > 0) {
+        for (const p of result.profiles) {
+          onCreate(p);
+        }
+      }
+    } catch (err) {
+      window.alert(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
   if (!activeMaterial) return null;
 
   return (
@@ -69,12 +104,36 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
             <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
             Material Library
           </h3>
-          <button
-            onClick={handleAdd}
-            className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleImportClick}
+              title="Import materials from file"
+              className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
+            >
+              <Upload className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleExportAll}
+              title="Export all material profiles"
+              className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleAdd}
+              title="Add new material"
+              className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileChange}
+            className="hidden"
+          />
         </div>
 
         <select
@@ -95,12 +154,21 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
             Properties
           </h3>
-          <button
-            onClick={() => onDelete(activeMaterial.id)}
-            className="text-neutral-600 hover:text-red-500 transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportSelected}
+              title="Export this material profile"
+              className="text-neutral-600 hover:text-red-500 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onDelete(activeMaterial.id)}
+              className="text-neutral-600 hover:text-red-500 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">

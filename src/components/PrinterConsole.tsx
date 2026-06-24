@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { SerialMessage } from '../lib/useWebSerial';
 import type { MachineProfile } from '../types';
+import { useTheme } from '../lib/themeContext';
 
 interface PrinterConsoleProps {
   isConnected: boolean;
@@ -108,7 +109,8 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
     level: 'warn' | 'block';
   } | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
-  const isLight = false;
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -354,6 +356,8 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
               onMouseDown={handleFire}
               onMouseUp={handleStopFire}
               onMouseLeave={handleStopFire}
+              onTouchStart={handleFire}
+              onTouchEnd={handleStopFire}
               disabled={isControlDisabled}
               className="flex items-center justify-center gap-2 px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-500 rounded-lg text-xs font-bold transition border border-amber-500/30 disabled:opacity-50"
             >

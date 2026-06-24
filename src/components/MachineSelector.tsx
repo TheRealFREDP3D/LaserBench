@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { MachineProfile, LaserControlMode, FirmwareType } from '../types';
 import { ParameterField } from './ParameterField';
-import { Plus, Trash2, ChevronDown, ChevronUp, Code } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Code, Download, Upload } from 'lucide-react';
 import { useConfirmModal } from '../hooks/useConfirmModal';
+import {
+  exportAllProfiles,
+  exportSelectedProfile,
+  importMachineProfilesFromFile,
+} from '../lib/profileExport';
 
 interface MachineSelectorProps {
   machines: MachineProfile[];
@@ -24,6 +29,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
   const activeMachine = machines.find((m) => m.id === selectedId) || machines[0];
   const [showAdvanced, setShowAdvanced] = useState(false);
   const { confirm, ConfirmModalComponent } = useConfirmModal();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFieldChange = (
     field: keyof MachineProfile,
@@ -51,6 +57,40 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
     if (ok) onDelete(activeMachine.id);
   };
 
+  const handleExportAll = () => {
+    exportAllProfiles('machine');
+  };
+
+  const handleExportSelected = () => {
+    if (!activeMachine) return;
+    exportSelectedProfile(activeMachine, 'machine');
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+      const result = await importMachineProfilesFromFile(file, machines);
+      if (result.profiles.length > 0) {
+        for (const p of result.profiles) {
+          onCreate(p);
+        }
+      }
+      const parts: string[] = [];
+      if (result.profiles.length > 0) parts.push(`${result.profiles.length} imported`);
+      if (result.duplicates > 0) parts.push(`${result.duplicates} skipped (duplicates)`);
+      if (result.invalid > 0) parts.push(`${result.invalid} invalid`);
+      await confirm(parts.length > 0 ? parts.join(', ') : 'No new profiles found');
+    } catch (err) {
+      await confirm(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
   if (!activeMachine) return null;
 
   return (
@@ -62,12 +102,36 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
             <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
             Machine Profile
           </h3>
-          <button
-            onClick={handleAdd}
-            className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleImportClick}
+              title="Import profiles from file"
+              className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
+            >
+              <Upload className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleExportAll}
+              title="Export all machine profiles"
+              className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleAdd}
+              title="Add new machine"
+              className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileChange}
+            className="hidden"
+          />
         </div>
 
         <select
@@ -88,12 +152,21 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
             Settings
           </h3>
-          <button
-            onClick={handleDelete}
-            className="text-neutral-600 hover:text-red-500 transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportSelected}
+              title="Export this machine profile"
+              className="text-neutral-600 hover:text-red-500 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleDelete}
+              className="text-neutral-600 hover:text-red-500 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">
