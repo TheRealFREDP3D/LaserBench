@@ -1,7 +1,7 @@
 import React from 'react';
 import { MaterialProfile, MaterialCategory } from '../types';
 import { ParameterField } from './ParameterField';
-import { Layers, Plus, Trash2, Database } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface MaterialDatabaseProps {
   materials: MaterialProfile[];
@@ -32,7 +32,10 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
 }) => {
   const activeMaterial = materials.find((m) => m.id === selectedId) || materials[0];
 
-  const handleFieldChange = (field: keyof MaterialProfile, value: any) => {
+  const handleFieldChange = (
+    field: keyof MaterialProfile,
+    value: MaterialProfile[keyof MaterialProfile]
+  ) => {
     if (!activeMaterial) return;
     onUpdate({ ...activeMaterial, [field]: value });
   };

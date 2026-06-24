@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { X, Flame, Cpu, Layers, Sliders } from 'lucide-react';
 import type { CalibrationHistoryEntry, MaterialProfile, PatternType } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -51,15 +51,6 @@ export default function QuickLogModal({
   const [optSpeed, setOptSpeed] = useState(midSpeed);
   const [optZ, setOptZ] = useState(midZ);
   const [notes, setNotes] = useState('');
-
-  useEffect(() => {
-    if (open) {
-      setOptPower(midPower);
-      setOptSpeed(midSpeed);
-      setOptZ(midZ);
-      setNotes('');
-    }
-  }, [open, midPower, midSpeed, midZ]);
 
   const trapRef = useFocusTrap<HTMLDivElement>(open);
 

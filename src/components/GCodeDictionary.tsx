@@ -1,15 +1,5 @@
-import { useState, useRef } from 'react';
-import {
-  Book,
-  Search,
-  X,
-  Check,
-  Copy,
-  Zap,
-  Settings,
-  ArrowRight,
-  CornerDownRight,
-} from 'lucide-react';
+import { useState } from 'react';
+import { Book, Search, X, Check, Copy, Settings, CornerDownRight } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useTheme } from '../lib/themeContext';
 import { GCODE_DATABASE, type GCodeEntry } from '../lib/gcodeDatabase';

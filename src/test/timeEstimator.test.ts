@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { estimateToolpathTime } from '../lib/timeEstimator';
-import { MachineProfile } from '../types';
+import { MachineProfile, PathSegment } from '../types';
 
 const mockMachine: MachineProfile = {
   id: 'm1',
@@ -22,7 +22,7 @@ const mockMachine: MachineProfile = {
 
 describe('timeEstimator', () => {
   it('estimates simple path time', () => {
-    const paths: any[] = [
+    const paths: PathSegment[] = [
       {
         points: [
           [0, 0],

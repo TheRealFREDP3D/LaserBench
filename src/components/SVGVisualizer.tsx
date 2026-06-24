@@ -94,6 +94,17 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
     }));
   };
 
+  const handleZoom = (direction: 'in' | 'out') => {
+    const scale = direction === 'in' ? 0.9 : 1.1;
+    setViewBox((prev) => ({
+      ...prev,
+      w: prev.w * scale,
+      h: prev.h * scale,
+      x: prev.x + (prev.w - prev.w * scale) / 2,
+      y: prev.y + (prev.h - prev.h * scale) / 2,
+    }));
+  };
+
   const handleClick = (e: React.MouseEvent) => {
     if (e.button === 0 && !e.altKey && !isDragging) {
       if (hoverPos && onJog) {
@@ -163,14 +174,14 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
           </button>
           <div className="h-px bg-white/5 mx-1" />
           <button
-            onClick={() => handleWheel({ deltaY: -100 } as any)}
+            onClick={() => handleZoom('in')}
             className="p-2 hover:bg-white/5 rounded transition-colors text-neutral-400 hover:text-white"
             title="Zoom In"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
           <button
-            onClick={() => handleWheel({ deltaY: 100 } as any)}
+            onClick={() => handleZoom('out')}
             className="p-2 hover:bg-white/5 rounded transition-colors text-neutral-400 hover:text-white"
             title="Zoom Out"
           >

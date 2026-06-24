@@ -23,7 +23,10 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
   const activeMachine = machines.find((m) => m.id === selectedId) || machines[0];
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const handleFieldChange = (field: keyof MachineProfile, value: any) => {
+  const handleFieldChange = (
+    field: keyof MachineProfile,
+    value: MachineProfile[keyof MachineProfile]
+  ) => {
     if (!activeMachine) return;
     onUpdate({ ...activeMachine, [field]: value });
   };

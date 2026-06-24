@@ -1,4 +1,5 @@
 import React from 'react';
+import { PatternType } from '../types';
 import { usePatternStore } from '../store/usePatternStore';
 import { useMachineStore } from '../store/useMachineStore';
 import { ParameterField } from './ParameterField';
@@ -31,7 +32,7 @@ const PatternConfigurator: React.FC = () => {
             return (
               <button
                 key={pat.id}
-                onClick={() => p.setPatternType(pat.id as any)}
+                onClick={() => p.setPatternType(pat.id as PatternType)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
                   isActive
                     ? 'bg-red-950/20 border-red-500/50 text-white shadow-[0_0_15px_rgba(220,38,38,0.1)]'

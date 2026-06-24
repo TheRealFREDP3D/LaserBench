@@ -1,9 +1,7 @@
 import { useState, useCallback } from 'react';
 import ConfirmModal from '../components/ConfirmModal';
-import { useTheme } from '../lib/themeContext';
 
 export function useConfirmModal() {
-  const { theme } = useTheme();
   const [state, setState] = useState<{ open: boolean; message: string; onConfirm: () => void }>({
     open: false,
     message: '',

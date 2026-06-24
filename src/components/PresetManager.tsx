@@ -5,15 +5,7 @@ import {
   type FormEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import {
-  Save,
-  Trash2,
-  Search,
-  Sparkles,
-  Check,
-  Info,
-  FileSliders,
-} from 'lucide-react';
+import { Save, Trash2, Search, Sparkles, Check, Info, FileSliders } from 'lucide-react';
 import { GeneratorPreset, PatternType } from '../types';
 import { useConfirmModal } from '../hooks/useConfirmModal';
 import { useTheme } from '../lib/themeContext';

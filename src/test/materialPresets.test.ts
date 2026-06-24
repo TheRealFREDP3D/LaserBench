@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getStoredMachines, getStoredMaterials, INITIAL_MACHINES } from '../lib/materialPresets';
+import { getStoredMachines, INITIAL_MACHINES } from '../lib/materialPresets';
 
 describe('materialPresets', () => {
   beforeEach(() => {

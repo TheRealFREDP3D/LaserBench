@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { generatePatternPaths } from './lib/gcodeGenerator';
 import { GeneratedData } from './types';
 import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
