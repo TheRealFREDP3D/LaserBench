@@ -97,7 +97,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
   if (!activeMaterial) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="material-library">
       <section>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 flex items-center gap-2">

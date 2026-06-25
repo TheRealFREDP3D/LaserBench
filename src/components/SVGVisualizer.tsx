@@ -155,7 +155,10 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col bg-[#050505] overflow-hidden select-none group">
+    <div
+      className="relative w-full h-full flex flex-col bg-[#050505] overflow-hidden select-none group"
+      data-tour="svg-canvas"
+    >
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <div className="bg-[#0A0A0A]/90 backdrop-blur-md border border-white/10 rounded-lg p-1.5 flex flex-col gap-1 shadow-2xl">
           <button

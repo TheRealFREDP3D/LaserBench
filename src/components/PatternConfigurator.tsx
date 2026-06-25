@@ -19,7 +19,7 @@ const PatternConfigurator: React.FC = () => {
   const machine = getActiveMachine();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="pattern-config">
       <section>
         <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 mb-4 flex items-center gap-2">
           <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />

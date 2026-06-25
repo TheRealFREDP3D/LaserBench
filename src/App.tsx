@@ -19,6 +19,7 @@ import { PrinterConsole } from './components/PrinterConsole';
 import { useWebSerial } from './lib/useWebSerial';
 import WorkflowStepper from './components/layout/WorkflowStepper';
 import StatusBar from './components/layout/StatusBar';
+import OnboardingTooltip from './components/OnboardingTooltip';
 
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -385,6 +386,8 @@ export default function App() {
         onConnect={handleConnect}
         onDisconnect={disconnect}
       />
+
+      <OnboardingTooltip />
 
       <Analytics />
       <SpeedInsights />

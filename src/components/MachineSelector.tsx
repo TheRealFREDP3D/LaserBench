@@ -94,7 +94,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
   if (!activeMachine) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="machine-selector">
       {ConfirmModalComponent}
       <section>
         <div className="flex items-center justify-between mb-4">

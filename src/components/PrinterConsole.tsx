@@ -15,6 +15,7 @@ import {
 import type { SerialMessage } from '../lib/useWebSerial';
 import type { MachineProfile } from '../types';
 import { useTheme } from '../lib/themeContext';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 interface PrinterConsoleProps {
   isConnected: boolean;
@@ -112,6 +113,80 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
+  const jog = (axis: string, dist: number) => {
+    if (axis === 'Z') {
+      onSend(`G91 G0 Z${dist} G90`);
+      return;
+    }
+    const dx = axis === 'X' ? dist : 0;
+    const dy = axis === 'Y' ? dist : 0;
+    onJogRelative(dx, dy);
+  };
+
+  const handleFire = () => {
+    const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
+    const cmd = activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
+    onSend(cmd);
+  };
+
+  const handleStopFire = () => {
+    onSend(activeMachine?.laserOff ?? 'M5');
+  };
+
+  const handleEStop = useCallback(() => {
+    if (isConnected) onSend('M112');
+  }, [isConnected, onSend]);
+
+  const handleHomeKey = useCallback(() => {
+    if (isConnected && !isPrinting) onSend('G28');
+  }, [isConnected, isPrinting, onSend]);
+
+  const handleFireKey = useCallback(() => {
+    if (isConnected && !isPrinting) handleFire();
+  }, [isConnected, isPrinting]);
+
+  const handleStopFireKey = useCallback(() => {
+    handleStopFire();
+  }, []);
+
+  const handleJogUp = useCallback(() => {
+    if (isConnected && !isPrinting) jog('Y', 10);
+  }, [isConnected, isPrinting]);
+
+  const handleJogDown = useCallback(() => {
+    if (isConnected && !isPrinting) jog('Y', -10);
+  }, [isConnected, isPrinting]);
+
+  const handleJogLeft = useCallback(() => {
+    if (isConnected && !isPrinting) jog('X', -10);
+  }, [isConnected, isPrinting]);
+
+  const handleJogRight = useCallback(() => {
+    if (isConnected && !isPrinting) jog('X', 10);
+  }, [isConnected, isPrinting]);
+
+  const handleConnectKey = useCallback(() => {
+    if (isConnected) onDisconnect();
+    else onConnect();
+  }, [isConnected, onConnect, onDisconnect]);
+
+  const handleAbortKey = useCallback(() => {
+    if (isPrinting) onAbortPrint();
+  }, [isPrinting, onAbortPrint]);
+
+  useKeyboardShortcuts({
+    onEStop: handleEStop,
+    onFire: handleFireKey,
+    onStopFire: handleStopFireKey,
+    onHome: handleHomeKey,
+    onJogUp: handleJogUp,
+    onJogDown: handleJogDown,
+    onJogLeft: handleJogLeft,
+    onJogRight: handleJogRight,
+    onConnect: handleConnectKey,
+    onAbortPrint: handleAbortKey,
+  });
+
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -150,28 +225,6 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
     }
     setShowHomingWarning(false);
   }, [onPrint, gcode]);
-
-  const handleHome = () => onSend('G28');
-
-  const jog = (axis: string, dist: number) => {
-    if (axis === 'Z') {
-      onSend(`G91 G0 Z${dist} G90`);
-      return;
-    }
-    const dx = axis === 'X' ? dist : 0;
-    const dy = axis === 'Y' ? dist : 0;
-    onJogRelative(dx, dy);
-  };
-
-  const handleFire = () => {
-    const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
-    const cmd = activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
-    onSend(cmd);
-  };
-
-  const handleStopFire = () => {
-    onSend(activeMachine?.laserOff ?? 'M5');
-  };
 
   const isControlDisabled = !isConnected || isPrinting;
 
@@ -222,7 +275,7 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
             <div className="flex gap-1.5 shrink-0">
               <button
                 onClick={() => {
-                  handleHome();
+                  onSend('G28');
                   handleRunJob();
                 }}
                 className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] rounded font-bold transition"
@@ -296,39 +349,59 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
               <button
                 onClick={() => jog('Y', 10)}
                 disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50"
+                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
+                title="Jog Up (↑)"
               >
                 <ArrowUp className="w-4 h-4" />
+                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
+                  ↑
+                </kbd>
               </button>
               <div />
               <button
                 onClick={() => jog('X', -10)}
                 disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50"
+                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
+                title="Jog Left (←)"
               >
                 <ArrowLeft className="w-4 h-4" />
+                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
+                  ←
+                </kbd>
               </button>
               <button
                 onClick={() => onSend('G28')}
                 disabled={isControlDisabled}
-                className="p-2 bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition disabled:opacity-50"
+                className="p-2 bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition disabled:opacity-50 relative"
+                title="Home (H)"
               >
                 <Home className="w-4 h-4" />
+                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
+                  H
+                </kbd>
               </button>
               <button
                 onClick={() => jog('X', 10)}
                 disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50"
+                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
+                title="Jog Right (→)"
               >
                 <ArrowRight className="w-4 h-4" />
+                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
+                  →
+                </kbd>
               </button>
               <div />
               <button
                 onClick={() => jog('Y', -10)}
                 disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50"
+                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
+                title="Jog Down (↓)"
               >
                 <ArrowDown className="w-4 h-4" />
+                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
+                  ↓
+                </kbd>
               </button>
               <div />
             </div>
@@ -367,6 +440,9 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
             >
               <Flame className="w-3.5 h-3.5" />
               FIRE
+              <kbd className="hidden sm:inline-block ml-1 px-1 py-0.5 bg-black/30 rounded text-[9px] font-mono opacity-50">
+                F
+              </kbd>
             </button>
             <button
               onClick={() => onSend('M112')}
@@ -375,6 +451,9 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               E-STOP
+              <kbd className="hidden sm:inline-block ml-1 px-1 py-0.5 bg-black/30 rounded text-[9px] font-mono opacity-50">
+                Ctrl+Esc
+              </kbd>
             </button>
             {onPrint && gcode && (
               <button

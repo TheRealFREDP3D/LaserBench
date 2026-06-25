@@ -33,6 +33,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
       <div className="flex items-center gap-6">
         <button
           onClick={isConnected ? onDisconnect : onConnect}
+          data-tour="connect-button"
           className={`flex items-center gap-2 transition-colors ${isConnected ? 'text-green-500 hover:text-green-400' : 'text-red-500 hover:text-red-400'}`}
         >
           {isConnected ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
