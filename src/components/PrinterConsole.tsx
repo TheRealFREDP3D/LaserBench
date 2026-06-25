@@ -1,21 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  Send,
-  Trash2,
-  Play,
-  ArrowUp,
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  Home,
-  Flame,
-  ShieldAlert,
-  AlertTriangle,
-} from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import type { SerialMessage } from '../lib/useWebSerial';
 import type { MachineProfile } from '../types';
-import { useTheme } from '../lib/themeContext';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { JogControls } from './console/JogControls';
+import { FireControls } from './console/FireControls';
+import { SerialLog } from './console/SerialLog';
 
 interface PrinterConsoleProps {
   isConnected: boolean;
@@ -102,71 +92,80 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
   activeMachine,
   onJogRelative,
 }: PrinterConsoleProps) {
-  const [command, setCommand] = useState('');
   const [showHomingWarning, setShowHomingWarning] = useState(false);
   const [pendingWarning, setPendingWarning] = useState<{
     command: string;
     message: string;
     level: 'warn' | 'block';
   } | null>(null);
-  const logEndRef = useRef<HTMLDivElement>(null);
-  const logContainerRef = useRef<HTMLDivElement>(null);
-  const autoScrollRef = useRef(true);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
 
-  const jog = (axis: string, dist: number) => {
-    if (axis === 'Z') {
-      onSend(`G91 G0 Z${dist} G90`);
-      return;
-    }
-    const dx = axis === 'X' ? dist : 0;
-    const dy = axis === 'Y' ? dist : 0;
-    onJogRelative(dx, dy);
-  };
+  const jog = useCallback(
+    (axis: string, dist: number) => {
+      if (axis === 'Z') {
+        onSend('G91');
+        onSend(`G0 Z${dist}`);
+        onSend('G90');
+        return;
+      }
+      const dx = axis === 'X' ? dist : 0;
+      const dy = axis === 'Y' ? dist : 0;
+      onJogRelative(dx, dy);
+    },
+    [onSend, onJogRelative]
+  );
 
-  const handleFire = () => {
+  const handleHome = useCallback(() => {
+    onSend('G28');
+  }, [onSend]);
+
+  const handleFire = useCallback(() => {
     const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
     const cmd = activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
     onSend(cmd);
-  };
+  }, [activeMachine, onSend]);
 
-  const handleStopFire = () => {
+  const handleStopFire = useCallback(() => {
     onSend(activeMachine?.laserOff ?? 'M5');
-  };
+  }, [activeMachine, onSend]);
 
   const handleEStop = useCallback(() => {
     if (isConnected) onSend('M112');
   }, [isConnected, onSend]);
 
-  const handleHomeKey = useCallback(() => {
-    if (isConnected && !isPrinting) onSend('G28');
-  }, [isConnected, isPrinting, onSend]);
+  const handleRunJob = useCallback(() => {
+    if (onPrint && gcode) {
+      onPrint(gcode);
+    }
+    setShowHomingWarning(false);
+  }, [onPrint, gcode]);
 
-  const handleFireKey = useCallback(() => {
-    if (isConnected && !isPrinting) handleFire();
-  }, [isConnected, isPrinting]);
+  const handleSendWithValidation = useCallback(
+    (cmd: string) => {
+      const trimmed = cmd.trim();
+      if (!trimmed) return;
 
-  const handleStopFireKey = useCallback(() => {
-    handleStopFire();
+      const upper = trimmed.toUpperCase();
+      const { level, message } = validateGCode(upper);
+
+      if (level === 'safe') {
+        onSend(upper);
+      } else {
+        setPendingWarning({ command: upper, message, level });
+      }
+    },
+    [onSend]
+  );
+
+  const handleConfirmSend = useCallback(() => {
+    if (pendingWarning) {
+      onSend(pendingWarning.command);
+      setPendingWarning(null);
+    }
+  }, [pendingWarning, onSend]);
+
+  const handleCancelSend = useCallback(() => {
+    setPendingWarning(null);
   }, []);
-
-  const handleJogUp = useCallback(() => {
-    if (isConnected && !isPrinting) jog('Y', 10);
-  }, [isConnected, isPrinting]);
-
-  const handleJogDown = useCallback(() => {
-    if (isConnected && !isPrinting) jog('Y', -10);
-  }, [isConnected, isPrinting]);
-
-  const handleJogLeft = useCallback(() => {
-    if (isConnected && !isPrinting) jog('X', -10);
-  }, [isConnected, isPrinting]);
-
-  const handleJogRight = useCallback(() => {
-    if (isConnected && !isPrinting) jog('X', 10);
-  }, [isConnected, isPrinting]);
 
   const handleConnectKey = useCallback(() => {
     if (isConnected) onDisconnect();
@@ -176,6 +175,34 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
   const handleAbortKey = useCallback(() => {
     if (isPrinting) onAbortPrint();
   }, [isPrinting, onAbortPrint]);
+
+  const handleFireKey = useCallback(() => {
+    if (isConnected && !isPrinting) handleFire();
+  }, [isConnected, isPrinting, handleFire]);
+
+  const handleStopFireKey = useCallback(() => {
+    handleStopFire();
+  }, [handleStopFire]);
+
+  const handleHomeKey = useCallback(() => {
+    if (isConnected && !isPrinting) handleHome();
+  }, [isConnected, isPrinting, handleHome]);
+
+  const handleJogUp = useCallback(() => {
+    if (isConnected && !isPrinting) onJogRelative(0, 10);
+  }, [isConnected, isPrinting, onJogRelative]);
+
+  const handleJogDown = useCallback(() => {
+    if (isConnected && !isPrinting) onJogRelative(0, -10);
+  }, [isConnected, isPrinting, onJogRelative]);
+
+  const handleJogLeft = useCallback(() => {
+    if (isConnected && !isPrinting) onJogRelative(-10, 0);
+  }, [isConnected, isPrinting, onJogRelative]);
+
+  const handleJogRight = useCallback(() => {
+    if (isConnected && !isPrinting) onJogRelative(10, 0);
+  }, [isConnected, isPrinting, onJogRelative]);
 
   useKeyboardShortcuts({
     onEStop: handleEStop,
@@ -189,64 +216,6 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
     onConnect: handleConnectKey,
     onAbortPrint: handleAbortKey,
   });
-
-  useEffect(() => {
-    if (autoScrollRef.current) {
-      logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  const handleLogScroll = () => {
-    const el = logContainerRef.current;
-    if (!el) return;
-    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 30;
-    autoScrollRef.current = atBottom;
-    setAutoScroll(atBottom);
-  };
-
-  const toggleAutoScroll = () => {
-    const next = !autoScrollRef.current;
-    autoScrollRef.current = next;
-    setAutoScroll(next);
-    if (next) {
-      logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const handleManualSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = command.trim();
-    if (!trimmed) return;
-
-    const upper = trimmed.toUpperCase();
-    const { level, message } = validateGCode(upper);
-
-    if (level === 'safe') {
-      onSend(upper);
-      setCommand('');
-    } else {
-      setPendingWarning({ command: upper, message, level });
-    }
-  };
-
-  const handleConfirmSend = () => {
-    if (pendingWarning) {
-      onSend(pendingWarning.command);
-      setCommand('');
-      setPendingWarning(null);
-    }
-  };
-
-  const handleCancelSend = () => {
-    setPendingWarning(null);
-  };
-
-  const handleRunJob = useCallback(() => {
-    if (onPrint && gcode) {
-      onPrint(gcode);
-    }
-    setShowHomingWarning(false);
-  }, [onPrint, gcode]);
 
   const isControlDisabled = !isConnected || isPrinting;
 
@@ -364,214 +333,36 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
           </div>
         )}
 
+        <JogControls onJog={jog} onHome={handleHome} disabled={isControlDisabled} />
+
         <div className="grid grid-cols-3 gap-4 border-b border-white/5 pb-4">
-          <div className="flex flex-col items-center gap-1">
-            <div className="grid grid-cols-3 gap-1">
-              <div />
-              <button
-                onClick={() => jog('Y', 10)}
-                disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
-                title="Jog Up (↑)"
-              >
-                <ArrowUp className="w-4 h-4" />
-                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
-                  ↑
-                </kbd>
-              </button>
-              <div />
-              <button
-                onClick={() => jog('X', -10)}
-                disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
-                title="Jog Left (←)"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
-                  ←
-                </kbd>
-              </button>
-              <button
-                onClick={() => onSend('G28')}
-                disabled={isControlDisabled}
-                className="p-2 bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition disabled:opacity-50 relative"
-                title="Home (H)"
-              >
-                <Home className="w-4 h-4" />
-                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
-                  H
-                </kbd>
-              </button>
-              <button
-                onClick={() => jog('X', 10)}
-                disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
-                title="Jog Right (→)"
-              >
-                <ArrowRight className="w-4 h-4" />
-                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
-                  →
-                </kbd>
-              </button>
-              <div />
-              <button
-                onClick={() => jog('Y', -10)}
-                disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
-                title="Jog Down (↓)"
-              >
-                <ArrowDown className="w-4 h-4" />
-                <kbd className="hidden sm:block absolute -bottom-1 -right-1 px-0.5 bg-black/50 rounded text-[7px] font-mono opacity-40">
-                  ↓
-                </kbd>
-              </button>
-              <div />
-            </div>
-            <span className="text-[10px] text-zinc-500 font-mono">JOG XY</span>
-          </div>
-
-          <div className="flex flex-col items-center justify-center gap-2">
-            <div className="flex flex-col gap-1">
-              <button
-                onClick={() => jog('Z', 5)}
-                disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition flex items-center gap-2 text-[10px] disabled:opacity-50"
-              >
-                <ArrowUp className="w-3 h-3" /> Z+
-              </button>
-              <button
-                onClick={() => jog('Z', -5)}
-                disabled={isControlDisabled}
-                className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition flex items-center gap-2 text-[10px] disabled:opacity-50"
-              >
-                <ArrowDown className="w-3 h-3" /> Z-
-              </button>
-            </div>
-            <span className="text-[10px] text-zinc-500 font-mono">JOG Z</span>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <button
-              onMouseDown={handleFire}
-              onMouseUp={handleStopFire}
-              onMouseLeave={handleStopFire}
-              onTouchStart={handleFire}
-              onTouchEnd={handleStopFire}
-              disabled={isControlDisabled}
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-500 rounded-lg text-xs font-bold transition border border-amber-500/30 disabled:opacity-50"
-            >
-              <Flame className="w-3.5 h-3.5" />
-              FIRE
-              <kbd className="hidden sm:inline-block ml-1 px-1 py-0.5 bg-black/30 rounded text-[9px] font-mono opacity-50">
-                F
-              </kbd>
-            </button>
-            <button
-              onClick={() => onSend('M112')}
-              disabled={!isConnected}
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-500 rounded-lg text-xs font-bold transition border border-red-500/30 disabled:opacity-50"
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              E-STOP
-              <kbd className="hidden sm:inline-block ml-1 px-1 py-0.5 bg-black/30 rounded text-[9px] font-mono opacity-50">
-                Ctrl+Esc
-              </kbd>
-            </button>
-            {onPrint && gcode && (
-              <button
-                onClick={() => {
-                  if (!isConnected) return;
-                  setShowHomingWarning(true);
-                }}
-                disabled={!isConnected || isPrinting}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition border shadow-sm disabled:opacity-50 ${
-                  isPrinting
-                    ? 'bg-zinc-700 border-zinc-600 text-zinc-400'
-                    : 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500/30 text-white'
-                }`}
-              >
-                <Play className="w-3.5 h-3.5" />
-                {isPrinting ? 'Printing...' : 'Run Job'}
-              </button>
-            )}
-          </div>
+          <div />
+          <div />
+          <FireControls
+            onFire={handleFire}
+            onStopFire={handleStopFire}
+            onEStop={handleEStop}
+            onRunJob={
+              onPrint && gcode
+                ? () => {
+                    if (!isConnected) return;
+                    setShowHomingWarning(true);
+                  }
+                : undefined
+            }
+            isConnected={isConnected}
+            isPrinting={isPrinting}
+            canPrint={!!(onPrint && gcode)}
+          />
         </div>
 
-        <div
-          className={`h-[350px] rounded-lg border overflow-hidden transition-all duration-200 flex flex-col ${
-            isLight
-              ? 'bg-zinc-50 border-zinc-200 text-zinc-800'
-              : 'bg-black border-white/5 text-emerald-400/90'
-          }`}
-        >
-          <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/5">
-            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-              Live Feed
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleAutoScroll}
-                className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition ${
-                  autoScroll
-                    ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-zinc-700 text-zinc-400 border border-zinc-600'
-                }`}
-                title={autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF — scroll down to resume'}
-              >
-                {autoScroll ? '⬇ AUTO' : '⏸ PAUSED'}
-              </button>
-              <button onClick={onClear} className="text-zinc-500 hover:text-zinc-300 transition">
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-          <div
-            ref={logContainerRef}
-            onScroll={handleLogScroll}
-            className="flex-1 overflow-auto p-3 font-mono text-[11px] leading-relaxed"
-          >
-            {messages.length === 0 && <div className="text-zinc-700 italic">No activity yet.</div>}
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex gap-2 ${msg.type === 'sent' ? 'text-indigo-400/80' : ''}`}
-              >
-                <span className="text-zinc-600 shrink-0 select-none">
-                  [
-                  {new Date(msg.timestamp).toLocaleTimeString([], {
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  })}
-                  ]
-                </span>
-                <span className="shrink-0 font-bold opacity-60">
-                  {msg.type === 'sent' ? '>' : '<'}
-                </span>
-                <span className="break-all whitespace-pre-wrap">{msg.text}</span>
-              </div>
-            ))}
-            <div ref={logEndRef} />
-          </div>
-          <form onSubmit={handleManualSend} className="border-t border-white/5 p-2 flex gap-2">
-            <input
-              type="text"
-              value={command}
-              onChange={(e) => setCommand(e.target.value.toUpperCase())}
-              placeholder={isPrinting ? 'Printing...' : 'Send command...'}
-              className="flex-1 bg-transparent border-none outline-none text-[11px] font-mono px-2 py-1"
-              disabled={isControlDisabled}
-            />
-            <button
-              type="submit"
-              disabled={isControlDisabled || !command.trim()}
-              className="text-indigo-500 disabled:text-zinc-700 transition"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-        </div>
+        <SerialLog
+          messages={messages}
+          onSend={handleSendWithValidation}
+          onClear={onClear}
+          isPrinting={isPrinting}
+          isControlDisabled={isControlDisabled}
+        />
       </div>
     </div>
   );
