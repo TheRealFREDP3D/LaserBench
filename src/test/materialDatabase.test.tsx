@@ -28,6 +28,7 @@ describe('MaterialDatabase', () => {
           onUpdate={vi.fn()}
           onCreate={vi.fn()}
           onDelete={vi.fn()}
+          pwmMax={1000}
         />
       </ThemeProvider>
     );

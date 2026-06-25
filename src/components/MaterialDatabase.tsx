@@ -1,13 +1,16 @@
 import React, { useRef } from 'react';
 import { MaterialProfile, MaterialCategory } from '../types';
 import { ParameterField } from './ParameterField';
-import { Plus, Trash2, Download, Upload } from 'lucide-react';
+import { Plus, Trash2, Download, Upload, Copy, ClipboardPaste } from 'lucide-react';
 import {
   exportAllProfiles,
   exportSelectedProfile,
   importMaterialProfilesFromFile,
+  copyProfileToClipboard,
+  importProfilesFromClipboard,
 } from '../lib/profileExport';
 import { useConfirmModal } from '../hooks/useConfirmModal';
+import { isValidMaterialProfile } from '../lib/materialPresets';
 
 interface MaterialDatabaseProps {
   materials: MaterialProfile[];
@@ -16,6 +19,7 @@ interface MaterialDatabaseProps {
   onUpdate: (m: MaterialProfile) => void;
   onCreate: (m: MaterialProfile) => void;
   onDelete: (id: string) => void;
+  pwmMax: number;
 }
 
 const CATEGORIES: MaterialCategory[] = [
@@ -35,6 +39,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
   onUpdate,
   onDelete,
   onCreate,
+  pwmMax,
 }) => {
   const activeMaterial = materials.find((m) => m.id === selectedId) || materials[0];
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -104,6 +109,36 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
     }
   };
 
+  const handleCopyProfile = async () => {
+    if (!activeMaterial) return;
+    try {
+      await copyProfileToClipboard(activeMaterial, 'material');
+    } catch {
+      window.alert('Failed to copy to clipboard');
+    }
+  };
+
+  const handlePasteProfile = async () => {
+    try {
+      const result = await importProfilesFromClipboard(
+        'material',
+        isValidMaterialProfile,
+        materials
+      );
+      if (result.profiles.length > 0) {
+        for (const p of result.profiles) {
+          onCreate(p);
+        }
+      } else if (result.duplicates > 0) {
+        window.alert('Profile already exists');
+      } else {
+        window.alert('No valid material profile found on clipboard');
+      }
+    } catch (err) {
+      window.alert(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
   if (!activeMaterial) return null;
 
   return (
@@ -122,6 +157,13 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
               className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
             >
               <Upload className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handlePasteProfile}
+              title="Import material from clipboard"
+              className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
+            >
+              <ClipboardPaste className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleExportAll}
@@ -166,6 +208,13 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
             Properties
           </h3>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopyProfile}
+              title="Copy profile to clipboard for sharing"
+              className="text-neutral-600 hover:text-red-500 transition-colors"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
             <button
               onClick={handleExportSelected}
               title="Export this material profile"
@@ -232,9 +281,10 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
                 label="Power"
                 id="eng-pwr"
                 min={0}
-                max={1000}
-                value={activeMaterial.engrave.power}
+                max={pwmMax}
+                value={Math.min(activeMaterial.engrave.power, pwmMax)}
                 onChange={(v) => handleNestedChange('engrave', 'power', v)}
+                unit={`PWM (0–${pwmMax})`}
               />
               <ParameterField
                 label="Speed"
@@ -253,9 +303,10 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
                 label="Power"
                 id="cut-pwr"
                 min={0}
-                max={1000}
-                value={activeMaterial.cut.power}
+                max={pwmMax}
+                value={Math.min(activeMaterial.cut.power, pwmMax)}
                 onChange={(v) => handleNestedChange('cut', 'power', v)}
+                unit={`PWM (0–${pwmMax})`}
               />
               <ParameterField
                 label="Speed"

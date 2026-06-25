@@ -1,4 +1,12 @@
-import { useMemo, useCallback, useState, useRef, useEffect, type ComponentType } from 'react';
+import {
+  useMemo,
+  useCallback,
+  useState,
+  useRef,
+  useEffect,
+  type ComponentType,
+  type ChangeEvent,
+} from 'react';
 import { generatePatternPaths } from './lib/gcodeGenerator';
 import { GeneratedData } from './types';
 import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
@@ -112,11 +120,10 @@ export default function App() {
   }, [effectiveResults, printGCode]);
 
   const handleFileUpload = useCallback(
-    async (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const file = target.files?.[0];
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
       if (!file) return;
-      target.value = '';
+      e.target.value = '';
       try {
         const content = await readGCodeFile(file);
         const parsed = parseGCodeFile(content, activeMachine?.pwmMax || 1000);
@@ -200,6 +207,7 @@ export default function App() {
               onUpdate={updateMaterial}
               onCreate={addMaterial}
               onDelete={deleteMaterial}
+              pwmMax={activeMachine?.pwmMax ?? 1000}
             />
           </motion.div>
         )}
@@ -255,7 +263,7 @@ export default function App() {
                     ref={fileInputRef}
                     type="file"
                     accept=".gcode,.nc,.gc"
-                    onChange={(e) => handleFileUpload(e.nativeEvent)}
+                    onChange={handleFileUpload}
                     className="hidden"
                   />
                 </div>
