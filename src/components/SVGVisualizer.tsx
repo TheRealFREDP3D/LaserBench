@@ -41,8 +41,9 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isDraggingOrigin, setIsDraggingOrigin] = useState(false);
 
-  const getSVGPoint = (e: React.MouseEvent | MouseEvent) => {
+  const getSVGPoint = (e: React.PointerEvent | React.MouseEvent | PointerEvent) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const pt = svgRef.current.createSVGPoint();
     pt.x = e.clientX;
@@ -53,9 +54,22 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
     return { x: svgP.x, y: svgP.y };
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const isNearOrigin = (pt: { x: number; y: number }) => {
+    const dx = pt.x - p.patternPosition.x;
+    const dy = pt.y - p.patternPosition.y;
+    return Math.sqrt(dx * dx + dy * dy) < 12;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
     const pt = getSVGPoint(e);
     setHoverPos({ x: Math.round(pt.x), y: Math.round(pt.y) });
+
+    if (isDraggingOrigin) {
+      const snappedX = Math.round(pt.x * 10) / 10;
+      const snappedY = Math.round(pt.y * 10) / 10;
+      p.setPatternPosition({ x: snappedX, y: snappedY });
+      return;
+    }
 
     if (isDragging) {
       const dx = pt.x - dragStart.x;
@@ -64,17 +78,25 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    const pt = getSVGPoint(e);
+
+    if (e.button === 0 && !e.altKey && isNearOrigin(pt)) {
+      setIsDraggingOrigin(true);
+      e.preventDefault();
+      return;
+    }
+
     if (e.button === 1 || (e.button === 0 && e.altKey)) {
       setIsDragging(true);
-      const pt = getSVGPoint(e);
       setDragStart(pt);
       e.preventDefault();
     }
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     setIsDragging(false);
+    setIsDraggingOrigin(false);
   };
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -197,11 +219,11 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
       </div>
 
       <div
-        className="flex-1 overflow-hidden cursor-crosshair"
-        onMouseMove={handleMouseMove}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        className={`flex-1 overflow-hidden ${isDraggingOrigin ? 'cursor-grabbing' : 'cursor-crosshair'}`}
+        onPointerMove={handlePointerMove}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
         onWheel={handleWheel}
         onClick={handleClick}
       >
@@ -269,8 +291,17 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
             ))}
           </g>
 
-          <g transform={`translate(${p.patternPosition.x}, ${p.patternPosition.y})`}>
-            <circle r="3" fill="red" opacity="0.4" className="animate-pulse" />
+          <g
+            transform={`translate(${p.patternPosition.x}, ${p.patternPosition.y})`}
+            style={{ cursor: isDraggingOrigin ? 'grabbing' : 'grab' }}
+          >
+            <circle r="10" fill="transparent" />
+            <circle
+              r="3"
+              fill="red"
+              opacity={isDraggingOrigin ? '0.7' : '0.4'}
+              className="animate-pulse"
+            />
             <line x1="-10" y1="0" x2="10" y2="0" stroke="red" strokeWidth="0.5" opacity="0.2" />
             <line x1="0" y1="-10" x2="0" y2="10" stroke="red" strokeWidth="0.5" opacity="0.2" />
           </g>
@@ -360,6 +391,10 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
         </div>
 
         <div className="flex items-center gap-3 text-[10px] text-neutral-600 font-medium">
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded">
+            <span className="text-red-500/50">&#9679;</span>
+            <span>Drag Origin to Move</span>
+          </div>
           <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded">
             <kbd className="font-sans border border-neutral-700 px-1 rounded text-[8px]">ALT</kbd>
             <span>+ Drag to Pan</span>
