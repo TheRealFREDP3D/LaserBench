@@ -171,8 +171,11 @@ export function importProfilesFromClipboard<T extends MachineProfile | MaterialP
     let data: unknown;
     try {
       data = JSON.parse(text);
-    } catch {
-      throw new Error('Clipboard does not contain valid JSON');
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw new Error('Clipboard does not contain valid JSON');
+      }
+      throw e;
     }
     return importProfiles(data, type, validate, existing);
   });
