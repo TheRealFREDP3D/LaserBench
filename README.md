@@ -28,15 +28,19 @@ A web-based laser cutter control interface with G-code generation, SVG toolpath 
 - **G-Code File Upload**: Import `.gcode`, `.nc`, or `.gc` files with parser
 - **Inline G-Code Editing**: Edit generated G-code with pencil/check/cancel/reset buttons
 - **Profile Import/Export**: Versioned JSON envelope with id-based dedup on import
+- **Clipboard Copy/Paste**: Copy/paste machine and material profiles via clipboard for easy sharing
+- **Modular Console**: Extracted JogControls, FireControls, and SerialLog subcomponents
+- **Pointer Events**: SVG canvas supports touch/pen/stylus input via pointer events
 - **Onboarding Tooltips**: 5-step walkthrough with localStorage persistence
 
-### Security & Performance
+#### Security & Performance
 - **Content Security Policy**: CSP meta tag in index.html
 - **Input Sanitization**: Control character removal, dangerous command blocking
 - **Ring Buffer**: O(1) serial message storage (500 messages) replacing array spread
 - **Numeric Input Debounce**: 200ms delay on blur/Enter to prevent lag
 - **SVG Wheel Throttle**: 50ms cooldown on zoom operations
 - **Conditional Analytics**: Vercel analytics loaded only when `VERCEL=1`
+- **TypeScript Strict Mode**: `strict: true` in tsconfig.json for stronger type safety
 
 ![Generate G-Code Calibration](images/generate_gcode.gif)
 

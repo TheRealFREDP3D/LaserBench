@@ -6,6 +6,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.7.2] — 2026-06-25
+
+### Added
+- **Clipboard profile copy/paste** — `copyProfileToClipboard()` and `importProfilesFromClipboard()` in `profileExport.ts`. Copy/Paste buttons (Copy, ClipboardPaste icons) in MachineSelector and MaterialDatabase headers for quick profile sharing
+- **Console subcomponents** — extracted `JogControls`, `FireControls`, `SerialLog` from PrinterConsole into `src/components/console/` for cleaner separation of concerns
+- **`uploaded` pattern type** — new `PatternType` variant for uploaded G-code files
+
+### Changed
+- **PrinterConsole refactored** — reduced from ~430 lines by extracting jog/fire/serial-log into dedicated components. All handlers wrapped in `useCallback` for better performance
+- **SVGVisualizer pointer events** — switched from `Mouse` to `Pointer` events (`onPointerDown/Move/Up/Leave`) for better touch/pen/stylus support
+- **G-code generator constants** — extracted magic numbers to named constants (`POWER_RAMP_LENGTH_MM`, `SPEED_RAMP_LINE_GAP_MM`, `MATRIX_BLOCK_GAP_MM`, `LABEL_TEXT_SCALE`, etc.)
+- **App.tsx file upload** — changed `handleFileUpload` from `Event` to `ChangeEvent<HTMLInputElement>` for proper React typing
+- **Package.json** — removed `express` from dependencies, moved `@tailwindcss/vite` to devDependencies, added `@types/react` and `@types/react-dom`, added `zustand` as explicit dependency
+- **tsconfig.json** — enabled `strict: true`
+- **Dockerfile** — healthcheck uses `127.0.0.1` instead of `localhost`; added `pnpm-workspace.yaml` back to COPY step
+- **Clean script** — removed `server.js` from `clean` target
+
+---
+
 ## [0.7.1] — 2026-06-25
 
 ### Added
