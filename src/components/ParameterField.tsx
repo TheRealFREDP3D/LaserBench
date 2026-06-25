@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import DebouncedRange from './DebouncedRange';
 
 interface ParameterFieldProps {
@@ -24,6 +24,16 @@ export const ParameterField: React.FC<ParameterFieldProps> = ({
   unit,
   isLight,
 }) => {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleNumberChange = (raw: string) => {
+    const parsed = parseFloat(raw);
+    if (Number.isNaN(parsed)) return;
+    const clamped = Math.min(max, Math.max(min, parsed));
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => onChange(clamped), 200);
+  };
+
   return (
     <div className="grid grid-cols-[1fr_2fr_80px] items-center gap-4 py-2 border-b border-white/5 last:border-0">
       <label
@@ -50,8 +60,12 @@ export const ParameterField: React.FC<ParameterFieldProps> = ({
           min={min}
           max={max}
           step={step}
-          value={value}
-          onChange={(e) => onChange(parseFloat(e.target.value) || min)}
+          defaultValue={value}
+          key={value}
+          onBlur={(e) => handleNumberChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleNumberChange((e.target as HTMLInputElement).value);
+          }}
           className={`w-16 elegant-input text-right px-2 py-1 rounded font-mono text-xs ${
             isLight
               ? 'bg-zinc-50 border-zinc-200 text-zinc-900'

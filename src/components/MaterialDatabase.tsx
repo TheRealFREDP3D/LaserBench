@@ -7,6 +7,7 @@ import {
   exportSelectedProfile,
   importMaterialProfilesFromFile,
 } from '../lib/profileExport';
+import { useConfirmModal } from '../hooks/useConfirmModal';
 
 interface MaterialDatabaseProps {
   materials: MaterialProfile[];
@@ -37,6 +38,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
 }) => {
   const activeMaterial = materials.find((m) => m.id === selectedId) || materials[0];
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
 
   const handleFieldChange = (
     field: keyof MaterialProfile,
@@ -52,6 +54,14 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
       ...activeMaterial,
       [parent]: { ...activeMaterial[parent], [field]: value },
     });
+  };
+
+  const handleDelete = async () => {
+    if (!activeMaterial) return;
+    const ok = await confirm(
+      `Delete material profile "${activeMaterial.name}"? This cannot be undone.`
+    );
+    if (ok) onDelete(activeMaterial.id);
   };
 
   const handleAdd = () => {
@@ -98,6 +108,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
 
   return (
     <div className="space-y-6" data-tour="material-library">
+      {ConfirmModalComponent}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 flex items-center gap-2">
@@ -163,7 +174,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
               <Download className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => onDelete(activeMaterial.id)}
+              onClick={handleDelete}
               className="text-neutral-600 hover:text-red-500 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />

@@ -6,7 +6,58 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [0.6.0] — 2026-06-21
+## [0.7.1] — 2026-06-25
+
+### Added
+- **Keyboard shortcuts** — `Ctrl+Esc` (E-STOP), `Esc` (abort print), `H` (home), `F` (hold to fire), arrow keys (jog XY), `C` (connect/disconnect). `<kbd>` badges on UI buttons. New `useKeyboardShortcuts` hook
+- **Auto-scroll pause in console** — scroll up to pause, click `⬇ AUTO` / `⏸ PAUSED` badge to toggle. Log messages still arrive; only scrolling is suppressed while paused
+- **Delete confirmation on materials** — MaterialDatabase trash button now uses `useConfirmModal` with "cannot be undone" warning (MachineSelector already had this)
+- **G-code file upload** — new `parseGCode()` parser and `gcodeFileUpload.ts` utility. Upload button in preview step accepts `.gcode`, `.nc`, `.gc` files
+- **Inline G-code editing** — GCodeOutput has pencil/check/cancel/reset buttons and textarea editor. Edited G-code re-parses for SVG visualization and time estimation
+- **Movement mode tracking** — StatusBar shows `Absolute`/`Incremental` badge from G90/G91 tracking in `useWebSerial`
+- **Baud rate dropdown** — MachineSelector now offers 250000, 230400, 115200, 57600, 9600 baud rates
+- **Profile import/export** — `exportAllProfiles()`, `exportSelectedProfile()`, `importMachineProfilesFromFile()`, `importMaterialProfilesFromFile()` with versioned JSON envelope format. Export/import buttons in MachineSelector and MaterialDatabase
+- **Onboarding tooltips** — 5-step walkthrough (Machine → Material → Pattern → Preview → Connect) with `data-tour` attributes, localStorage persistence, theme-aware
+- **CSP meta tag** — Content Security Policy in `index.html` covering script, style, img, connect, font, object, base-uri, form-action, frame-ancestors, worker-src
+- **Favicon installation** — RealFaviconGenerator files in `public/`, proper `<link>` tags in `index.html`
+- **GitHub Actions CI** — lint + test + build workflow on push/PR to main, uploads dist artifact
+- **LICENSE** — MIT license
+- **`.nvmrc`** — locks Node.js version to 22
+- **`engines` field** in `package.json` — `"node": ">=18"`
+- **Test suite expansion** — from 48 to 198 tests across 19 files:
+  - `gcodeGenerator.test.ts` (34 tests): all 5 pattern types, G-code structure, laser modes, delta, kerf, edge cases
+  - `gcodeParser.test.ts` (21 tests): G0/G1/G28/G92, M3/M5/M106/M107, G90/G91, bounds, comments
+  - `timeEstimator.test.ts` (19 tests): trapezoid model, formatting, edge cases
+  - `materialPresets.test.ts` (38 tests): validation, enums, localStorage roundtrip
+  - `profileExport.test.ts` (9 tests): envelope validation, import/dedup
+  - `printerConsole.test.tsx` (18 tests): render, E-STOP, jog, messages, keyboard shortcuts
+  - `confirmModal.test.tsx` (9 tests): open/close, callbacks, accessibility
+  - `debouncedRange.test.tsx` (6 tests): debounce, rapid changes, clamping
+
+### Changed
+- **Numeric input debounce** — ParameterField number inputs now debounce 200ms on blur/Enter (range sliders already had this)
+- **Ring buffer for serial messages** — `RingBuffer<T>` class replaces `[...prev, msg].slice(-500)`, O(1) push with no per-message array copy
+- **SVG wheel zoom throttle** — `handleWheel` throttled to 50ms via `performance.now()` to prevent trackpad stutter
+- **Vercel analytics conditional** — `@vercel/analytics` and `@vercel/speed-insights` lazy-loaded only when `import.meta.env.VERCEL === '1'`; no errors in non-Vercel deployments
+- **Delta arm length removed** — `deltaArmLength` removed from `MachineProfile` type, `DeltaParams`, material presets, and G-code generator defaults (only `deltaRodLength` used)
+
+### Fixed
+- **Double `getStoredMachines()` call** — extracted to `initialMachines` const outside zustand `create` to prevent initialization duplication
+- **G-code input validation** — `validateGCode()` strips control chars, validates line starts with G/M/T/S/F/O/N, warns/blocks dangerous commands
+- **Machine deletion confirmation** — wired `useConfirmModal` hook to MachineSelector delete button
+- **Hardcoded pattern dimensions** — `generatePatternPaths` captures return values from each generator for `patternWidth`/`patternHeight`
+- **M3 → M4 in M3_M4_M5 mode** — corrected laser on command from M3 to M4 for bidirectional mode
+- **State-during-render fix** — removed render-time `setState` from SVGVisualizer; added `key` prop in App.tsx with machine dimensions to force remount
+- **Jog inconsistency** — both SVG click and arrow buttons now use absolute `G0 X Y` with position tracking
+- **Serial send timeout** — `waitForSlot()` rejects after 10s; `printGCode()` catches and aborts with error message; pending timeouts cleaned on disconnect
+- **PrinterConsole theme** — replaced hardcoded `const isLight = false` with `useTheme()`
+- **Baud rate bug** — `connect()` coerces baudRate with `Math.floor(Number(baudRate || 250000)) || 250000`; `isValidMachineProfile` validates positive finite number
+- **Z-jog fix** — `jog()` function handles Z axis with `G91 G0 Z{dist} G90`
+- **Movement mode stuck at G91** — changed `if/else if` to two independent `if` checks so compound commands like `G91 G0 Z5 G90` resolve correctly
+- **Silent upload errors** — `window.alert` with error message in catch block
+- **Edited G-code visualization** — `effectiveResults` re-parses via `parseGCode()` to keep SVG/time in sync
+- **Dockerfile** — removed `pnpm-workspace.yaml` from COPY, added `HEALTHCHECK` and `nginx.conf` for SPA routing
+- **Images moved** to `images/` directory, README updated
 
 ### Added
 - **`baudRate` field on `MachineProfile`** — serial baud rate is now a per-machine setting (default 250000). Users can configure 115200, 57600, etc. from the Machine Selector editor without editing code

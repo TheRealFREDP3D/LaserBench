@@ -110,6 +110,9 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
     level: 'warn' | 'block';
   } | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef(true);
+  const [autoScroll, setAutoScroll] = useState(true);
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
@@ -188,8 +191,27 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
   });
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (autoScrollRef.current) {
+      logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
+
+  const handleLogScroll = () => {
+    const el = logContainerRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 30;
+    autoScrollRef.current = atBottom;
+    setAutoScroll(atBottom);
+  };
+
+  const toggleAutoScroll = () => {
+    const next = !autoScrollRef.current;
+    autoScrollRef.current = next;
+    setAutoScroll(next);
+    if (next) {
+      logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const handleManualSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -486,11 +508,28 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
             <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
               Live Feed
             </span>
-            <button onClick={onClear} className="text-zinc-500 hover:text-zinc-300 transition">
-              <Trash2 className="w-3 h-3" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleAutoScroll}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition ${
+                  autoScroll
+                    ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-zinc-700 text-zinc-400 border border-zinc-600'
+                }`}
+                title={autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF — scroll down to resume'}
+              >
+                {autoScroll ? '⬇ AUTO' : '⏸ PAUSED'}
+              </button>
+              <button onClick={onClear} className="text-zinc-500 hover:text-zinc-300 transition">
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
           </div>
-          <div className="flex-1 overflow-auto p-3 font-mono text-[11px] leading-relaxed">
+          <div
+            ref={logContainerRef}
+            onScroll={handleLogScroll}
+            className="flex-1 overflow-auto p-3 font-mono text-[11px] leading-relaxed"
+          >
             {messages.length === 0 && <div className="text-zinc-700 italic">No activity yet.</div>}
             {messages.map((msg, i) => (
               <div

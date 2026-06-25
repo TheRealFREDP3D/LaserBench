@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import MaterialDatabase from '../components/MaterialDatabase';
 import { MaterialProfile } from '../types';
+import { ThemeProvider } from '../lib/themeContext';
 
 const mockMaterials: MaterialProfile[] = [
   {
@@ -19,14 +20,16 @@ const mockMaterials: MaterialProfile[] = [
 describe('MaterialDatabase', () => {
   it('renders material details', () => {
     render(
-      <MaterialDatabase
-        materials={mockMaterials}
-        selectedId="mat1"
-        onSelect={vi.fn()}
-        onUpdate={vi.fn()}
-        onCreate={vi.fn()}
-        onDelete={vi.fn()}
-      />
+      <ThemeProvider>
+        <MaterialDatabase
+          materials={mockMaterials}
+          selectedId="mat1"
+          onSelect={vi.fn()}
+          onUpdate={vi.fn()}
+          onCreate={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      </ThemeProvider>
     );
     expect(screen.getByText('Test Plywood')).toBeInTheDocument();
   });

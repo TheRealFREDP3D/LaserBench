@@ -4,6 +4,9 @@
   "version": "0.7.1",
   "description": "Web-based laser cutter control interface with G-code generation and serial communication",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",

@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useRef } from 'react';
+import { useMemo, useCallback, useState, useRef, useEffect, type ComponentType } from 'react';
 import { generatePatternPaths } from './lib/gcodeGenerator';
 import { GeneratedData } from './types';
 import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
@@ -21,10 +21,10 @@ import WorkflowStepper from './components/layout/WorkflowStepper';
 import StatusBar from './components/layout/StatusBar';
 import OnboardingTooltip from './components/OnboardingTooltip';
 
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Settings, Terminal, Upload } from 'lucide-react';
+
+const isVercel = import.meta.env.VERCEL === '1';
 
 type MobilePanel = 'config' | 'console' | null;
 
@@ -389,8 +389,24 @@ export default function App() {
 
       <OnboardingTooltip />
 
-      <Analytics />
-      <SpeedInsights />
+      {isVercel && <VercelAnalytics />}
     </div>
+  );
+}
+
+function VercelAnalytics() {
+  const [Analytics, setAnalytics] = useState<ComponentType | null>(null);
+  const [SpeedInsights, setSpeedInsights] = useState<ComponentType | null>(null);
+
+  useEffect(() => {
+    import('@vercel/analytics/react').then((m) => setAnalytics(() => m.Analytics));
+    import('@vercel/speed-insights/react').then((m) => setSpeedInsights(() => m.SpeedInsights));
+  }, []);
+
+  return (
+    <>
+      {Analytics && <Analytics />}
+      {SpeedInsights && <SpeedInsights />}
+    </>
   );
 }

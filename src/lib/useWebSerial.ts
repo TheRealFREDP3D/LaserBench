@@ -9,6 +9,42 @@ export interface SerialMessage {
 const BUFFER_SIZE = 4;
 const MIN_SEND_INTERVAL_MS = 50;
 const SLOT_TIMEOUT_MS = 10_000;
+const MAX_MESSAGES = 500;
+
+class RingBuffer<T> {
+  private buffer: T[];
+  private head = 0;
+  private count = 0;
+  private capacity: number;
+
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.buffer = new Array(capacity);
+  }
+
+  push(item: T): void {
+    this.buffer[(this.head + this.count) % this.capacity] = item;
+    if (this.count < this.capacity) {
+      this.count++;
+    } else {
+      this.head = (this.head + 1) % this.capacity;
+    }
+  }
+
+  toArray(): T[] {
+    if (this.count === 0) return [];
+    const result: T[] = [];
+    for (let i = 0; i < this.count; i++) {
+      result.push(this.buffer[(this.head + i) % this.capacity]);
+    }
+    return result;
+  }
+
+  clear(): void {
+    this.head = 0;
+    this.count = 0;
+  }
+}
 
 export function useWebSerial() {
   const [isConnected, setIsConnected] = useState(false);
@@ -30,14 +66,17 @@ export function useWebSerial() {
   const bufferTimeoutRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const lastSendTimeRef = useRef(0);
 
+  const ringBufferRef = useRef(new RingBuffer<SerialMessage>(MAX_MESSAGES));
+
   const addMessage = useCallback((type: 'sent' | 'received', text: string) => {
-    setMessages((prev) => {
-      const newMessages = [...prev, { type, text, timestamp: Date.now() }];
-      return newMessages.slice(-500);
-    });
+    ringBufferRef.current.push({ type, text, timestamp: Date.now() });
+    setMessages(ringBufferRef.current.toArray());
   }, []);
 
-  const clearMessages = useCallback(() => setMessages([]), []);
+  const clearMessages = useCallback(() => {
+    ringBufferRef.current.clear();
+    setMessages([]);
+  }, []);
 
   const waitForSlot = (): Promise<void> => {
     if (bufferSlotsRef.current > 0) {

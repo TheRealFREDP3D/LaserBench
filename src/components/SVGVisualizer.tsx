@@ -22,6 +22,7 @@ interface SVGVisualizerProps {
 const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog, isPrinting }) => {
   const p = usePatternStore();
   const svgRef = useRef<SVGSVGElement>(null);
+  const wheelThrottleRef = useRef(0);
 
   const isCircular = machine.bedShape === 'circular';
   const bedW = machine.bedWidth;
@@ -77,6 +78,10 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
   };
 
   const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const now = performance.now();
+    if (now - wheelThrottleRef.current < 50) return;
+    wheelThrottleRef.current = now;
     const scale = e.deltaY > 0 ? 1.1 : 0.9;
     setViewBox((prev) => ({
       ...prev,
