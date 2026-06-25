@@ -117,7 +117,7 @@ const PatternConfigurator: React.FC = () => {
           <ParameterField
             label="Pattern Size"
             id="blk-size"
-            min={5}
+            min={1}
             max={30}
             value={p.blockSize}
             onChange={p.setBlockSize}
