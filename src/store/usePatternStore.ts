@@ -10,6 +10,7 @@ interface PatternState {
   powerSteps: number;
   speedSteps: number;
   blockSize: number;
+  textSize: number;
   nominalThickness: number;
   kerfValues: number[];
   zMin: number;
@@ -25,6 +26,7 @@ interface PatternState {
   setPowerSteps: (val: number) => void;
   setSpeedSteps: (val: number) => void;
   setBlockSize: (val: number) => void;
+  setTextSize: (val: number) => void;
   setNominalThickness: (val: number) => void;
   setKerfValues: (vals: number[]) => void;
   setZMin: (val: number) => void;
@@ -48,6 +50,7 @@ export const usePatternStore = create<PatternState>((set) => ({
   powerSteps: 5,
   speedSteps: 5,
   blockSize: 10,
+  textSize: 4,
   nominalThickness: 3.0,
   kerfValues: [0.1, 0.15, 0.2, 0.25],
   zMin: 0,
@@ -67,6 +70,7 @@ export const usePatternStore = create<PatternState>((set) => ({
   setPowerSteps: (val) => set({ powerSteps: val }),
   setSpeedSteps: (val) => set({ speedSteps: val }),
   setBlockSize: (val) => set({ blockSize: val }),
+  setTextSize: (val) => set({ textSize: val }),
   setNominalThickness: (val) => set({ nominalThickness: val }),
   setKerfValues: (vals) => set({ kerfValues: vals }),
   setZMin: (val) => set({ zMin: val }),

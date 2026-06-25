@@ -115,12 +115,21 @@ const PatternConfigurator: React.FC = () => {
           <div className="my-4 border-t border-white/5" />
 
           <ParameterField
-            label="Block Size"
+            label="Pattern Size"
             id="blk-size"
             min={5}
             max={30}
             value={p.blockSize}
             onChange={p.setBlockSize}
+            unit="mm"
+          />
+          <ParameterField
+            label="Text Size"
+            id="txt-size"
+            min={1}
+            max={15}
+            value={p.textSize}
+            onChange={p.setTextSize}
             unit="mm"
           />
         </div>
