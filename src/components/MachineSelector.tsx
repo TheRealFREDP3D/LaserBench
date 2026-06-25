@@ -212,6 +212,23 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
             </div>
           </div>
 
+          <div>
+            <label className="text-[9px] uppercase font-bold text-neutral-600 mb-1 block">
+              Baud Rate
+            </label>
+            <select
+              value={activeMachine.baudRate}
+              onChange={(e) => handleFieldChange('baudRate', Number(e.target.value))}
+              className="w-full bg-black border border-white/5 rounded px-2 py-1.5 text-[11px] outline-none"
+            >
+              <option value={250000}>250000 (Default)</option>
+              <option value={230400}>230400</option>
+              <option value={115200}>115200</option>
+              <option value={57600}>57600</option>
+              <option value={9600}>9600</option>
+            </select>
+          </div>
+
           <div className="space-y-1">
             <ParameterField
               label="Bed Width"

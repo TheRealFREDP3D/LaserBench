@@ -18,6 +18,7 @@ export function useWebSerial() {
   const [messages, setMessages] = useState<SerialMessage[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [movementMode, setMovementMode] = useState<'G90' | 'G91'>('G90');
 
   const portRef = useRef<SerialPort | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader<string> | null>(null);
@@ -116,15 +117,16 @@ export function useWebSerial() {
     }
   };
 
-  const connect = async (baudRate: number = 250000) => {
+  const connect = async (baudRate?: number) => {
     if (!('serial' in navigator)) {
       addMessage('received', 'Error: Web Serial API is not supported in this browser.');
       return;
     }
+    const resolvedBaud = Math.floor(Number(baudRate || 250000)) || 250000;
     try {
       setConnectionState('connecting');
       const port = await navigator.serial.requestPort();
-      await port.open({ baudRate });
+      await port.open({ baudRate: resolvedBaud });
       portRef.current = port;
       setConnectionState('connected');
 
@@ -133,6 +135,7 @@ export function useWebSerial() {
       writerRef.current = encoder.writable.getWriter();
 
       setIsConnected(true);
+      setMovementMode('G90');
       keepReadingRef.current = true;
       readLoop();
       addMessage('sent', '--- Connected to printer ---');
@@ -183,6 +186,9 @@ export function useWebSerial() {
       await waitForSlot();
     }
     await writerRef.current.write(command + '\n');
+    const upper = command.toUpperCase();
+    if (/\bG90\b/.test(upper)) setMovementMode('G90');
+    if (/\bG91\b/.test(upper)) setMovementMode('G91');
     if (!silent) {
       addMessage('sent', command);
     }
@@ -270,6 +276,7 @@ export function useWebSerial() {
     messages,
     isPrinting,
     progress,
+    movementMode,
     connect,
     disconnect,
     send,

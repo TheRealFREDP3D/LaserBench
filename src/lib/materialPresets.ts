@@ -30,7 +30,9 @@ export function isValidMachineProfile(m: unknown): m is MachineProfile {
     !VALID_BED_SHAPES.includes(obj.bedShape as never) ||
     typeof obj.bedWidth !== 'number' ||
     typeof obj.bedHeight !== 'number' ||
-    typeof obj.baudRate !== 'number'
+    typeof obj.baudRate !== 'number' ||
+    !Number.isFinite(obj.baudRate) ||
+    obj.baudRate <= 0
   )
     return false;
 

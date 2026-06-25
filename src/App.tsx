@@ -1,7 +1,9 @@
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback, useState, useRef } from 'react';
 import { generatePatternPaths } from './lib/gcodeGenerator';
 import { GeneratedData } from './types';
 import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
+import { parseGCodeFile, readGCodeFile } from './lib/gcodeFileUpload';
+import { parseGCode } from './lib/gcodeParser';
 
 import { useMachineStore } from './store/useMachineStore';
 import { useMaterialStore } from './store/useMaterialStore';
@@ -21,7 +23,7 @@ import StatusBar from './components/layout/StatusBar';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Settings, Terminal } from 'lucide-react';
+import { Settings, Terminal, Upload } from 'lucide-react';
 
 type MobilePanel = 'config' | 'console' | null;
 
@@ -32,6 +34,7 @@ export default function App() {
     messages,
     isPrinting,
     progress,
+    movementMode,
     connect,
     disconnect,
     send,
@@ -62,6 +65,12 @@ export default function App() {
   const activeMachine = getActiveMachine();
   const activeMaterial = getActiveMaterial();
 
+  const [jogPos, setJogPos] = useState({ x: 0, y: 0 });
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
+  const [uploadedGCode, setUploadedGCode] = useState<GeneratedData | null>(null);
+  const [editedGCode, setEditedGCode] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Deriving results using useMemo instead of useEffect+useState to avoid cascading renders
   const generatedResults = useMemo<GeneratedData | null>(() => {
     if (!activeMachine || !activeMaterial) return null;
@@ -71,17 +80,68 @@ export default function App() {
     });
   }, [pattern, activeMachine, activeMaterial]);
 
+  const effectiveResults = useMemo<GeneratedData | null>(() => {
+    const base = uploadedGCode || generatedResults;
+    if (!base) return null;
+    if (editedGCode !== null) {
+      const parsed = parseGCode(editedGCode, activeMachine?.pwmMax || 1000);
+      const width = parsed.bounds.maxX - parsed.bounds.minX;
+      const height = parsed.bounds.maxY - parsed.bounds.minY;
+      return {
+        ...base,
+        gcode: editedGCode,
+        svgPaths: parsed.svgPaths,
+        paths: parsed.paths,
+        width: width || base.width,
+        height: height || base.height,
+        offsetX: -parsed.bounds.minX,
+        offsetY: -parsed.bounds.minY,
+      };
+    }
+    return base;
+  }, [uploadedGCode, generatedResults, editedGCode, activeMachine]);
+
   const estimatedTimeStr = useMemo(() => {
-    if (!generatedResults || !activeMachine) return null;
-    return formatEstimatedTime(estimateToolpathTime(generatedResults.paths, activeMachine));
-  }, [generatedResults, activeMachine]);
+    if (!effectiveResults || !activeMachine) return null;
+    return formatEstimatedTime(estimateToolpathTime(effectiveResults.paths, activeMachine));
+  }, [effectiveResults, activeMachine]);
 
   const handlePrint = useCallback(() => {
-    if (generatedResults) printGCode(generatedResults.gcode);
-  }, [generatedResults, printGCode]);
+    if (effectiveResults) printGCode(effectiveResults.gcode);
+  }, [effectiveResults, printGCode]);
 
-  const [jogPos, setJogPos] = useState({ x: 0, y: 0 });
-  const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
+  const handleFileUpload = useCallback(
+    async (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      if (!file) return;
+      target.value = '';
+      try {
+        const content = await readGCodeFile(file);
+        const parsed = parseGCodeFile(content, activeMachine?.pwmMax || 1000);
+        setUploadedGCode(parsed);
+        setEditedGCode(null);
+      } catch (err) {
+        window.alert(
+          `Failed to load G-Code file: ${err instanceof Error ? err.message : 'Unknown error'}`
+        );
+      }
+    },
+    [activeMachine]
+  );
+
+  const handleClearUpload = useCallback(() => {
+    setUploadedGCode(null);
+    setEditedGCode(null);
+  }, []);
+
+  const handleEditGCode = useCallback((edited: string) => {
+    setEditedGCode(edited);
+  }, []);
+
+  const handleConnect = useCallback(() => {
+    connect(activeMachine?.baudRate);
+  }, [connect, activeMachine]);
 
   const handleJog = useCallback(
     (x: number, y: number) => {
@@ -163,22 +223,54 @@ export default function App() {
           >
             <div className="space-y-6">
               <section>
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 mb-4 flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-                  G-Code Preview
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                    G-Code Preview
+                    {uploadedGCode && (
+                      <span className="text-[9px] font-normal text-indigo-400 normal-case tracking-normal ml-2">
+                        (uploaded file)
+                      </span>
+                    )}
+                  </h3>
+                  <div className="flex items-center gap-1">
+                    {uploadedGCode && (
+                      <button
+                        onClick={handleClearUpload}
+                        className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-neutral-500 hover:text-red-400 bg-white/5 hover:bg-white/10 rounded transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10 rounded transition-colors"
+                    >
+                      <Upload className="w-3 h-3" />
+                      Upload
+                    </button>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".gcode,.nc,.gc"
+                    onChange={(e) => handleFileUpload(e.nativeEvent)}
+                    className="hidden"
+                  />
+                </div>
                 <div className="bg-[#0D0D0D] rounded-xl border border-white/5 h-[60vh]">
-                  {generatedResults ? (
+                  {effectiveResults ? (
                     <GCodeOutput
-                      gcode={generatedResults.gcode}
-                      patternType={pattern.selectedPattern}
+                      gcode={effectiveResults.gcode}
+                      patternType={uploadedGCode ? 'uploaded' : pattern.selectedPattern}
                       machine={activeMachine!}
                       material={activeMaterial!}
-                      paths={generatedResults.paths}
+                      paths={effectiveResults.paths}
+                      onEdit={handleEditGCode}
                     />
                   ) : (
                     <div className="h-full flex items-center justify-center text-neutral-700 text-xs italic">
-                      Generate a pattern first
+                      Generate a pattern or upload a G-Code file
                     </div>
                   )}
                 </div>
@@ -196,13 +288,13 @@ export default function App() {
       messages={messages}
       isPrinting={isPrinting}
       progress={progress}
-      onConnect={connect}
+      onConnect={handleConnect}
       onDisconnect={disconnect}
       onSend={send}
       onClear={clearMessages}
       onAbortPrint={abortPrint}
       onPrint={handlePrint}
-      gcode={generatedResults?.gcode}
+      gcode={effectiveResults?.gcode}
       activeMachine={activeMachine}
       onJogRelative={handleJogRelative}
     />
@@ -211,14 +303,14 @@ export default function App() {
   const svgPanel = (
     <div className="flex-1 flex flex-col min-w-0 bg-[#000] items-center justify-center">
       <div className="flex-1 relative w-full h-full">
-        {generatedResults && activeMachine && activeMaterial ? (
+        {effectiveResults && activeMachine && activeMaterial ? (
           <SVGVisualizer
             key={`${activeMachine.id}-${activeMachine.bedWidth}-${activeMachine.bedHeight}-${activeMachine.bedShape}`}
-            svgPaths={generatedResults.svgPaths}
+            svgPaths={effectiveResults.svgPaths}
             machine={activeMachine}
             material={activeMaterial}
             patternType={pattern.selectedPattern}
-            paths={generatedResults.paths}
+            paths={effectiveResults.paths}
             onJog={handleJog}
           />
         ) : (
@@ -289,7 +381,8 @@ export default function App() {
         isDelta={activeMachine?.isDelta || false}
         isPrinting={isPrinting}
         progress={progress}
-        onConnect={connect}
+        movementMode={movementMode}
+        onConnect={handleConnect}
         onDisconnect={disconnect}
       />
 

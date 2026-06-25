@@ -15,6 +15,7 @@ describe('StatusBar', () => {
         isDelta={false}
         isPrinting={false}
         progress={0}
+        movementMode="G90"
         onConnect={() => {}}
         onDisconnect={() => {}}
       />

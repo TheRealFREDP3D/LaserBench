@@ -154,6 +154,10 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
   const handleHome = () => onSend('G28');
 
   const jog = (axis: string, dist: number) => {
+    if (axis === 'Z') {
+      onSend(`G91 G0 Z${dist} G90`);
+      return;
+    }
     const dx = axis === 'X' ? dist : 0;
     const dy = axis === 'Y' ? dist : 0;
     onJogRelative(dx, dy);
