@@ -142,3 +142,38 @@ export function importMaterialProfilesFromFile(
     importProfiles(data, 'material', isValidMaterialProfile, existing)
   );
 }
+
+export async function copyProfileToClipboard(
+  profile: MachineProfile | MaterialProfile,
+  type: ProfileType
+): Promise<void> {
+  if (!navigator.clipboard) {
+    throw new Error('Clipboard API not available (requires HTTPS)');
+  }
+  const envelope: ExportEnvelope<MachineProfile | MaterialProfile> = {
+    version: 1,
+    type,
+    exportedAt: new Date().toISOString(),
+    profiles: [profile],
+  };
+  await navigator.clipboard.writeText(JSON.stringify(envelope, null, 2));
+}
+
+export function importProfilesFromClipboard<T extends MachineProfile | MaterialProfile>(
+  type: ProfileType,
+  validate: (item: unknown) => item is T,
+  existing: T[]
+): Promise<ImportResult<T>> {
+  if (!navigator.clipboard) {
+    return Promise.reject(new Error('Clipboard API not available (requires HTTPS)'));
+  }
+  return navigator.clipboard.readText().then((text) => {
+    let data: unknown;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error('Clipboard does not contain valid JSON');
+    }
+    return importProfiles(data, type, validate, existing);
+  });
+}

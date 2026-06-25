@@ -12,9 +12,11 @@ interface MaterialState {
   getActiveMaterial: () => MaterialProfile | null;
 }
 
+const initialMaterials = getStoredMaterials();
+
 export const useMaterialStore = create<MaterialState>((set, get) => ({
-  materials: getStoredMaterials(),
-  activeMaterialId: getStoredMaterials()[0]?.id || null,
+  materials: initialMaterials,
+  activeMaterialId: initialMaterials[0]?.id || null,
   setActiveMaterialId: (id) => set({ activeMaterialId: id }),
   updateMaterial: (updated) => {
     set((state) => {

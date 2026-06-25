@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { MachineProfile, MaterialProfile, PathSegment } from '../types';
+import { MachineProfile, MaterialProfile, PathSegment, PatternType } from '../types';
 import { FileCode, Copy, Download, Pencil, Check, X } from 'lucide-react';
 import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
 
 interface GCodeOutputProps {
   gcode: string;
-  patternType: string;
+  patternType: PatternType;
   machine: MachineProfile;
   material: MaterialProfile;
   paths: PathSegment[];

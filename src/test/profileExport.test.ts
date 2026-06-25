@@ -55,12 +55,9 @@ describe('importProfiles (machine)', () => {
       exportedAt: '2026-06-24',
       profiles: [validMachine],
     };
-    const result = importProfiles(
-      envelope,
-      'machine',
-      (x): x is MachineProfile => true,
-      [validMachine]
-    );
+    const result = importProfiles(envelope, 'machine', (x): x is MachineProfile => true, [
+      validMachine,
+    ]);
     expect(result.profiles.length).toBe(0);
     expect(result.duplicates).toBe(1);
   });
@@ -147,12 +144,9 @@ describe('importProfiles (material)', () => {
       exportedAt: '2026-06-24',
       profiles: [validMaterial],
     };
-    const result = importProfiles(
-      envelope,
-      'material',
-      (x): x is MaterialProfile => true,
-      [validMaterial]
-    );
+    const result = importProfiles(envelope, 'material', (x): x is MaterialProfile => true, [
+      validMaterial,
+    ]);
     expect(result.duplicates).toBe(1);
   });
 });

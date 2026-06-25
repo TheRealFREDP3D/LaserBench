@@ -1,13 +1,26 @@
 import React, { useState, useRef } from 'react';
 import { MachineProfile, LaserControlMode, FirmwareType } from '../types';
 import { ParameterField } from './ParameterField';
-import { Plus, Trash2, ChevronDown, ChevronUp, Code, Download, Upload } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Code,
+  Download,
+  Upload,
+  Copy,
+  ClipboardPaste,
+} from 'lucide-react';
 import { useConfirmModal } from '../hooks/useConfirmModal';
 import {
   exportAllProfiles,
   exportSelectedProfile,
   importMachineProfilesFromFile,
+  copyProfileToClipboard,
+  importProfilesFromClipboard,
 } from '../lib/profileExport';
+import { isValidMachineProfile } from '../lib/materialPresets';
 
 interface MachineSelectorProps {
   machines: MachineProfile[];
@@ -91,6 +104,33 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
     }
   };
 
+  const handleCopyProfile = async () => {
+    if (!activeMachine) return;
+    try {
+      await copyProfileToClipboard(activeMachine, 'machine');
+    } catch {
+      await confirm('Failed to copy to clipboard');
+    }
+  };
+
+  const handlePasteProfile = async () => {
+    try {
+      const result = await importProfilesFromClipboard('machine', isValidMachineProfile, machines);
+      if (result.profiles.length > 0) {
+        for (const p of result.profiles) {
+          onCreate(p);
+        }
+        await confirm(`${result.profiles.length} profile(s) imported`);
+      } else if (result.duplicates > 0) {
+        await confirm('Profile already exists');
+      } else {
+        await confirm('No valid machine profile found on clipboard');
+      }
+    } catch (err) {
+      await confirm(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
   if (!activeMachine) return null;
 
   return (
@@ -109,6 +149,13 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
               className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
             >
               <Upload className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handlePasteProfile}
+              title="Import machine from clipboard"
+              className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-white"
+            >
+              <ClipboardPaste className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleExportAll}
@@ -153,6 +200,13 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
             Settings
           </h3>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopyProfile}
+              title="Copy profile to clipboard for sharing"
+              className="text-neutral-600 hover:text-red-500 transition-colors"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
             <button
               onClick={handleExportSelected}
               title="Export this machine profile"

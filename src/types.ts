@@ -73,7 +73,13 @@ export interface PathSegment {
   isLaserOn: boolean;
 }
 
-export type PatternType = 'power_ramp' | 'speed_ramp' | 'matrix' | 'focus_ladder' | 'kerf_test';
+export type PatternType =
+  | 'power_ramp'
+  | 'speed_ramp'
+  | 'matrix'
+  | 'focus_ladder'
+  | 'kerf_test'
+  | 'uploaded';
 
 export interface GeneratorPreset {
   id: string;
