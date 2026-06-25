@@ -94,6 +94,7 @@ interface PatternContext {
   powerSteps: number;
   speedSteps: number;
   blockSize: number;
+  patternScale: number;
   zMin: number;
   zMax: number;
   zSteps: number;
@@ -110,6 +111,7 @@ function generateMatrix(ctx: PatternContext) {
     powerSteps,
     speedSteps,
     blockSize,
+    patternScale,
     textSize,
     textLetterSpacing,
     labelPower,
@@ -117,8 +119,9 @@ function generateMatrix(ctx: PatternContext) {
     machine,
   } = ctx;
 
-  const totalWidth = speedSteps * (blockSize + MATRIX_BLOCK_GAP_MM);
-  const totalHeight = powerSteps * (blockSize + MATRIX_BLOCK_GAP_MM);
+  const gap = MATRIX_BLOCK_GAP_MM * patternScale;
+  const totalWidth = speedSteps * (blockSize + gap);
+  const totalHeight = powerSteps * (blockSize + gap);
 
   const startX = -totalWidth / 2;
   const startY = -totalHeight / 2;
@@ -126,13 +129,13 @@ function generateMatrix(ctx: PatternContext) {
   for (let s = 0; s < speedSteps; s++) {
     const speed =
       speedSteps > 1 ? speedMin + (speedMax - speedMin) * (s / (speedSteps - 1)) : speedMin;
-    const px = startX + s * (blockSize + MATRIX_BLOCK_GAP_MM);
+    const px = startX + s * (blockSize + gap);
 
     const speedLabel = Math.round(speed).toString();
     const speedLabelPaths = renderTextPath(
       speedLabel,
       px + blockSize / 2 - (speedLabel.length * textSize * 0.4) / 2,
-      startY - MATRIX_BLOCK_GAP_MM - textSize,
+      startY - gap - textSize,
       textSize * SMALL_LABEL_TEXT_SCALE,
       textLetterSpacing * SMALL_LABEL_SPACING_SCALE
     );
@@ -141,7 +144,7 @@ function generateMatrix(ctx: PatternContext) {
     for (let p = 0; p < powerSteps; p++) {
       const power =
         powerSteps > 1 ? powerMin + (powerMax - powerMin) * (p / (powerSteps - 1)) : powerMin;
-      const py = startY + p * (blockSize + MATRIX_BLOCK_GAP_MM);
+      const py = startY + p * (blockSize + gap);
 
       const points: [number, number][] = [
         [px, py],
@@ -156,7 +159,7 @@ function generateMatrix(ctx: PatternContext) {
         const pLabel = Math.round(power).toString();
         const pLabelPaths = renderTextPath(
           pLabel,
-          px - MATRIX_BLOCK_GAP_MM - pLabel.length * textSize * 0.5,
+          px - gap - pLabel.length * textSize * 0.5,
           py + blockSize / 2 - textSize / 2,
           textSize * SMALL_LABEL_TEXT_SCALE,
           textLetterSpacing * SMALL_LABEL_SPACING_SCALE
@@ -176,13 +179,14 @@ function generatePowerRamp(ctx: PatternContext) {
     powerMax,
     speedMin,
     blockSize,
+    patternScale,
     machine,
     labelPower,
     labelSpeed,
     textSize,
     textLetterSpacing,
   } = ctx;
-  const rampLen = POWER_RAMP_LENGTH_MM;
+  const rampLen = POWER_RAMP_LENGTH_MM * patternScale;
   const startX = -rampLen / 2;
   const startY = -blockSize / 2;
 
@@ -200,17 +204,18 @@ function generatePowerRamp(ctx: PatternContext) {
     true
   );
 
+  const inset = POWER_RAMP_INSET_MM * patternScale;
   for (let i = 0; i < POWER_RAMP_GRADIENT_STEPS; i++) {
     const x1 = startX + (i / POWER_RAMP_GRADIENT_STEPS) * rampLen;
     const x2 = startX + ((i + 1) / POWER_RAMP_GRADIENT_STEPS) * rampLen;
     const p = powerMin + (i / POWER_RAMP_GRADIENT_STEPS) * (powerMax - powerMin);
     addSegment(
       [
-        [x1, startY + POWER_RAMP_INSET_MM],
-        [x2, startY + POWER_RAMP_INSET_MM],
-        [x2, startY + blockSize - POWER_RAMP_INSET_MM],
-        [x1, startY + blockSize - POWER_RAMP_INSET_MM],
-        [x1, startY + POWER_RAMP_INSET_MM],
+        [x1, startY + inset],
+        [x2, startY + inset],
+        [x2, startY + blockSize - inset],
+        [x1, startY + blockSize - inset],
+        [x1, startY + inset],
       ],
       Math.round(p),
       speedMin,
@@ -219,17 +224,18 @@ function generatePowerRamp(ctx: PatternContext) {
     );
   }
 
+  const labelOffset = LABEL_OFFSET_MM * patternScale;
   const label = `PWR RAMP: ${Math.round(powerMin)}-${Math.round(powerMax)} F${Math.round(speedMin)}`;
   const lp = renderTextPath(
     label,
     startX,
-    startY + blockSize + LABEL_OFFSET_MM,
+    startY + blockSize + labelOffset,
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
   lp.forEach((p) => addSegment(p, labelPower, labelSpeed, machine.workZ, true));
 
-  return { patternWidth: rampLen, patternHeight: blockSize + 10 };
+  return { patternWidth: rampLen, patternHeight: blockSize + 10 * patternScale };
 }
 
 function generateSpeedRamp(ctx: PatternContext) {
@@ -239,21 +245,23 @@ function generateSpeedRamp(ctx: PatternContext) {
     speedMin,
     speedMax,
     speedSteps,
+    patternScale,
     machine,
     labelPower,
     labelSpeed,
     textSize,
     textLetterSpacing,
   } = ctx;
-  const lineLen = SPEED_RAMP_LINE_LENGTH_MM;
-  const totalH = speedSteps * SPEED_RAMP_LINE_GAP_MM;
+  const lineLen = SPEED_RAMP_LINE_LENGTH_MM * patternScale;
+  const lineGap = SPEED_RAMP_LINE_GAP_MM * patternScale;
+  const totalH = speedSteps * lineGap;
   const startX = -lineLen / 2;
   const startY = -totalH / 2;
 
   for (let i = 0; i < speedSteps; i++) {
     const speed =
       speedSteps > 1 ? speedMin + (speedMax - speedMin) * (i / (speedSteps - 1)) : speedMin;
-    const y = startY + i * SPEED_RAMP_LINE_GAP_MM;
+    const y = startY + i * lineGap;
     addSegment(
       [
         [startX, y],
@@ -268,7 +276,7 @@ function generateSpeedRamp(ctx: PatternContext) {
     const label = Math.round(speed).toString();
     const lp = renderTextPath(
       label,
-      startX + lineLen + LABEL_OFFSET_MM,
+      startX + lineLen + LABEL_OFFSET_MM * patternScale,
       y - textSize / 2,
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
@@ -280,13 +288,13 @@ function generateSpeedRamp(ctx: PatternContext) {
   const tp = renderTextPath(
     title,
     startX,
-    startY - TITLE_OFFSET_MM,
+    startY - TITLE_OFFSET_MM * patternScale,
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
   tp.forEach((p) => addSegment(p, labelPower, labelSpeed, machine.workZ, true));
 
-  return { patternWidth: lineLen + 20, patternHeight: totalH + 10 };
+  return { patternWidth: lineLen + 20 * patternScale, patternHeight: totalH + 10 * patternScale };
 }
 
 function generateFocusLadder(ctx: PatternContext) {
@@ -297,20 +305,22 @@ function generateFocusLadder(ctx: PatternContext) {
     zMin,
     zMax,
     zSteps,
+    patternScale,
     machine,
     labelPower,
     labelSpeed,
     textSize,
     textLetterSpacing,
   } = ctx;
-  const lineLen = FOCUS_LADDER_LINE_LENGTH_MM;
-  const totalH = zSteps * FOCUS_LADDER_LINE_GAP_MM;
+  const lineLen = FOCUS_LADDER_LINE_LENGTH_MM * patternScale;
+  const lineGap = FOCUS_LADDER_LINE_GAP_MM * patternScale;
+  const totalH = zSteps * lineGap;
   const startX = -lineLen / 2;
   const startY = -totalH / 2;
 
   for (let i = 0; i < zSteps; i++) {
     const z = zSteps > 1 ? zMin + (zMax - zMin) * (i / (zSteps - 1)) : zMin;
-    const y = startY + i * FOCUS_LADDER_LINE_GAP_MM;
+    const y = startY + i * lineGap;
 
     addSegment(
       [
@@ -326,7 +336,7 @@ function generateFocusLadder(ctx: PatternContext) {
     const label = `Z:${z.toFixed(2)}`;
     const lp = renderTextPath(
       label,
-      startX + lineLen + LABEL_OFFSET_MM,
+      startX + lineLen + LABEL_OFFSET_MM * patternScale,
       y - textSize / 2,
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
@@ -338,19 +348,20 @@ function generateFocusLadder(ctx: PatternContext) {
   const tp = renderTextPath(
     title,
     startX,
-    startY - TITLE_OFFSET_MM - 1,
+    startY - TITLE_OFFSET_MM * patternScale - 1,
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
   tp.forEach((p) => addSegment(p, labelPower, labelSpeed, machine.workZ, true));
 
-  return { patternWidth: lineLen + 30, patternHeight: totalH + 15 };
+  return { patternWidth: lineLen + 30 * patternScale, patternHeight: totalH + 15 * patternScale };
 }
 
 function generateKerfTest(ctx: PatternContext, nominal: number) {
   const {
     addSegment,
     kerfValues,
+    patternScale,
     machine,
     labelPower,
     labelSpeed,
@@ -358,15 +369,16 @@ function generateKerfTest(ctx: PatternContext, nominal: number) {
     textLetterSpacing,
     material,
   } = ctx;
-  const slotW = KERF_SLOT_WIDTH_MM;
-  const slotH = KERF_SLOT_HEIGHT_MM;
-  const totalW = kerfValues.length * (slotW + KERF_SLOT_GAP_MM);
+  const slotW = KERF_SLOT_WIDTH_MM * patternScale;
+  const slotH = KERF_SLOT_HEIGHT_MM * patternScale;
+  const slotGap = KERF_SLOT_GAP_MM * patternScale;
+  const totalW = kerfValues.length * (slotW + slotGap);
   const startX = -totalW / 2;
   const startY = -slotH / 2;
 
   kerfValues.forEach((offset, i) => {
-    const px = startX + i * (slotW + KERF_SLOT_GAP_MM);
-    const actualW = nominal + offset;
+    const px = startX + i * (slotW + slotGap);
+    const actualW = (nominal + offset) * patternScale;
 
     const pts: [number, number][] = [
       [px, startY + slotH],
@@ -380,14 +392,14 @@ function generateKerfTest(ctx: PatternContext, nominal: number) {
     const lp = renderTextPath(
       label,
       px + actualW / 2 - (label.length * textSize * 0.4) / 2,
-      startY + slotH + LABEL_OFFSET_MM,
+      startY + slotH + LABEL_OFFSET_MM * patternScale,
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
     lp.forEach((p) => addSegment(p, labelPower, labelSpeed, machine.workZ, true));
   });
 
-  return { patternWidth: totalW, patternHeight: slotH + 10 };
+  return { patternWidth: totalW, patternHeight: slotH + 10 * patternScale };
 }
 
 export function generatePatternPaths(
@@ -426,6 +438,7 @@ export function generatePatternPaths(
 
   const textSize = Math.max(2, config.textSize ?? blockSize * 0.4);
   const textLetterSpacing = textSize * 0.3;
+  const patternScale = blockSize / 10;
 
   let deltaKin: DeltaKinematics | null = null;
   if (machine.isDelta) {
@@ -478,6 +491,7 @@ export function generatePatternPaths(
     powerSteps,
     speedSteps,
     blockSize,
+    patternScale,
     zMin,
     zMax,
     zSteps,
