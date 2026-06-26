@@ -15,6 +15,8 @@ const mockMachines: MachineProfile[] = [
     pwmMax: 1000,
     safeZ: 10,
     workZ: 0,
+    zSecure: 10,
+    zFocused: 0,
     travelSpeed: 5000,
     bedShape: 'rectangular',
     bedWidth: 300,

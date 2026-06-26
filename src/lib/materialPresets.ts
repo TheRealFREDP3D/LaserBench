@@ -26,6 +26,8 @@ export function isValidMachineProfile(m: unknown): m is MachineProfile {
     typeof obj.pwmMax !== 'number' ||
     typeof obj.safeZ !== 'number' ||
     typeof obj.workZ !== 'number' ||
+    typeof obj.zSecure !== 'number' ||
+    typeof obj.zFocused !== 'number' ||
     typeof obj.travelSpeed !== 'number' ||
     !VALID_BED_SHAPES.includes(obj.bedShape as never) ||
     typeof obj.bedWidth !== 'number' ||
@@ -108,6 +110,8 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     pwmMax: 255,
     safeZ: 0,
     workZ: 0,
+    zSecure: 0,
+    zFocused: 0,
     travelSpeed: 6000,
     bedShape: 'circular',
     bedWidth: 90,
@@ -132,6 +136,8 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     pwmMax: 1000,
     safeZ: 5,
     workZ: 0,
+    zSecure: 5,
+    zFocused: 0,
     travelSpeed: 4000,
     bedShape: 'rectangular',
     bedWidth: 300,
@@ -152,6 +158,8 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     pwmMax: 1000,
     safeZ: 10,
     workZ: 0,
+    zSecure: 10,
+    zFocused: 0,
     travelSpeed: 8000,
     bedShape: 'rectangular',
     bedWidth: 430,
@@ -172,6 +180,8 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     pwmMax: 255,
     safeZ: 5,
     workZ: 0,
+    zSecure: 5,
+    zFocused: 0,
     travelSpeed: 5000,
     bedShape: 'rectangular',
     bedWidth: 220,

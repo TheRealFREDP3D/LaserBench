@@ -319,6 +319,24 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
               onChange={(v) => handleFieldChange('travelSpeed', v)}
               unit="F"
             />
+            <ParameterField
+              label="Z Secure"
+              id="z-secure"
+              min={0}
+              max={100}
+              value={activeMachine.zSecure}
+              onChange={(v) => handleFieldChange('zSecure', v)}
+              unit="mm"
+            />
+            <ParameterField
+              label="Z Focused"
+              id="z-focused"
+              min={0}
+              max={100}
+              value={activeMachine.zFocused}
+              onChange={(v) => handleFieldChange('zFocused', v)}
+              unit="mm"
+            />
           </div>
 
           <div className="pt-2">

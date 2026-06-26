@@ -22,6 +22,8 @@ const validMachine: MachineProfile = {
   pwmMax: 1000,
   safeZ: 5,
   workZ: 0,
+  zSecure: 5,
+  zFocused: 0,
   travelSpeed: 4000,
   bedShape: 'rectangular',
   bedWidth: 300,

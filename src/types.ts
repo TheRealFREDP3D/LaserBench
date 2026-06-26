@@ -11,6 +11,8 @@ export interface MachineProfile {
   pwmMax: number;
   safeZ: number;
   workZ: number;
+  zSecure: number;
+  zFocused: number;
   travelSpeed: number;
   bedShape: 'circular' | 'rectangular';
   bedWidth: number;
