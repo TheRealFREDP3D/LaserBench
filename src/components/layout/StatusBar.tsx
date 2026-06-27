@@ -3,12 +3,10 @@ import { Wifi, WifiOff, Cpu, Layers, Clock, Activity, Move } from 'lucide-react'
 
 interface StatusBarProps {
   isConnected: boolean;
-  connectionState: string;
   machineName: string;
   firmware: string;
   materialName: string;
   estimatedTimeStr: string | null;
-  isDelta: boolean;
   isPrinting: boolean;
   progress: number;
   movementMode: 'G90' | 'G91';
@@ -92,7 +90,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
           </div>
         )}
 
-        <div className="text-neutral-600 font-mono">v0.6.0-PRO</div>
+        <div className="text-neutral-600 font-mono">v{__APP_VERSION__}</div>
       </div>
     </div>
   );

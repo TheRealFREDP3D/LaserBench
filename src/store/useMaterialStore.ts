@@ -8,13 +8,13 @@ interface MaterialState {
   setActiveMaterialId: (id: string) => void;
   updateMaterial: (updated: MaterialProfile) => void;
   addMaterial: (material: MaterialProfile) => void;
+  addMaterials: (materials: MaterialProfile[]) => void;
   deleteMaterial: (id: string) => void;
-  getActiveMaterial: () => MaterialProfile | null;
 }
 
 const initialMaterials = getStoredMaterials();
 
-export const useMaterialStore = create<MaterialState>((set, get) => ({
+export const useMaterialStore = create<MaterialState>((set) => ({
   materials: initialMaterials,
   activeMaterialId: initialMaterials[0]?.id || null,
   setActiveMaterialId: (id) => set({ activeMaterialId: id }),
@@ -28,6 +28,13 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
   addMaterial: (material) => {
     set((state) => {
       const newMaterials = [...state.materials, material];
+      saveStoredMaterials(newMaterials);
+      return { materials: newMaterials };
+    });
+  },
+  addMaterials: (materials) => {
+    set((state) => {
+      const newMaterials = [...state.materials, ...materials];
       saveStoredMaterials(newMaterials);
       return { materials: newMaterials };
     });
@@ -46,8 +53,11 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
       return { materials: newMaterials, activeMaterialId: nextId };
     });
   },
-  getActiveMaterial: () => {
-    const { materials, activeMaterialId } = get();
-    return materials.find((m) => m.id === activeMaterialId) || materials[0] || null;
-  },
 }));
+
+export function selectActiveMaterial(state: {
+  materials: MaterialProfile[];
+  activeMaterialId: string | null;
+}): MaterialProfile | null {
+  return state.materials.find((m) => m.id === state.activeMaterialId) || state.materials[0] || null;
+}

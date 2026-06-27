@@ -10,8 +10,6 @@ const mockMachine: MachineProfile = {
   laserOn: 'M3 S{power}',
   laserOff: 'M5',
   pwmMax: 1000,
-  safeZ: 10,
-  workZ: 0,
   zSecure: 10,
   zFocused: 0,
   travelSpeed: 6000,

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import DebouncedRange from './DebouncedRange';
 
 interface ParameterFieldProps {
@@ -33,6 +33,12 @@ export const ParameterField: React.FC<ParameterFieldProps> = ({
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => onChange(clamped), 200);
   };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   return (
     <div className="grid grid-cols-[1fr_2fr_80px] items-center gap-4 py-2 border-b border-white/5 last:border-0">

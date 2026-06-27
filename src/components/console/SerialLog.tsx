@@ -9,6 +9,7 @@ interface SerialLogProps {
   onClear: () => void;
   isPrinting: boolean;
   isControlDisabled: boolean;
+  className?: string;
 }
 
 export const SerialLog = React.memo(function SerialLog({
@@ -17,6 +18,7 @@ export const SerialLog = React.memo(function SerialLog({
   onClear,
   isPrinting,
   isControlDisabled,
+  className,
 }: SerialLogProps) {
   const [command, setCommand] = useState('');
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -59,11 +61,11 @@ export const SerialLog = React.memo(function SerialLog({
 
   return (
     <div
-      className={`h-[350px] rounded-lg border overflow-hidden transition-all duration-200 flex flex-col ${
+      className={`rounded-lg border overflow-hidden transition-all duration-200 flex flex-col ${
         isLight
           ? 'bg-zinc-50 border-zinc-200 text-zinc-800'
           : 'bg-black border-white/5 text-emerald-400/90'
-      }`}
+      } ${className ?? ''}`}
     >
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/5">
         <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
@@ -72,6 +74,8 @@ export const SerialLog = React.memo(function SerialLog({
         <div className="flex items-center gap-2">
           <button
             onClick={toggleAutoScroll}
+            aria-pressed={autoScroll}
+            aria-label={`Auto-scroll ${autoScroll ? 'on' : 'off'}`}
             className={`px-1.5 py-0.5 rounded text-[9px] font-mono transition ${
               autoScroll
                 ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
@@ -81,7 +85,11 @@ export const SerialLog = React.memo(function SerialLog({
           >
             {autoScroll ? '⬇ AUTO' : '⏸ PAUSED'}
           </button>
-          <button onClick={onClear} className="text-zinc-500 hover:text-zinc-300 transition">
+          <button
+            onClick={onClear}
+            aria-label="Clear log"
+            className="text-zinc-500 hover:text-zinc-300 transition"
+          >
             <Trash2 className="w-3 h-3" />
           </button>
         </div>

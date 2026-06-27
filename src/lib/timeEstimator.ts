@@ -72,7 +72,7 @@ export function formatEstimatedTime(seconds: number): string {
   if (seconds <= 0) return '0s';
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
-  const secs = Math.ceil(seconds % 60);
+  const secs = Math.floor(seconds % 60);
 
   const parts: string[] = [];
   if (hrs > 0) {

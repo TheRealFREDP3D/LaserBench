@@ -1,11 +1,11 @@
 import React from 'react';
 import { PatternType } from '../types';
 import { usePatternStore } from '../store/usePatternStore';
-import { useMachineStore } from '../store/useMachineStore';
+import { useMachineStore, selectActiveMachine } from '../store/useMachineStore';
 import { ParameterField } from './ParameterField';
 import { Sliders, Zap, Gauge, Layers, Move } from 'lucide-react';
 
-const PATTERNS = [
+const PATTERNS: { id: PatternType; label: string; icon: typeof Sliders }[] = [
   { id: 'matrix', label: 'Power-Speed Matrix', icon: Sliders },
   { id: 'power_ramp', label: 'Power Ramp', icon: Zap },
   { id: 'speed_ramp', label: 'Speed Ramp', icon: Gauge },
@@ -15,8 +15,7 @@ const PATTERNS = [
 
 const PatternConfigurator: React.FC = () => {
   const p = usePatternStore();
-  const { getActiveMachine } = useMachineStore();
-  const machine = getActiveMachine();
+  const machine = useMachineStore(selectActiveMachine);
 
   return (
     <div className="space-y-6" data-tour="pattern-config">
@@ -32,7 +31,7 @@ const PatternConfigurator: React.FC = () => {
             return (
               <button
                 key={pat.id}
-                onClick={() => p.setPatternType(pat.id as PatternType)}
+                onClick={() => p.setPatternType(pat.id)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
                   isActive
                     ? 'bg-red-950/20 border-red-500/50 text-white shadow-[0_0_15px_rgba(220,38,38,0.1)]'

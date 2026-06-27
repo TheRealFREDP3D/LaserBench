@@ -9,8 +9,6 @@ export interface MachineProfile {
   laserOn: string;
   laserOff: string;
   pwmMax: number;
-  safeZ: number;
-  workZ: number;
   zSecure: number;
   zFocused: number;
   travelSpeed: number;

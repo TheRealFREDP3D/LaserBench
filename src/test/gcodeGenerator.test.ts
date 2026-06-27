@@ -10,8 +10,6 @@ const mockMachine: MachineProfile = {
   laserOn: 'M3 S{power}',
   laserOff: 'M5',
   pwmMax: 1000,
-  safeZ: 5,
-  workZ: 0,
   zSecure: 5,
   zFocused: 0,
   travelSpeed: 4000,
@@ -100,7 +98,7 @@ describe('gcodeGenerator', () => {
 
     it('ends with safe Z and home', () => {
       const res = generatePatternPaths('matrix', mockMachine, mockMaterial, {});
-      expect(res.gcode).toContain(`G0 Z${mockMachine.safeZ}`);
+      expect(res.gcode).toContain(`G0 Z${mockMachine.zSecure}`);
       expect(res.gcode).toContain('G0 X0 Y0');
     });
 

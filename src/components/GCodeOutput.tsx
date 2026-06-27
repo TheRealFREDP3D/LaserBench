@@ -1,14 +1,12 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { MachineProfile, MaterialProfile, PathSegment, PatternType } from '../types';
+import { MaterialProfile, PatternType } from '../types';
 import { FileCode, Copy, Download, Pencil, Check, X } from 'lucide-react';
 import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
 
 interface GCodeOutputProps {
   gcode: string;
   patternType: PatternType;
-  machine: MachineProfile;
   material: MaterialProfile;
-  paths: PathSegment[];
   onEdit?: (editedGcode: string) => void;
 }
 
@@ -17,8 +15,12 @@ const GCodeOutput: React.FC<GCodeOutputProps> = ({ gcode, patternType, material,
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(gcode);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(gcode);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(gcode);
+    } catch {
+      // clipboard unavailable
+    }
   };
 
   const handleDownload = () => {

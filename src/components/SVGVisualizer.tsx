@@ -1,20 +1,11 @@
-import React, { useState, useRef, useMemo } from 'react';
-import {
-  MachineProfile,
-  MaterialProfile,
-  PatternType,
-  SvgPathElement,
-  PathSegment,
-} from '../types';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { MachineProfile, SvgPathElement } from '../types';
 import { usePatternStore } from '../store/usePatternStore';
 import { Crosshair, Move, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface SVGVisualizerProps {
   svgPaths: SvgPathElement[];
   machine: MachineProfile;
-  material: MaterialProfile;
-  patternType: PatternType;
-  paths: PathSegment[];
   onJog?: (x: number, y: number) => void;
   isPrinting?: boolean;
 }
@@ -37,6 +28,10 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
 
   // Track relevant machine dimensions for state reset
   const [viewBox, setViewBox] = useState(defaultViewBox);
+
+  useEffect(() => {
+    setViewBox(defaultViewBox);
+  }, [defaultViewBox]);
 
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -190,6 +185,7 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
         <div className="bg-[#0A0A0A]/90 backdrop-blur-md border border-white/10 rounded-lg p-1.5 flex flex-col gap-1 shadow-2xl">
           <button
             onClick={resetView}
+            aria-label="Reset view"
             className="p-2 hover:bg-white/5 rounded transition-colors text-neutral-400 hover:text-white"
             title="Reset View"
           >
@@ -198,6 +194,7 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
           <div className="h-px bg-white/5 mx-1" />
           <button
             onClick={() => handleZoom('in')}
+            aria-label="Zoom in"
             className="p-2 hover:bg-white/5 rounded transition-colors text-neutral-400 hover:text-white"
             title="Zoom In"
           >
@@ -205,6 +202,7 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
           </button>
           <button
             onClick={() => handleZoom('out')}
+            aria-label="Zoom out"
             className="p-2 hover:bg-white/5 rounded transition-colors text-neutral-400 hover:text-white"
             title="Zoom Out"
           >

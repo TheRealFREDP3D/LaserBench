@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import { X, Flame, Cpu, Layers, Sliders } from 'lucide-react';
 import type { CalibrationHistoryEntry, MaterialProfile, PatternType } from '../types';
 import { useFocusTrap } from '../hooks/useFocusTrap';
@@ -53,6 +53,15 @@ export default function QuickLogModal({
   const [notes, setNotes] = useState('');
 
   const trapRef = useFocusTrap<HTMLDivElement>(open);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 

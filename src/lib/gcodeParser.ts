@@ -151,6 +151,69 @@ export function parseGCode(gcode: string, pwmMax: number = 1000): ParseResult {
         newX = 0;
         newY = 0;
         moved = true;
+      } else if (cmd.code === 2 || cmd.code === 3) {
+        const endX =
+          cmd.params.X !== undefined ? (relativeMode ? segX + cmd.params.X : cmd.params.X) : segX;
+        const endY =
+          cmd.params.Y !== undefined ? (relativeMode ? segY + cmd.params.Y : cmd.params.Y) : segY;
+
+        let cx: number;
+        let cy: number;
+        if (cmd.params.I !== undefined && cmd.params.J !== undefined) {
+          cx = segX + cmd.params.I;
+          cy = segY + cmd.params.J;
+        } else if (cmd.params.R !== undefined && cmd.params.R !== 0) {
+          const dx = endX - segX;
+          const dy = endY - segY;
+          const dSq = dx * dx + dy * dy;
+          const r = Math.abs(cmd.params.R);
+          const hSq = r * r - dSq / 4;
+          if (hSq < 0) {
+            newX = endX;
+            newY = endY;
+            moved = true;
+          } else {
+            const h = Math.sqrt(hSq);
+            const mx = (segX + endX) / 2;
+            const my = (segY + endY) / 2;
+            const nx = -dy / Math.sqrt(dSq);
+            const ny = dx / Math.sqrt(dSq);
+            const sign = cmd.code === 2 ? 1 : -1;
+            cx = mx + sign * h * nx;
+            cy = my + sign * h * ny;
+            const startAngle = Math.atan2(segY - cy, segX - cx);
+            const endAngle = Math.atan2(endY - cy, endX - cx);
+            let sweep = endAngle - startAngle;
+            if (cmd.code === 2) {
+              if (sweep > 0) sweep -= 2 * Math.PI;
+              if (sweep === 0) sweep = -2 * Math.PI;
+            } else {
+              if (sweep < 0) sweep += 2 * Math.PI;
+              if (sweep === 0) sweep = 2 * Math.PI;
+            }
+            const radius = Math.sqrt((segX - cx) ** 2 + (segY - cy) ** 2);
+            const steps = Math.max(8, Math.ceil(Math.abs(sweep) / (Math.PI / 32)));
+            for (let s = 1; s <= steps; s++) {
+              const angle = startAngle + (sweep * s) / steps;
+              newX = cx + radius * Math.cos(angle);
+              newY = cy + radius * Math.sin(angle);
+              if (segPoints.length === 0) {
+                segPoints.push([segX, segY]);
+                segPower = laserOn ? currentPower : 0;
+                segSpeed = currentSpeed;
+                segLaserOn = laserOn;
+              }
+              segPoints.push([newX, newY]);
+              updateBounds(newX, newY);
+              segX = newX;
+              segY = newY;
+            }
+          }
+        } else {
+          newX = endX;
+          newY = endY;
+          moved = true;
+        }
       } else if (cmd.code === 92) {
         if (cmd.params.X !== undefined) newX = cmd.params.X;
         if (cmd.params.Y !== undefined) newY = cmd.params.Y;

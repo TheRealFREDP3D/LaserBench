@@ -28,7 +28,9 @@ export const FireControls = React.memo(function FireControls({
         onPointerDown={onFire}
         onPointerUp={onStopFire}
         onPointerLeave={onStopFire}
+        onPointerCancel={onStopFire}
         disabled={disabled}
+        aria-label="Fire laser"
         className="flex items-center justify-center gap-2 px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-500 rounded-lg text-xs font-bold transition border border-amber-500/30 disabled:opacity-50"
       >
         <Flame className="w-3.5 h-3.5" />

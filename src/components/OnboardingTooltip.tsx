@@ -135,6 +135,15 @@ const OnboardingTooltip: React.FC = () => {
     setStep(TOUR_STEPS.length);
   }, []);
 
+  useEffect(() => {
+    if (!started || isComplete) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleDismiss();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [started, isComplete, handleDismiss]);
+
   if (!started || isComplete) return null;
 
   const current = TOUR_STEPS[step];

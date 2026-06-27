@@ -28,6 +28,7 @@ interface MachineSelectorProps {
   onSelect: (id: string) => void;
   onUpdate: (m: MachineProfile) => void;
   onCreate: (m: MachineProfile) => void;
+  onCreateBatch: (m: MachineProfile[]) => void;
   onDelete: (id: string) => void;
 }
 
@@ -38,6 +39,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
   onUpdate,
   onDelete,
   onCreate,
+  onCreateBatch,
 }) => {
   const activeMachine = machines.find((m) => m.id === selectedId) || machines[0];
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -90,9 +92,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
     try {
       const result = await importMachineProfilesFromFile(file, machines);
       if (result.profiles.length > 0) {
-        for (const p of result.profiles) {
-          onCreate(p);
-        }
+        onCreateBatch(result.profiles);
       }
       const parts: string[] = [];
       if (result.profiles.length > 0) parts.push(`${result.profiles.length} imported`);
@@ -117,9 +117,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
     try {
       const result = await importProfilesFromClipboard('machine', isValidMachineProfile, machines);
       if (result.profiles.length > 0) {
-        for (const p of result.profiles) {
-          onCreate(p);
-        }
+        onCreateBatch(result.profiles);
         await confirm(`${result.profiles.length} profile(s) imported`);
       } else if (result.duplicates > 0) {
         await confirm('Profile already exists');
@@ -216,6 +214,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
             </button>
             <button
               onClick={handleDelete}
+              aria-label="Delete machine profile"
               className="text-neutral-600 hover:text-red-500 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />

@@ -18,6 +18,7 @@ interface MaterialDatabaseProps {
   onSelect: (id: string) => void;
   onUpdate: (m: MaterialProfile) => void;
   onCreate: (m: MaterialProfile) => void;
+  onCreateBatch: (m: MaterialProfile[]) => void;
   onDelete: (id: string) => void;
   pwmMax: number;
 }
@@ -39,6 +40,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
   onUpdate,
   onDelete,
   onCreate,
+  onCreateBatch,
   pwmMax,
 }) => {
   const activeMaterial = materials.find((m) => m.id === selectedId) || materials[0];
@@ -100,9 +102,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
     try {
       const result = await importMaterialProfilesFromFile(file, materials);
       if (result.profiles.length > 0) {
-        for (const p of result.profiles) {
-          onCreate(p);
-        }
+        onCreateBatch(result.profiles);
       }
     } catch (err) {
       window.alert(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -126,9 +126,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
         materials
       );
       if (result.profiles.length > 0) {
-        for (const p of result.profiles) {
-          onCreate(p);
-        }
+        onCreateBatch(result.profiles);
       } else if (result.duplicates > 0) {
         window.alert('Profile already exists');
       } else {
@@ -224,6 +222,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
             </button>
             <button
               onClick={handleDelete}
+              aria-label="Delete material profile"
               className="text-neutral-600 hover:text-red-500 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />

@@ -13,8 +13,8 @@ import { estimateToolpathTime, formatEstimatedTime } from './lib/timeEstimator';
 import { parseGCodeFile, readGCodeFile } from './lib/gcodeFileUpload';
 import { parseGCode } from './lib/gcodeParser';
 
-import { useMachineStore } from './store/useMachineStore';
-import { useMaterialStore } from './store/useMaterialStore';
+import { useMachineStore, selectActiveMachine } from './store/useMachineStore';
+import { useMaterialStore, selectActiveMaterial } from './store/useMaterialStore';
 import { usePatternStore } from './store/usePatternStore';
 import { useUIStore } from './store/useUIStore';
 
@@ -29,8 +29,10 @@ import WorkflowStepper from './components/layout/WorkflowStepper';
 import StatusBar from './components/layout/StatusBar';
 import OnboardingTooltip from './components/OnboardingTooltip';
 
+import GCodeDictionary from './components/GCodeDictionary';
+
 import { motion, AnimatePresence } from 'motion/react';
-import { Settings, Terminal, Upload } from 'lucide-react';
+import { Settings, Terminal, Upload, Book } from 'lucide-react';
 
 const isVercel = import.meta.env.VERCEL === '1';
 
@@ -39,7 +41,6 @@ type MobilePanel = 'config' | 'console' | null;
 export default function App() {
   const {
     isConnected,
-    connectionState,
     messages,
     isPrinting,
     progress,
@@ -52,30 +53,25 @@ export default function App() {
     clearMessages,
   } = useWebSerial();
 
+  const { machines, setActiveMachineId, updateMachine, addMachine, addMachines, deleteMachine } =
+    useMachineStore();
   const {
-    getActiveMachine,
-    machines,
-    setActiveMachineId,
-    updateMachine,
-    addMachine,
-    deleteMachine,
-  } = useMachineStore();
-  const {
-    getActiveMaterial,
     materials,
     setActiveMaterialId,
     updateMaterial,
     addMaterial,
+    addMaterials,
     deleteMaterial,
   } = useMaterialStore();
   const pattern = usePatternStore();
   const ui = useUIStore();
 
-  const activeMachine = getActiveMachine();
-  const activeMaterial = getActiveMaterial();
+  const activeMachine = useMachineStore(selectActiveMachine);
+  const activeMaterial = useMaterialStore(selectActiveMaterial);
 
   const [jogPos, setJogPos] = useState({ x: 0, y: 0 });
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
+  const [showDictionary, setShowDictionary] = useState(false);
   const [uploadedGCode, setUploadedGCode] = useState<GeneratedData | null>(null);
   const [editedGCode, setEditedGCode] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -172,7 +168,7 @@ export default function App() {
   );
 
   const configPanel = (
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6 flex flex-col flex-1 min-h-0">
       <AnimatePresence mode="wait">
         {ui.currentStep === 'machine' && (
           <motion.div
@@ -181,6 +177,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2 }}
+            className="flex-1 overflow-y-auto"
           >
             <MachineSelector
               machines={machines}
@@ -188,6 +185,7 @@ export default function App() {
               onSelect={setActiveMachineId}
               onUpdate={updateMachine}
               onCreate={addMachine}
+              onCreateBatch={addMachines}
               onDelete={deleteMachine}
             />
           </motion.div>
@@ -199,6 +197,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2 }}
+            className="flex-1 overflow-y-auto"
           >
             <MaterialDatabase
               materials={materials}
@@ -206,6 +205,7 @@ export default function App() {
               onSelect={setActiveMaterialId}
               onUpdate={updateMaterial}
               onCreate={addMaterial}
+              onCreateBatch={addMaterials}
               onDelete={deleteMaterial}
               pwmMax={activeMachine?.pwmMax ?? 1000}
             />
@@ -218,6 +218,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2 }}
+            className="flex-1 overflow-y-auto"
           >
             <PatternConfigurator />
           </motion.div>
@@ -229,61 +230,58 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2 }}
+            className="flex-1 min-h-0 flex flex-col"
           >
-            <div className="space-y-6">
-              <section>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-                    G-Code Preview
-                    {uploadedGCode && (
-                      <span className="text-[9px] font-normal text-indigo-400 normal-case tracking-normal ml-2">
-                        (uploaded file)
-                      </span>
-                    )}
-                  </h3>
-                  <div className="flex items-center gap-1">
-                    {uploadedGCode && (
-                      <button
-                        onClick={handleClearUpload}
-                        className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-neutral-500 hover:text-red-400 bg-white/5 hover:bg-white/10 rounded transition-colors"
-                      >
-                        Clear
-                      </button>
-                    )}
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-1.5 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10 rounded transition-colors"
-                    >
-                      <Upload className="w-3 h-3" />
-                      Upload
-                    </button>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".gcode,.nc,.gc"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </div>
-                <div className="bg-[#0D0D0D] rounded-xl border border-white/5 h-[60vh]">
-                  {effectiveResults ? (
-                    <GCodeOutput
-                      gcode={effectiveResults.gcode}
-                      patternType={uploadedGCode ? 'uploaded' : pattern.selectedPattern}
-                      machine={activeMachine!}
-                      material={activeMaterial!}
-                      paths={effectiveResults.paths}
-                      onEdit={handleEditGCode}
-                    />
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-neutral-700 text-xs italic">
-                      Generate a pattern or upload a G-Code file
-                    </div>
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center justify-between mb-4 shrink-0">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                  G-Code Preview
+                  {uploadedGCode && (
+                    <span className="text-[9px] font-normal text-indigo-400 normal-case tracking-normal ml-2">
+                      (uploaded file)
+                    </span>
                   )}
+                </h3>
+                <div className="flex items-center gap-1">
+                  {uploadedGCode && (
+                    <button
+                      onClick={handleClearUpload}
+                      className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-neutral-500 hover:text-red-400 bg-white/5 hover:bg-white/10 rounded transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10 rounded transition-colors"
+                  >
+                    <Upload className="w-3 h-3" />
+                    Upload
+                  </button>
                 </div>
-              </section>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".gcode,.nc,.gc"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
+              <div className="flex-1 min-h-0 bg-[#0D0D0D] rounded-xl border border-white/5">
+                {effectiveResults ? (
+                  <GCodeOutput
+                    gcode={effectiveResults.gcode}
+                    patternType={uploadedGCode ? 'uploaded' : pattern.selectedPattern}
+                    material={activeMaterial!}
+                    onEdit={handleEditGCode}
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-neutral-700 text-xs italic">
+                    Generate a pattern or upload a G-Code file
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
@@ -317,9 +315,6 @@ export default function App() {
             key={`${activeMachine.id}-${activeMachine.bedWidth}-${activeMachine.bedHeight}-${activeMachine.bedShape}`}
             svgPaths={effectiveResults.svgPaths}
             machine={activeMachine}
-            material={activeMaterial}
-            patternType={pattern.selectedPattern}
-            paths={effectiveResults.paths}
             onJog={handleJog}
           />
         ) : (
@@ -333,13 +328,23 @@ export default function App() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-[#050505] text-[#E0E0E0] font-sans selection:bg-red-500/30 overflow-hidden">
-      <header className="shrink-0 h-12 bg-[#0A0A0A] border-b border-white/8">
-        <WorkflowStepper />
+      <header className="shrink-0 h-12 bg-[#0A0A0A] border-b border-white/8 flex items-center">
+        <div className="flex-1 min-w-0">
+          <WorkflowStepper />
+        </div>
+        <button
+          onClick={() => setShowDictionary(true)}
+          className="shrink-0 flex items-center gap-1.5 px-3 h-full text-[10px] font-bold uppercase tracking-wider text-neutral-400 hover:text-white hover:bg-white/5 transition-colors border-l border-white/8"
+          title="G-Code Dictionary"
+        >
+          <Book className="w-3.5 h-3.5" />
+          <span className="hidden lg:inline">Dictionary</span>
+        </button>
       </header>
 
       {/* Desktop & Tablet: 3-column layout */}
       <div className="hidden md:flex flex-1 min-h-0">
-        <div className="w-[280px] xl:w-[340px] 2xl:w-[400px] border-r border-white/8 bg-[#0A0A0A] overflow-y-auto shrink-0">
+        <div className="w-[280px] xl:w-[340px] 2xl:w-[400px] border-r border-white/8 bg-[#0A0A0A] flex flex-col shrink-0">
           {configPanel}
         </div>
         {svgPanel}
@@ -382,12 +387,10 @@ export default function App() {
 
       <StatusBar
         isConnected={isConnected}
-        connectionState={connectionState}
         machineName={activeMachine?.name || ''}
         firmware={activeMachine?.firmware || 'grbl'}
         materialName={activeMaterial?.name || ''}
         estimatedTimeStr={estimatedTimeStr}
-        isDelta={activeMachine?.isDelta || false}
         isPrinting={isPrinting}
         progress={progress}
         movementMode={movementMode}
@@ -396,6 +399,8 @@ export default function App() {
       />
 
       <OnboardingTooltip />
+
+      {showDictionary && <GCodeDictionary onClose={() => setShowDictionary(false)} />}
 
       {isVercel && <VercelAnalytics />}
     </div>

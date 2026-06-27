@@ -14,7 +14,7 @@ interface PrinterConsoleProps {
   progress: number;
   onConnect: () => void;
   onDisconnect: () => void;
-  onSend: (cmd: string) => void;
+  onSend: (cmd: string) => void | Promise<void>;
   onClear: () => void;
   onAbortPrint: () => void;
   onPrint?: (gcode: string) => void;
@@ -242,9 +242,9 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 flex flex-col min-h-0 p-4 gap-3">
         {isPrinting && (
-          <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-lg p-3 space-y-2 animate-pulse">
+          <div className="shrink-0 bg-indigo-950/20 border border-indigo-500/20 rounded-lg p-3 space-y-2 animate-pulse">
             <div className="flex items-center justify-between">
               <p className="text-[10px] text-indigo-400 font-mono">PRINTING: {progress}%</p>
               <button
@@ -258,15 +258,15 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
         )}
 
         {showHomingWarning && !isPrinting && (
-          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-amber-950/60 border border-amber-800/50 rounded-lg text-xs">
+          <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 bg-amber-950/60 border border-amber-800/50 rounded-lg text-xs">
             <div className="flex items-center gap-2 text-amber-300">
               <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
               <span>Machine should be homed before running a job.</span>
             </div>
             <div className="flex gap-1.5 shrink-0">
               <button
-                onClick={() => {
-                  onSend('G28');
+                onClick={async () => {
+                  await onSend('G28');
                   handleRunJob();
                 }}
                 className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] rounded font-bold transition"
@@ -291,7 +291,7 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
 
         {pendingWarning && (
           <div
-            className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs border ${
+            className={`shrink-0 flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs border ${
               pendingWarning.level === 'block'
                 ? 'bg-red-950/60 border-red-800/50'
                 : 'bg-amber-950/60 border-amber-800/50'
@@ -333,36 +333,42 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
           </div>
         )}
 
-        <JogControls onJog={jog} onHome={handleHome} disabled={isControlDisabled} />
-
-        <div className="grid grid-cols-3 gap-4 border-b border-white/5 pb-4">
-          <div />
-          <div />
-          <FireControls
-            onFire={handleFire}
-            onStopFire={handleStopFire}
-            onEStop={handleEStop}
-            onRunJob={
-              onPrint && gcode
-                ? () => {
-                    if (!isConnected) return;
-                    setShowHomingWarning(true);
-                  }
-                : undefined
+        <div className="shrink-0">
+          <JogControls
+            onJog={jog}
+            onHome={handleHome}
+            disabled={isControlDisabled}
+            rightSlot={
+              <FireControls
+                onFire={handleFire}
+                onStopFire={handleStopFire}
+                onEStop={handleEStop}
+                onRunJob={
+                  onPrint && gcode
+                    ? () => {
+                        if (!isConnected) return;
+                        setShowHomingWarning(true);
+                      }
+                    : undefined
+                }
+                isConnected={isConnected}
+                isPrinting={isPrinting}
+                canPrint={!!(onPrint && gcode)}
+              />
             }
-            isConnected={isConnected}
-            isPrinting={isPrinting}
-            canPrint={!!(onPrint && gcode)}
           />
         </div>
 
-        <SerialLog
-          messages={messages}
-          onSend={handleSendWithValidation}
-          onClear={onClear}
-          isPrinting={isPrinting}
-          isControlDisabled={isControlDisabled}
-        />
+        <div className="flex-1 min-h-0">
+          <SerialLog
+            messages={messages}
+            onSend={handleSendWithValidation}
+            onClear={onClear}
+            isPrinting={isPrinting}
+            isControlDisabled={isControlDisabled}
+            className="h-full"
+          />
+        </div>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ interface JogControlsProps {
   onJog: (axis: string, dist: number) => void;
   onHome: () => void;
   disabled: boolean;
+  rightSlot?: React.ReactNode;
 }
 
 const JOG_STEP = 10;
@@ -14,6 +15,7 @@ export const JogControls = React.memo(function JogControls({
   onJog,
   onHome,
   disabled,
+  rightSlot,
 }: JogControlsProps) {
   return (
     <div className="grid grid-cols-3 gap-4 border-b border-white/5 pb-4">
@@ -23,6 +25,7 @@ export const JogControls = React.memo(function JogControls({
           <button
             onClick={() => onJog('Y', JOG_STEP)}
             disabled={disabled}
+            aria-label="Jog Up"
             className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
             title="Jog Up (↑)"
           >
@@ -35,6 +38,7 @@ export const JogControls = React.memo(function JogControls({
           <button
             onClick={() => onJog('X', -JOG_STEP)}
             disabled={disabled}
+            aria-label="Jog Left"
             className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
             title="Jog Left (←)"
           >
@@ -46,6 +50,7 @@ export const JogControls = React.memo(function JogControls({
           <button
             onClick={onHome}
             disabled={disabled}
+            aria-label="Home"
             className="p-2 bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition disabled:opacity-50 relative"
             title="Home (H)"
           >
@@ -57,6 +62,7 @@ export const JogControls = React.memo(function JogControls({
           <button
             onClick={() => onJog('X', JOG_STEP)}
             disabled={disabled}
+            aria-label="Jog Right"
             className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
             title="Jog Right (→)"
           >
@@ -69,6 +75,7 @@ export const JogControls = React.memo(function JogControls({
           <button
             onClick={() => onJog('Y', -JOG_STEP)}
             disabled={disabled}
+            aria-label="Jog Down"
             className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition disabled:opacity-50 relative"
             title="Jog Down (↓)"
           >
@@ -87,6 +94,7 @@ export const JogControls = React.memo(function JogControls({
           <button
             onClick={() => onJog('Z', Z_STEP)}
             disabled={disabled}
+            aria-label="Jog Z Up"
             className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition flex items-center gap-2 text-[10px] disabled:opacity-50"
           >
             <ArrowUp className="w-3 h-3" /> Z+
@@ -94,6 +102,7 @@ export const JogControls = React.memo(function JogControls({
           <button
             onClick={() => onJog('Z', -Z_STEP)}
             disabled={disabled}
+            aria-label="Jog Z Down"
             className="p-2 bg-zinc-800 rounded hover:bg-zinc-700 transition flex items-center gap-2 text-[10px] disabled:opacity-50"
           >
             <ArrowDown className="w-3 h-3" /> Z-
@@ -101,6 +110,8 @@ export const JogControls = React.memo(function JogControls({
         </div>
         <span className="text-[10px] text-zinc-500 font-mono">JOG Z</span>
       </div>
+
+      {rightSlot && <div className="flex flex-col justify-center">{rightSlot}</div>}
     </div>
   );
 });

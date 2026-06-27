@@ -10,7 +10,7 @@ export function downloadGCode(gcode: string, filename: string) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
 export function makeGCodeFilename(patternType: PatternType, materialName: string): string {
