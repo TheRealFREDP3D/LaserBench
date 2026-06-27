@@ -8,6 +8,9 @@ A web-based laser cutter control interface with G-code generation, SVG toolpath 
 
 ## Features
 
+![LaserBench - Main Page](images/main_page.png)
+
+
 ### Core Functionality
 - **Calibration Pattern Generator**: Power-Speed Matrix, Power Ramp, Speed Ramp, Focus Ladder, and Kerf Clearance Comb patterns
 - **Delta Kinematics Validation**: Pre-flight reachability checks for delta/SCARA machines — patterns are validated against your configured print radius before G-code is generated

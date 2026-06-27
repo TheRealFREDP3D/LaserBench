@@ -5,7 +5,7 @@ import { ThemeProvider } from '../lib/themeContext';
 
 // Mock Web Serial API
 if (!('serial' in navigator)) {
-  (navigator as any).serial = {
+  (navigator as unknown as Record<string, unknown>).serial = {
     requestPort: vi.fn(),
     getPorts: vi.fn(() => Promise.resolve([])),
   };

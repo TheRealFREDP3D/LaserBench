@@ -44,7 +44,7 @@ describe('importProfiles (machine)', () => {
       exportedAt: '2026-06-24',
       profiles: [validMachine],
     };
-    const result = importProfiles(envelope, 'machine', (x): x is MachineProfile => true, []);
+    const result = importProfiles(envelope, 'machine', (_x): _x is MachineProfile => true, []);
     expect(result.profiles.length).toBe(1);
     expect(result.duplicates).toBe(0);
     expect(result.invalid).toBe(0);
@@ -57,7 +57,7 @@ describe('importProfiles (machine)', () => {
       exportedAt: '2026-06-24',
       profiles: [validMachine],
     };
-    const result = importProfiles(envelope, 'machine', (x): x is MachineProfile => true, [
+    const result = importProfiles(envelope, 'machine', (_x): _x is MachineProfile => true, [
       validMachine,
     ]);
     expect(result.profiles.length).toBe(0);
@@ -71,7 +71,7 @@ describe('importProfiles (machine)', () => {
       exportedAt: '2026-06-24',
       profiles: [{ id: 'bad' }],
     };
-    const result = importProfiles(envelope, 'machine', (x): x is MachineProfile => false, []);
+    const result = importProfiles(envelope, 'machine', (_x): _x is MachineProfile => false, []);
     expect(result.profiles.length).toBe(0);
     expect(result.invalid).toBe(1);
   });
@@ -83,21 +83,21 @@ describe('importProfiles (machine)', () => {
       exportedAt: '2026-06-24',
       profiles: [],
     };
-    expect(() => importProfiles(envelope, 'machine', (x): x is MachineProfile => true, [])).toThrow(
-      'Expected machine profiles, got material'
-    );
+    expect(() =>
+      importProfiles(envelope, 'machine', (_x): _x is MachineProfile => true, [])
+    ).toThrow('Expected machine profiles, got material');
   });
 
   it('throws on invalid envelope', () => {
     expect(() =>
-      importProfiles({ bad: true }, 'machine', (x): x is MachineProfile => true, [])
+      importProfiles({ bad: true }, 'machine', (_x): _x is MachineProfile => true, [])
     ).toThrow('Unrecognized file format');
   });
 
   it('throws on missing profiles array', () => {
     const envelope = { version: 1, type: 'machine', exportedAt: '2026-06-24' };
     expect(() =>
-      importProfiles(envelope, 'machine', (x): x is MachineProfile => true, [])
+      importProfiles(envelope, 'machine', (_x): _x is MachineProfile => true, [])
     ).toThrow();
   });
 
@@ -111,8 +111,8 @@ describe('importProfiles (machine)', () => {
     const result = importProfiles(
       envelope,
       'machine',
-      (x): x is MachineProfile => {
-        const o = x as Record<string, unknown>;
+      (_x): _x is MachineProfile => {
+        const o = _x as Record<string, unknown>;
         return (
           typeof o.id === 'string' &&
           typeof o.firmware === 'string' &&
@@ -134,7 +134,7 @@ describe('importProfiles (material)', () => {
       exportedAt: '2026-06-24',
       profiles: [validMaterial],
     };
-    const result = importProfiles(envelope, 'material', (x): x is MaterialProfile => true, []);
+    const result = importProfiles(envelope, 'material', (_x): _x is MaterialProfile => true, []);
     expect(result.profiles.length).toBe(1);
     expect(result.duplicates).toBe(0);
   });
@@ -146,7 +146,7 @@ describe('importProfiles (material)', () => {
       exportedAt: '2026-06-24',
       profiles: [validMaterial],
     };
-    const result = importProfiles(envelope, 'material', (x): x is MaterialProfile => true, [
+    const result = importProfiles(envelope, 'material', (_x): _x is MaterialProfile => true, [
       validMaterial,
     ]);
     expect(result.duplicates).toBe(1);

@@ -75,7 +75,7 @@ describe('isValidMachineProfile', () => {
   });
 
   it('rejects missing required fields', () => {
-    const { id, ...rest } = validMachine;
+    const { id: _id, ...rest } = validMachine;
     expect(isValidMachineProfile(rest)).toBe(false);
   });
 
@@ -171,7 +171,7 @@ describe('isValidMaterialProfile', () => {
   });
 
   it('rejects missing required fields', () => {
-    const { id, ...rest } = validMaterial;
+    const { id: _id, ...rest } = validMaterial;
     expect(isValidMaterialProfile(rest)).toBe(false);
   });
 

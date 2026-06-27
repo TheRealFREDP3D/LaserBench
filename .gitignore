@@ -9,7 +9,7 @@ coverage/
 
 
 #Ignore vscode AI rules
-pnpm-lock.yaml
+
 pnpm-workspace.yaml
 /_DEV_
 /.kiro
@@ -19,4 +19,7 @@ pnpm-workspace.yaml
 /metadata.json
 /REVIEW_v0.4.1.md
 /AGENTS.md
-/TODO-Fixes.md
+/.obsidian
+/attachments
+/.smart-env
+/.vault-intelligence
