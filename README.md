@@ -1,15 +1,12 @@
 # LaserBench
 
-![LaserBench - Logo](images/logo.jpg)
+![LaserBench - Header](images/header.jpg) 
 
 A web-based laser cutter control interface with G-code generation, SVG toolpath pre-visualization, serial communication, and a real-time printer console.
 
-![Console and Machine Control](images/connect-console.gif)
-
 ## Features
 
-![LaserBench - Main Page](images/main_page.png)
-
+![LaserBench - Full Workflow](images/full_workflow.gif)
 
 ### Core Functionality
 - **Calibration Pattern Generator**: Power-Speed Matrix, Power Ramp, Speed Ramp, Focus Ladder, and Kerf Clearance Comb patterns
@@ -24,6 +21,8 @@ A web-based laser cutter control interface with G-code generation, SVG toolpath 
 - **G-Code Dictionary**: In-app reference for all common G/M codes with syntax, examples, and compatibility notes
 - **Dark / Light Theme**: Toggle between elegant dark and high-contrast light modes
 
+![Why](images/why_I_built_this.jpg)
+
 ### Advanced Features
 - **Keyboard Shortcuts**: Ctrl+Esc (E-STOP), Esc (abort print), H (home), F (hold to fire), arrow keys (jog XY), C (connect/disconnect)
 - **Auto-Scroll Console**: Scroll up to pause auto-scroll, click badge to toggle
@@ -36,6 +35,8 @@ A web-based laser cutter control interface with G-code generation, SVG toolpath 
 - **Pointer Events**: SVG canvas supports touch/pen/stylus input via pointer events
 - **Onboarding Tooltips**: 5-step walkthrough with localStorage persistence
 
+![Material Parameters](images/material-panel.png)
+
 #### Security & Performance
 - **Content Security Policy**: CSP meta tag in index.html
 - **Input Sanitization**: Control character removal, dangerous command blocking
@@ -45,7 +46,7 @@ A web-based laser cutter control interface with G-code generation, SVG toolpath 
 - **Conditional Analytics**: Vercel analytics loaded only when `VERCEL=1`
 - **TypeScript Strict Mode**: `strict: true` in tsconfig.json for stronger type safety
 
-![Generate G-Code Calibration](images/generate_gcode.gif)
+
 
 ## Delta Kinematics
 
@@ -141,6 +142,8 @@ Web Serial API is required for printer connection:
 | Opera 75+ | ✅ |
 | Firefox | ❌ |
 | Safari | ❌ |
+
+![LaserBench - Main Page](images/main_page.png)
 
 ## License
 
