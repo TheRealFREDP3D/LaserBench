@@ -558,20 +558,32 @@ export function generatePatternPaths(
   const gcodeLines: string[] = [];
   if (machine.startGCode) gcodeLines.push(sanitizeGCodeBlock(machine.startGCode));
   else {
-    gcodeLines.push('G21 ; Units mm');
-    gcodeLines.push('G90 ; Absolute');
-    gcodeLines.push(`G0 F${machine.travelSpeed} Z${machine.zSecure}`);
+    gcodeLines.push('G21');
+    gcodeLines.push('G91');
+    gcodeLines.push('M106 S0');
   }
 
   let currentZ = machine.zSecure;
   let currentFeed = 0;
+  let prevX = 0;
+  let prevY = 0;
+  let needsM8 = true;
 
   pathGroups.forEach((g: PathSegment) => {
+    if (needsM8) {
+      gcodeLines.push('M8');
+      needsM8 = false;
+    }
+
     const p0 = g.points[0];
     const zChanged = g.z !== currentZ;
+    const deltaX0 = p0[0] - prevX;
+    const deltaY0 = p0[1] - prevY;
     gcodeLines.push(
-      `G0 F${machine.travelSpeed} X${p0[0].toFixed(3)} Y${p0[1].toFixed(3)}${zChanged ? ` Z${g.z.toFixed(3)}` : ''}`
+      `G0 F0 X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${g.z.toFixed(3)}` : ''}`
     );
+    prevX = p0[0];
+    prevY = p0[1];
     currentZ = g.z;
 
     let onCmd = '';
@@ -585,15 +597,19 @@ export function generatePatternPaths(
     for (let i = 1; i < g.points.length; i++) {
       const p = g.points[i];
       const firstCut = i === 1;
+      const deltaX = p[0] - prevX;
+      const deltaY = p[1] - prevY;
       gcodeLines.push(
-        `G1${g.speed !== currentFeed || firstCut ? ` F${g.speed}` : ''} X${p[0].toFixed(3)} Y${p[1].toFixed(3)}${firstCut && zChanged ? ` Z${g.z.toFixed(3)}` : ''}`
+        `G1${g.speed !== currentFeed || firstCut ? ` F${g.speed}` : ''} X${deltaX.toFixed(3)} Y${deltaY.toFixed(3)}${firstCut && zChanged ? ` Z${g.z.toFixed(3)}` : ''}`
       );
+      prevX = p[0];
+      prevY = p[1];
       currentFeed = g.speed;
     }
 
     let offCmd = '';
     if (machine.laserMode === 'M3_M5') offCmd = 'M5';
-    else if (machine.laserMode === 'M106_M107') offCmd = 'M107';
+    else if (machine.laserMode === 'M106_M107') offCmd = 'M106 S0';
     else if (machine.laserMode === 'M3_M4_M5') offCmd = 'M5';
     else offCmd = sanitizeGCodeLine(machine.laserOff);
     gcodeLines.push(offCmd);
@@ -601,8 +617,11 @@ export function generatePatternPaths(
 
   if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));
   else {
-    gcodeLines.push(`G0 Z${machine.zSecure.toFixed(3)}`);
-    gcodeLines.push('G0 X0 Y0');
+    gcodeLines.push('M106 S0');
+    gcodeLines.push('M9');
+    gcodeLines.push(`G0 X${(-prevX).toFixed(3)} Y${(-prevY).toFixed(3)} F0`);
+    gcodeLines.push('M107');
+    gcodeLines.push('G28');
   }
 
   const svgPaths: SvgPathElement[] = pathGroups.map((g: PathSegment) => {
