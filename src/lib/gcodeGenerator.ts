@@ -60,12 +60,6 @@ function sanitizeGCodeBlock(text: string): string {
     .join('\n');
 }
 
-function replacePower(template: string, power: number): string {
-  const idx = template.indexOf('{power}');
-  if (idx === -1) return template;
-  return template.slice(0, idx) + power.toString() + template.slice(idx + 7);
-}
-
 const DEFAULT_DELTA_PARAMS = {
   deltaRadius: 105.6,
   deltaRodLength: 217.0,
@@ -583,7 +577,6 @@ export function generatePatternPaths(
     if (machine.laserMode === 'M3_M5') onCmd = `M3 S${g.power}`;
     else if (machine.laserMode === 'M106_M107') onCmd = `M106 S${g.power}`;
     else if (machine.laserMode === 'M3_M4_M5') onCmd = `M4 S${g.power}`;
-    else onCmd = replacePower(machine.laserOn, g.power);
 
     gcodeLines.push(onCmd);
 
@@ -610,10 +603,13 @@ export function generatePatternPaths(
 
   if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));
   else {
-    gcodeLines.push('M106 S0');
+    let endOffCmd = '';
+    if (machine.laserMode === 'M3_M5') endOffCmd = 'M5';
+    else if (machine.laserMode === 'M106_M107') endOffCmd = 'M106 S0';
+    else if (machine.laserMode === 'M3_M4_M5') endOffCmd = 'M5';
+    gcodeLines.push(endOffCmd);
     gcodeLines.push('M9');
     gcodeLines.push(`G0 X${(-prevX).toFixed(3)} Y${(-prevY).toFixed(3)} F0`);
-    gcodeLines.push('M107');
     gcodeLines.push('G28');
   }
 

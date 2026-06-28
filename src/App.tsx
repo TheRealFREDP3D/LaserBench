@@ -150,10 +150,12 @@ export default function App() {
   const handleJog = useCallback(
     (x: number, y: number) => {
       if (!isConnected) return;
-      send(`G0 X${x.toFixed(2)} Y${y.toFixed(2)}`);
-      setJogPos({ x, y });
+      const dx = Math.round((x - jogPos.x) * 100) / 100;
+      const dy = Math.round((y - jogPos.y) * 100) / 100;
+      send(`G0 X${(jogPos.x + dx).toFixed(2)} Y${(jogPos.y + dy).toFixed(2)}`);
+      setJogPos({ x: jogPos.x + dx, y: jogPos.y + dy });
     },
-    [isConnected, send]
+    [isConnected, send, jogPos]
   );
 
   const handleJogRelative = useCallback(

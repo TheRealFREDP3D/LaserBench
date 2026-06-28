@@ -93,6 +93,7 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
   onJogRelative,
 }: PrinterConsoleProps) {
   const [showHomingWarning, setShowHomingWarning] = useState(false);
+  const [jogStep, setJogStep] = useState(10);
   const [pendingWarning, setPendingWarning] = useState<{
     command: string;
     message: string;
@@ -189,20 +190,20 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
   }, [isConnected, isPrinting, handleHome]);
 
   const handleJogUp = useCallback(() => {
-    if (isConnected && !isPrinting) onJogRelative(0, 10);
-  }, [isConnected, isPrinting, onJogRelative]);
+    if (isConnected && !isPrinting) onJogRelative(0, jogStep);
+  }, [isConnected, isPrinting, onJogRelative, jogStep]);
 
   const handleJogDown = useCallback(() => {
-    if (isConnected && !isPrinting) onJogRelative(0, -10);
-  }, [isConnected, isPrinting, onJogRelative]);
+    if (isConnected && !isPrinting) onJogRelative(0, -jogStep);
+  }, [isConnected, isPrinting, onJogRelative, jogStep]);
 
   const handleJogLeft = useCallback(() => {
-    if (isConnected && !isPrinting) onJogRelative(-10, 0);
-  }, [isConnected, isPrinting, onJogRelative]);
+    if (isConnected && !isPrinting) onJogRelative(-jogStep, 0);
+  }, [isConnected, isPrinting, onJogRelative, jogStep]);
 
   const handleJogRight = useCallback(() => {
-    if (isConnected && !isPrinting) onJogRelative(10, 0);
-  }, [isConnected, isPrinting, onJogRelative]);
+    if (isConnected && !isPrinting) onJogRelative(jogStep, 0);
+  }, [isConnected, isPrinting, onJogRelative, jogStep]);
 
   useKeyboardShortcuts({
     onEStop: handleEStop,
@@ -338,6 +339,8 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
             onJog={jog}
             onHome={handleHome}
             disabled={isControlDisabled}
+            jogStep={jogStep}
+            onJogStepChange={setJogStep}
             rightSlot={
               <FireControls
                 onFire={handleFire}
