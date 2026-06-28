@@ -567,14 +567,7 @@ export function generatePatternPaths(
   let currentFeed = 0;
   let prevX = 0;
   let prevY = 0;
-  let needsM8 = true;
-
   pathGroups.forEach((g: PathSegment) => {
-    if (needsM8) {
-      gcodeLines.push('M8');
-      needsM8 = false;
-    }
-
     const p0 = g.points[0];
     const zChanged = g.z !== currentZ;
     const deltaX0 = p0[0] - prevX;
