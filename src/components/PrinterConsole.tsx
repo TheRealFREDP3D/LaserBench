@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import type { SerialMessage } from '../lib/useWebSerial';
+import type { SerialMessage } from '../store/useSerialStore';
 import type { MachineProfile } from '../types';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { JogControls } from './console/JogControls';

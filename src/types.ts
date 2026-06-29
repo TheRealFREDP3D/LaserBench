@@ -71,6 +71,7 @@ export interface PathSegment {
   speed: number;
   z: number;
   isLaserOn: boolean;
+  postSegmentGCode?: string;
 }
 
 export type PatternType =

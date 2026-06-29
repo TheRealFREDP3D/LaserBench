@@ -46,7 +46,7 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
     const ctm = svgRef.current.getScreenCTM();
     if (!ctm) return { x: 0, y: 0 };
     const svgP = pt.matrixTransform(ctm.inverse());
-    return { x: svgP.x, y: svgP.y };
+    return { x: svgP.x, y: -svgP.y };
   };
 
   const isNearOrigin = (pt: { x: number; y: number }) => {
@@ -407,4 +407,4 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
   );
 };
 
-export default SVGVisualizer;
+export default React.memo(SVGVisualizer);

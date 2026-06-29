@@ -301,9 +301,9 @@ describe('gcodeGenerator', () => {
         zMax: 5,
         zSteps: 3,
       });
-      expect(res.gcode).toContain('Z1');
-      expect(res.gcode).toContain('Z3');
-      expect(res.gcode).toContain('Z5');
+      expect(res.gcode).toContain('Z-4.000');
+      expect(res.gcode).toContain('Z2.000');
+      expect(res.gcode).toContain('Z5.000');
     });
   });
 

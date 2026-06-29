@@ -75,7 +75,8 @@ interface PatternContext {
     power: number,
     speed: number,
     z: number,
-    isLaserOn: boolean
+    isLaserOn: boolean,
+    postSegmentGCode?: string
   ) => void;
   labelPower: number;
   labelSpeed: number;
@@ -134,9 +135,8 @@ function generateMatrix(ctx: PatternContext) {
       textSize * SMALL_LABEL_TEXT_SCALE,
       textLetterSpacing * SMALL_LABEL_SPACING_SCALE
     );
-    speedLabelPaths.forEach((p) =>
-      addSegment(p, labelPower, labelSpeed, machine.zFocused + material.thickness, true)
-    );
+    const speedLabelPoints = speedLabelPaths.flat();
+    addSegment(speedLabelPoints, labelPower, labelSpeed, machine.zFocused + material.thickness, true);
 
     for (let p = 0; p < powerSteps; p++) {
       const power =
@@ -167,9 +167,8 @@ function generateMatrix(ctx: PatternContext) {
           textSize * SMALL_LABEL_TEXT_SCALE,
           textLetterSpacing * SMALL_LABEL_SPACING_SCALE
         );
-        pLabelPaths.forEach((pts) =>
-          addSegment(pts, labelPower, labelSpeed, machine.zFocused + material.thickness, true)
-        );
+        const pLabelPoints = pLabelPaths.flat();
+        addSegment(pLabelPoints, labelPower, labelSpeed, machine.zFocused + material.thickness, true);
       }
     }
   }
@@ -239,9 +238,8 @@ function generatePowerRamp(ctx: PatternContext) {
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
-  lp.forEach((p) =>
-    addSegment(p, labelPower, labelSpeed, machine.zFocused + material.thickness, true)
-  );
+  const lpPoints = lp.flat();
+  addSegment(lpPoints, labelPower, labelSpeed, machine.zFocused + material.thickness, true);
 
   return { patternWidth: rampLen, patternHeight: blockSize + 10 * patternScale };
 }
@@ -290,9 +288,8 @@ function generateSpeedRamp(ctx: PatternContext) {
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
-    lp.forEach((p) =>
-      addSegment(p, labelPower, labelSpeed, machine.zFocused + material.thickness, true)
-    );
+    const lpPoints = lp.flat();
+    addSegment(lpPoints, labelPower, labelSpeed, machine.zFocused + material.thickness, true);
   }
 
   const title = `SPEED RAMP (S${Math.round(powerMin)})`;
@@ -303,9 +300,8 @@ function generateSpeedRamp(ctx: PatternContext) {
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
-  tp.forEach((p) =>
-    addSegment(p, labelPower, labelSpeed, machine.zFocused + material.thickness, true)
-  );
+  const tpPoints = tp.flat();
+  addSegment(tpPoints, labelPower, labelSpeed, machine.zFocused + material.thickness, true);
 
   return { patternWidth: lineLen + 20 * patternScale, patternHeight: totalH + 10 * patternScale };
 }
@@ -313,8 +309,6 @@ function generateSpeedRamp(ctx: PatternContext) {
 function generateFocusLadder(ctx: PatternContext) {
   const {
     addSegment,
-    powerMin,
-    speedMin,
     zMin,
     zMax,
     zSteps,
@@ -326,25 +320,38 @@ function generateFocusLadder(ctx: PatternContext) {
     textLetterSpacing,
     material,
   } = ctx;
+  const engravePower = material.engrave.power;
+  const engraveSpeed = material.engrave.speed;
   const lineLen = FOCUS_LADDER_LINE_LENGTH_MM * patternScale;
   const lineGap = FOCUS_LADDER_LINE_GAP_MM * patternScale;
   const totalH = zSteps * lineGap;
   const startX = -lineLen / 2;
   const startY = -totalH / 2;
+  const workingZ = machine.zFocused + material.thickness;
+  const stepSize = zSteps > 1 ? (zMax - zMin) / (zSteps - 1) : 0;
 
   for (let i = 0; i < zSteps; i++) {
     const z = zSteps > 1 ? zMin + (zMax - zMin) * (i / (zSteps - 1)) : zMin;
     const y = startY + i * lineGap;
+    const isLast = i === zSteps - 1;
+
+    let postGCode: string | undefined;
+    if (isLast) {
+      postGCode = `G90\nG0 F0 Z${machine.zSecure.toFixed(3)}\nG91`;
+    } else {
+      postGCode = `G0 F0 Z${stepSize.toFixed(3)}`;
+    }
 
     addSegment(
       [
         [startX, y],
         [startX + lineLen, y],
       ],
-      powerMin,
-      speedMin,
+      engravePower,
+      engraveSpeed,
       z,
-      true
+      true,
+      postGCode
     );
 
     const label = `Z:${z.toFixed(2)}`;
@@ -355,12 +362,11 @@ function generateFocusLadder(ctx: PatternContext) {
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
-    lp.forEach((p) =>
-      addSegment(p, labelPower, labelSpeed, machine.zFocused + material.thickness, true)
-    );
+    const lpPoints = lp.flat();
+    addSegment(lpPoints, labelPower, labelSpeed, workingZ, true);
   }
 
-  const title = `FOCUS LADDER (P:${Math.round(powerMin)} S:${Math.round(speedMin)})`;
+  const title = `FOCUS LADDER (P:${engravePower} S:${engraveSpeed})`;
   const tp = renderTextPath(
     title,
     startX,
@@ -368,9 +374,8 @@ function generateFocusLadder(ctx: PatternContext) {
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
-  tp.forEach((p) =>
-    addSegment(p, labelPower, labelSpeed, machine.zFocused + material.thickness, true)
-  );
+  const tpPoints = tp.flat();
+  addSegment(tpPoints, labelPower, labelSpeed, workingZ, true);
 
   return { patternWidth: lineLen + 30 * patternScale, patternHeight: totalH + 15 * patternScale };
 }
@@ -420,9 +425,8 @@ function generateKerfTest(ctx: PatternContext, nominal: number) {
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
-    lp.forEach((p) =>
-      addSegment(p, labelPower, labelSpeed, machine.zFocused + material.thickness, true)
-    );
+    const lpPoints = lp.flat();
+    addSegment(lpPoints, labelPower, labelSpeed, machine.zFocused + material.thickness, true);
   });
 
   return { patternWidth: totalW, patternHeight: slotH + 10 * patternScale };
@@ -485,7 +489,8 @@ export function generatePatternPaths(
     power: number,
     speed: number,
     z: number,
-    isLaserOn: boolean
+    isLaserOn: boolean,
+    postSegmentGCode?: string
   ) {
     const movedPoints = points.map(([x, y]) => [x + pos.x, y + pos.y] as [number, number]);
 
@@ -496,7 +501,7 @@ export function generatePatternPaths(
         deltaWarnings.add(warn);
       }
     }
-    pathGroups.push({ points: movedPoints, power, speed, z, isLaserOn });
+    pathGroups.push({ points: movedPoints, power, speed, z, isLaserOn, postSegmentGCode });
   }
 
   const labelPower = Math.round(machine.pwmMax * 0.4);
@@ -553,32 +558,41 @@ export function generatePatternPaths(
   if (machine.startGCode) gcodeLines.push(sanitizeGCodeBlock(machine.startGCode));
   else {
     gcodeLines.push('G21');
-    gcodeLines.push('G91');
     gcodeLines.push('M106 S0');
   }
+
+  gcodeLines.push('G91');
 
   let currentZ = machine.zSecure;
   let currentFeed = 0;
   let prevX = 0;
   let prevY = 0;
-  pathGroups.forEach((g: PathSegment) => {
+  pathGroups.forEach((g: PathSegment, idx: number) => {
     const p0 = g.points[0];
     const zChanged = g.z !== currentZ;
     const deltaX0 = p0[0] - prevX;
     const deltaY0 = p0[1] - prevY;
+    const deltaZ0 = g.z - currentZ;
     gcodeLines.push(
-      `G0 F0 X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${g.z.toFixed(3)}` : ''}`
+      `G0 F0 X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${deltaZ0.toFixed(3)}` : ''}`
     );
     prevX = p0[0];
     prevY = p0[1];
     currentZ = g.z;
+
+    const prev = idx > 0 ? pathGroups[idx - 1] : null;
+    const isNewGroup = !prev || prev.power !== g.power || prev.speed !== g.speed || prev.z !== g.z;
+
+    const next = idx < pathGroups.length - 1 ? pathGroups[idx + 1] : null;
+    const isEndOfGroup =
+      !next || next.power !== g.power || next.speed !== g.speed || next.z !== g.z;
 
     let onCmd = '';
     if (machine.laserMode === 'M3_M5') onCmd = `M3 S${g.power}`;
     else if (machine.laserMode === 'M106_M107') onCmd = `M106 S${g.power}`;
     else if (machine.laserMode === 'M3_M4_M5') onCmd = `M4 S${g.power}`;
 
-    gcodeLines.push(onCmd);
+    if (isNewGroup) gcodeLines.push(onCmd);
 
     for (let i = 1; i < g.points.length; i++) {
       const p = g.points[i];
@@ -586,19 +600,23 @@ export function generatePatternPaths(
       const deltaX = p[0] - prevX;
       const deltaY = p[1] - prevY;
       gcodeLines.push(
-        `G1${g.speed !== currentFeed || firstCut ? ` F${g.speed}` : ''} X${deltaX.toFixed(3)} Y${deltaY.toFixed(3)}${firstCut && zChanged ? ` Z${g.z.toFixed(3)}` : ''}`
+        `G1${g.speed !== currentFeed || firstCut ? ` F${g.speed}` : ''} X${deltaX.toFixed(3)} Y${deltaY.toFixed(3)}`
       );
       prevX = p[0];
       prevY = p[1];
       currentFeed = g.speed;
     }
 
-    let offCmd = '';
-    if (machine.laserMode === 'M3_M5') offCmd = 'M5';
-    else if (machine.laserMode === 'M106_M107') offCmd = 'M106 S0';
-    else if (machine.laserMode === 'M3_M4_M5') offCmd = 'M5';
-    else offCmd = sanitizeGCodeLine(machine.laserOff);
-    gcodeLines.push(offCmd);
+    if (isEndOfGroup) {
+      let offCmd = '';
+      if (machine.laserMode === 'M3_M5') offCmd = 'M5';
+      else if (machine.laserMode === 'M106_M107') offCmd = 'M106 S0';
+      else if (machine.laserMode === 'M3_M4_M5') offCmd = 'M5';
+      else offCmd = sanitizeGCodeLine(machine.laserOff);
+      gcodeLines.push(offCmd);
+    }
+
+    if (g.postSegmentGCode) gcodeLines.push(g.postSegmentGCode);
   });
 
   if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));
@@ -609,7 +627,8 @@ export function generatePatternPaths(
     else if (machine.laserMode === 'M3_M4_M5') endOffCmd = 'M5';
     gcodeLines.push(endOffCmd);
     gcodeLines.push('M9');
-    gcodeLines.push(`G0 X${(-prevX).toFixed(3)} Y${(-prevY).toFixed(3)} F0`);
+    gcodeLines.push('G90');
+    gcodeLines.push(`G0 X0 Y0 Z${machine.zSecure.toFixed(3)} F0`);
     gcodeLines.push('G28');
   }
 

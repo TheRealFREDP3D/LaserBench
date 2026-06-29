@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Trash2 } from 'lucide-react';
-import type { SerialMessage } from '../../lib/useWebSerial';
+import type { SerialMessage } from '../../store/useSerialStore';
 import { useTheme } from '../../lib/themeContext';
 
 interface SerialLogProps {

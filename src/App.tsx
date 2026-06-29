@@ -24,7 +24,7 @@ import PatternConfigurator from './components/PatternConfigurator';
 import SVGVisualizer from './components/SVGVisualizer';
 import GCodeOutput from './components/GCodeOutput';
 import { PrinterConsole } from './components/PrinterConsole';
-import { useWebSerial } from './lib/useWebSerial';
+import { useSerialStore } from './store/useSerialStore';
 import WorkflowStepper from './components/layout/WorkflowStepper';
 import StatusBar from './components/layout/StatusBar';
 import OnboardingTooltip from './components/OnboardingTooltip';
@@ -51,7 +51,7 @@ export default function App() {
     printGCode,
     abortPrint,
     clearMessages,
-  } = useWebSerial();
+  } = useSerialStore();
 
   const { machines, setActiveMachineId, updateMachine, addMachine, addMachines, deleteMachine } =
     useMachineStore();

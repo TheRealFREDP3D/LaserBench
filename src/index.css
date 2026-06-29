@@ -54,7 +54,7 @@ h4 {
   background-color: var(--color-elevated);
   border: 1px solid var(--color-border-strong);
   color: var(--color-text-primary);
-  transition: all 0.2s ease-in-out;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .elegant-input:focus {
@@ -102,433 +102,215 @@ h4 {
   background: var(--color-overlay);
 }
 
-/* High Contrast Light Theme Overrides (For Bright Workshops) */
+/* ══════════════════════════════════════════════════════════════════════
+   Light Theme — token-based
+   Overrides the standard Tailwind color variables so ALL utilities
+   (bg-black, text-white, border-white/10, bg-slate-*, text-red-*, etc.)
+   automatically flip without per-class overrides.
+   ══════════════════════════════════════════════════════════════════════ */
 .theme-light {
   color-scheme: light;
+
+  /* ── Base tokens ──────────────────────────────────────────────── */
+  --color-bg: #f4f4f5;
+  --color-surface: #ffffff;
+  --color-elevated: #f4f4f5;
+  --color-overlay: #e4e4e7;
+  --color-border: rgba(0, 0, 0, 0.15);
+  --color-border-strong: rgba(0, 0, 0, 0.3);
+  --color-text-primary: #18181b;
+  --color-text-secondary: #27272a;
+  --color-text-muted: #52525b;
+
+  /* ── Tailwind color overrides (dark → light) ──────────────────── */
+  --color-black: #ffffff;
+  --color-white: #18181b;
+
+  --color-neutral-50: #09090b;
+  --color-neutral-100: #18181b;
+  --color-neutral-200: #27272a;
+  --color-neutral-300: #3f3f46;
+  --color-neutral-400: #52525b;
+  --color-neutral-500: #71717a;
+  --color-neutral-600: #a1a1aa;
+  --color-neutral-700: #d4d4d8;
+  --color-neutral-800: #e4e4e7;
+  --color-neutral-900: #f4f4f5;
+  --color-neutral-950: #fafafa;
+
+  --color-slate-50: #020617;
+  --color-slate-100: #0f172a;
+  --color-slate-200: #1e293b;
+  --color-slate-300: #334155;
+  --color-slate-400: #475569;
+  --color-slate-500: #64748b;
+  --color-slate-600: #94a3b8;
+  --color-slate-700: #d4d4d8;
+  --color-slate-800: #e4e4e7;
+  --color-slate-850: #e4e4e7;
+  --color-slate-900: #f4f4f5;
+  --color-slate-950: #fafafa;
+
+  --color-red-50: #450a0a;
+  --color-red-100: #7f1d1d;
+  --color-red-200: #991b1b;
+  --color-red-300: #b91c1c;
+  --color-red-400: #dc2626;
+  --color-red-500: #dc2626;
+  --color-red-600: #dc2626;
+  --color-red-650: #b91c1c;
+  --color-red-700: #b91c1c;
+  --color-red-800: #fca5a5;
+  --color-red-900: #fecaca;
+  --color-red-950: #fee2e2;
+
+  --color-indigo-50: #1e1b4b;
+  --color-indigo-100: #312e81;
+  --color-indigo-200: #3730a3;
+  --color-indigo-300: #4338ca;
+  --color-indigo-400: #4f46e5;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #818cf8;
+  --color-indigo-700: #c7d2fe;
+  --color-indigo-800: #e0e7ff;
+  --color-indigo-900: #eef2ff;
+  --color-indigo-950: #eef2ff;
+
+  --color-amber-50: #451a03;
+  --color-amber-100: #78350f;
+  --color-amber-200: #92400e;
+  --color-amber-300: #b45309;
+  --color-amber-400: #d97706;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #fbbf24;
+  --color-amber-700: #fde68a;
+  --color-amber-800: #fef3c7;
+  --color-amber-900: #fef9c3;
+  --color-amber-950: #fef3c7;
+
+  --color-sky-50: #0c4a6e;
+  --color-sky-100: #075985;
+  --color-sky-200: #0369a1;
+  --color-sky-300: #0284c7;
+  --color-sky-400: #0ea5e9;
+  --color-sky-500: #38bdf8;
+  --color-sky-600: #7dd3fc;
+  --color-sky-700: #bae6fd;
+  --color-sky-800: #e0f2fe;
+  --color-sky-900: #e0f2fe;
+  --color-sky-950: #e0f2fe;
+
+  --color-purple-50: #3b0764;
+  --color-purple-100: #581c87;
+  --color-purple-200: #6b21a8;
+  --color-purple-300: #7c3aed;
+  --color-purple-400: #8b5cf6;
+  --color-purple-500: #a78bfa;
+  --color-purple-600: #c4b5fd;
+  --color-purple-700: #ddd6fe;
+  --color-purple-800: #ede9fe;
+  --color-purple-900: #f5f3ff;
+  --color-purple-950: #f3e8ff;
+
+  --color-rose-50: #4c0519;
+  --color-rose-100: #881337;
+  --color-rose-200: #9f1239;
+  --color-rose-300: #be123c;
+  --color-rose-400: #e11d48;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #fb7185;
+  --color-rose-700: #fecdd3;
+  --color-rose-800: #ffe4e6;
+  --color-rose-900: #fff1f2;
+  --color-rose-950: #ffe4e6;
+
+  --color-emerald-50: #022c22;
+  --color-emerald-100: #064e3b;
+  --color-emerald-200: #065f46;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #15803d;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #34d399;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+  --color-emerald-900: #d1fae5;
+  --color-emerald-950: #ecfdf5;
+
+  --color-lime-400: #15803d;
 }
 
-#laserbench-root.theme-light {
-  background-color: #f4f4f5 !important;
-  color: #18181b !important;
-}
-
-.theme-light body {
-  background-color: #f4f4f5 !important;
-  color: #18181b !important;
-}
-
-/* Header */
-.theme-light header {
-  background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
-.theme-light header h1 {
-  color: #18181b !important;
-}
-.theme-light header .label-caps {
-  color: #71717a !important;
-}
-
-/* Card panels */
-.theme-light .bg-\[\#0F0F0F\],
-.theme-light .bg-slate-900 {
-  background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-  color: #18181b !important;
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
-}
-.theme-light .bg-\[\#0F0F0F\] h2,
-.theme-light .bg-slate-900 h2 {
-  color: #18181b !important;
-}
-
-/* Section elements and forms */
-.theme-light .bg-\[\#1A1A1A\],
-.theme-light .bg-slate-950\/80 {
-  background-color: #f4f4f5 !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
-.theme-light .bg-\[\#1A1A1A\] h3,
-.theme-light .bg-\[\#1A1A1A\] span {
-  color: #18181b !important;
-}
-
-/* Correcting near-black layout cards and indicators to light theme */
-.theme-light .bg-\[\#080808\] {
-  background-color: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.12) !important;
-}
-.theme-light span.bg-\[\#080808\] {
-  background-color: #e4e4e7 !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-  color: #18181b !important;
-}
-.theme-light .border-white\/10,
-.theme-light .border-white\/8,
-.theme-light .border-white\/12,
-.theme-light .border-white\/15,
-.theme-light .border-slate-800,
-.theme-light .border-slate-850,
-.theme-light .border-slate-900 {
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Primary and secondary buttons / toggles */
-.theme-light .bg-\[\#252525\],
-.theme-light .bg-slate-800 {
-  background-color: #e4e4e7 !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-  color: #18181b !important;
-}
-.theme-light .bg-\[\#252525\]:hover,
-.theme-light .bg-slate-800:hover {
-  background-color: #d4d4d8 !important;
-}
-.theme-light .bg-\[\#333333\],
-.theme-light .bg-slate-700 {
-  background-color: #d4d4d8 !important;
-  color: #18181b !important;
-}
-
-/* Select options and input text boxes */
-.theme-light .elegant-input {
-  background-color: #ffffff !important;
-  border: 1px solid rgba(0, 0, 0, 0.3) !important;
-  color: #18181b !important;
-}
-.theme-light .elegant-input:focus {
-  border-color: #dc2626 !important;
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.2) !important;
-}
-.theme-light select option {
-  background-color: #ffffff !important;
-  color: #18181b !important;
-}
-
-/* Active buttons and tabs */
-.theme-light .bg-red-650 {
-  background-color: #b91c1c !important;
-}
-.theme-light .bg-red-650:hover {
-  background-color: #991b1b !important;
-}
-.theme-light .bg-red-950\/20,
-.theme-light .bg-red-950\/25,
-.theme-light .bg-red-950\/40,
-.theme-light .bg-red-950\/45,
-.theme-light .bg-red-950\/60 {
-  background-color: #fee2e2 !important;
-  border-color: #fecaca !important;
-  color: #b91c1c !important;
-}
-
-/* Specific theme color patterns for selectors/icons */
-.theme-light .bg-indigo-950\/45 {
-  background-color: #eef2ff !important;
-  border-color: #c7d2fe !important;
-  color: #4338ca !important;
-}
-.theme-light .bg-amber-950\/45 {
-  background-color: #fef3c7 !important;
-  border-color: #fde68a !important;
-  color: #b45309 !important;
-}
-.theme-light .bg-sky-950\/45 {
-  background-color: #e0f2fe !important;
-  border-color: #bae6fd !important;
-  color: #0369a1 !important;
-}
-.theme-light .bg-purple-950\/45 {
-  background-color: #f3e8ff !important;
-  border-color: #e9d5ff !important;
-  color: #6b21a8 !important;
-}
-.theme-light .bg-rose-950\/45 {
-  background-color: #ffe4e6 !important;
-  border-color: #fecdd3 !important;
-  color: #be123c !important;
-}
-
-/* Active selections in list boxes */
-.theme-light .bg-\[\#1E1414\],
-.theme-light .bg-\[\#221010\],
-.theme-light .bg-\[\#1e1414\],
-.theme-light .bg-\[\#221010\],
-.theme-light .bg-slate-950\/20,
-.theme-light .bg-slate-950\/80,
-.theme-light .bg-slate-950\/90,
-.theme-light .bg-slate-950 {
-  background-color: #f4f4f5 !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Dynamic slider track background adjustments */
-.theme-light .bg-\[\#252525\][type='range'] {
-  background-color: #e4e4e7 !important;
-}
-
-/* Text selections & colors */
-.theme-light .text-\[\#E8E8E8\],
-.theme-light .text-slate-100,
-.theme-light .text-slate-200 {
-  color: #18181b !important;
-}
-.theme-light .text-white {
-  color: #18181b !important;
-}
-.theme-light .text-\[\#9A9A9A\],
-.theme-light .text-slate-300 {
-  color: #27272a !important;
-}
-.theme-light .text-\[\#707070\],
-.theme-light .text-slate-500,
-.theme-light .text-slate-400 {
-  color: #52525b !important;
-}
-.theme-light .text-\[\#505050\] {
-  color: #71717a !important;
-}
-.theme-light .text-\[\#64748b\] {
-  color: #475569 !important;
-}
-.theme-light .label-caps {
-  color: #52525b !important;
-}
-.theme-light .text-neutral-300 {
-  color: #18181b !important;
-}
-.theme-light .text-neutral-400 {
-  color: #27272a !important;
-}
-.theme-light .text-neutral-500 {
-  color: #52525b !important;
-}
-
-.theme-light .text-red-400,
-.theme-light .text-red-500 {
-  color: #b91c1c !important;
-}
-.theme-light .text-indigo-300,
-.theme-light .text-indigo-400 {
-  color: #4338ca !important;
-}
-.theme-light .text-amber-400 {
-  color: #b45309 !important;
-}
-.theme-light .text-sky-400 {
-  color: #0369a1 !important;
-}
-.theme-light .text-purple-400 {
-  color: #6b21a8 !important;
-}
-.theme-light .text-rose-400 {
-  color: #be123c !important;
-}
-.theme-light .text-lime-400,
-.theme-light .text-emerald-400 {
-  color: #15803d !important;
-}
-.theme-light .text-green-400 {
-  color: #15803d !important;
-}
-.theme-light .bg-green-400 {
-  background-color: #15803d !important;
-}
-
-/* Specific styling for SVG canvas backplate */
-.theme-light .bg-\[\#050505\] {
-  background-color: #fafafa !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
+/* ── SVG element overrides (target fill/stroke attrs, not classes) ─ */
 .theme-light #laser-canvas rect[fill='black'] {
-  fill: #fafafa !important;
-  stroke: #d4d4d8 !important;
+  fill: #fafafa;
+  stroke: #d4d4d8;
 }
 .theme-light #laser-canvas circle[fill='black'] {
-  fill: #fafafa !important;
-  stroke: #d4d4d8 !important;
+  fill: #fafafa;
+  stroke: #d4d4d8;
 }
 .theme-light #laser-canvas line[stroke='#444'] {
-  stroke: #e4e4e7 !important;
-  stroke-width: 0.3 !important;
+  stroke: #e4e4e7;
+  stroke-width: 0.3;
 }
 .theme-light #laser-canvas line[stroke='#1e293b'] {
-  stroke: #e2e8f0 !important;
-  stroke-width: 0.25 !important;
+  stroke: #e2e8f0;
+  stroke-width: 0.25;
 }
 .theme-light #laser-canvas circle[stroke='#555'] {
-  stroke: #a1a1aa !important;
-  stroke-width: 0.3 !important;
+  stroke: #a1a1aa;
+  stroke-width: 0.3;
 }
-
-/* Toolpath lines inside the visualizer */
 .theme-light path[stroke='#93c5fd'] {
-  stroke: #1d4ed8 !important; /* Rich deep blue for high visibility */
-  stroke-width: 1.2px !important;
+  stroke: #1d4ed8;
+  stroke-width: 1.2px;
 }
 .theme-light path[stroke='#3b82f6'] {
-  stroke: #2563eb !important; /* Bright primary blue */
-  stroke-width: 1.2px !important;
+  stroke: #2563eb;
+  stroke-width: 1.2px;
 }
 .theme-light path[stroke='#f59e0b'] {
-  stroke: #c2410c !important; /* Heavy amber-orange */
-  stroke-width: 1.2px !important;
+  stroke: #c2410c;
+  stroke-width: 1.2px;
 }
 .theme-light path[stroke='#ef4444'] {
-  stroke: #b91c1c !important; /* Crimson red */
-  stroke-width: 1.5px !important;
+  stroke: #b91c1c;
+  stroke-width: 1.5px;
 }
 
-/* SVG floating info inspector */
-.theme-light .bg-\[\#151515\]\/95,
-.theme-light .bg-\[\#151515\]\/95,
-.theme-light .bg-\[\#151515\],
-.theme-light .bg-\[\#151515\],
-.theme-light #svg-visualizer-container div.absolute {
-  background-color: rgba(255, 255, 255, 0.98) !important;
-  border-color: rgba(0, 0, 0, 0.2) !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15) !important;
-  color: #18181b !important;
-}
-.theme-light .bg-\[\#151515\]\/95 span,
-.theme-light .bg-\[\#151515\]\/95 span,
-.theme-light #svg-visualizer-container div.absolute span {
-  color: #18181b !important;
-}
-.theme-light .bg-\[\#151515\]\/95 strong,
-.theme-light .bg-\[\#151515\]\/95 strong,
-.theme-light #svg-visualizer-container div.absolute strong {
-  color: #000000 !important;
-}
-
-/* G90/G21 badge */
-.theme-light .bg-slate-950\/90 {
-  background-color: #e4e4e7 !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-  color: #18181b !important;
-}
-
-/* G-code Textarea */
-.theme-light .bg-black,
-.theme-light textarea.bg-black,
-.theme-light textarea#gcode-textarea,
-.theme-light .text-emerald-400\/90 {
-  background-color: #fafafa !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-  color: #15803d !important; /* Highly readable forest green */
-}
-
-/* Divide-borders and slate borders */
-.theme-light .divide-slate-850 > * {
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
-.theme-light .divide-slate-850 {
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
-.theme-light .border-slate-950,
-.theme-light .border-slate-900\/40,
-.theme-light .border-slate-900 {
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Red borders and elements used in calibration modals & buttons */
-.theme-light .border-red-900\/60,
-.theme-light .border-red-900\/40,
-.theme-light .border-red-900\/30,
-.theme-light .border-red-900,
-.theme-light .border-red-800 {
-  border-color: #fca5a5 !important;
-}
-
-/* Hover-background light theme overrides */
-.theme-light .hover\:bg-\[\#1A1A1A\]:hover,
-.theme-light .hover\:bg-\[\#333333\]:hover,
-.theme-light .hover\:bg-\[\#252525\]:hover {
-  background-color: #e4e4e7 !important;
-  color: #18181b !important;
-}
-
-/* Hover-text override so text never turns white/invisible on light background */
-.theme-light .hover\:text-white:hover,
-.theme-light .hover\:text-\[\#E8E8E8\]:hover {
-  color: #18181b !important;
-}
-
-/* Bottom status footer bar */
-.theme-light footer {
-  background-color: #e4e4e7 !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-  color: #18181b !important;
-}
-.theme-light footer span {
-  color: #27272a !important;
-}
-
-/* Scrollbars */
+/* ── Scrollbar overrides ────────────────────────────────────────── */
 .theme-light ::-webkit-scrollbar-track {
-  background: #f4f4f5;
+  background: var(--color-bg);
 }
 .theme-light ::-webkit-scrollbar-thumb {
-  background: #d4d4d8;
+  background: var(--color-overlay);
 }
 .theme-light ::-webkit-scrollbar-thumb:hover {
   background: #a1a1aa;
 }
 
-/* Custom Modal Backplates */
-.theme-light .bg-black\/85 {
-  background-color: rgba(0, 0, 0, 0.6) !important;
-}
-
-/* Global Contrast Improvements */
+/* ── Global contrast enhancements (both themes) ─────────────────── */
 button,
 select,
 input {
-  transition: all 0.2s ease !important;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
-/* Dark mode contrast enhancements */
 :root:not(.theme-light) button:not(:disabled) {
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.25);
 }
 :root:not(.theme-light) button:not(:disabled):hover {
-  border-color: rgba(255, 255, 255, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.45);
   filter: brightness(1.3);
 }
-
 :root:not(.theme-light) select,
 :root:not(.theme-light) input[type='text'],
 :root:not(.theme-light) input[type='number'] {
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.08);
 }
-
 :root:not(.theme-light) select:focus,
 :root:not(.theme-light) input:focus {
-  border-color: #dc2626 !important;
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.4) !important;
-}
-
-/* Light mode contrast enhancements */
-.theme-light button:not(:disabled) {
-  border-color: rgba(0, 0, 0, 0.3) !important;
-}
-.theme-light button:not(:disabled):hover {
-  border-color: rgba(0, 0, 0, 0.6) !important;
-  background-color: rgba(0, 0, 0, 0.05) !important;
-}
-
-.theme-light select,
-.theme-light input[type='text'],
-.theme-light input[type='number'] {
-  border-color: rgba(0, 0, 0, 0.35) !important;
-  background-color: rgba(255, 255, 255, 0.8) !important;
-}
-
-.theme-light select:focus,
-.theme-light input:focus {
-  border-color: #b91c1c !important;
-  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.25) !important;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.4);
 }

@@ -33,12 +33,6 @@ interface PatternState {
   setZMax: (val: number) => void;
   setZSteps: (val: number) => void;
   setPatternPosition: (pos: { x: number; y: number }) => void;
-
-  // Validation checks for "green lights"
-  isMachineStepComplete: boolean;
-  isMaterialStepComplete: boolean;
-  isPatternStepComplete: boolean;
-  setStepComplete: (step: 'machine' | 'material' | 'pattern', complete: boolean) => void;
 }
 
 export const usePatternStore = create<PatternState>((set) => ({
@@ -58,10 +52,6 @@ export const usePatternStore = create<PatternState>((set) => ({
   zSteps: 5,
   patternPosition: { x: 0, y: 0 },
 
-  isMachineStepComplete: true, // Defaults to true since we have initial machines
-  isMaterialStepComplete: true,
-  isPatternStepComplete: false,
-
   setPatternType: (type) => set({ selectedPattern: type }),
   setPowerMin: (val) => set({ powerMin: Math.max(0, Math.round(val)) }),
   setPowerMax: (val) => set({ powerMax: Math.max(0, Math.round(val)) }),
@@ -77,8 +67,4 @@ export const usePatternStore = create<PatternState>((set) => ({
   setZMax: (val) => set({ zMax: val }),
   setZSteps: (val) => set({ zSteps: Math.max(1, Math.round(val)) }),
   setPatternPosition: (pos) => set({ patternPosition: pos }),
-  setStepComplete: (step, complete) =>
-    set({
-      [`is${step.charAt(0).toUpperCase() + step.slice(1)}StepComplete`]: complete,
-    }),
 }));
