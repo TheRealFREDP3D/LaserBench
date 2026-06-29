@@ -125,6 +125,7 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
     simAnimRef.current = requestAnimationFrame(tick);
     return () => {
       if (simAnimRef.current) cancelAnimationFrame(simAnimRef.current);
+      simLastTimeRef.current = 0;
     };
   }, [isSimPlaying, totalSimPoints, playSpeed, isLooping]);
 
@@ -137,7 +138,9 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
     pt.y = e.clientY;
     const ctm = svgRef.current.getScreenCTM();
     if (!ctm) return { x: 0, y: 0 };
-    const svgP = pt.matrixTransform(ctm.inverse());
+    const inverse = ctm.inverse();
+    if (!inverse) return { x: 0, y: 0 };
+    const svgP = pt.matrixTransform(inverse);
     return { x: svgP.x, y: -svgP.y };
   };
 
@@ -515,8 +518,12 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
         <div className="px-3 py-1.5 bg-[#0A0A0A] border-t border-white/5 flex items-center gap-3 shrink-0">
           <button
             onClick={() => {
-              if (simIndex >= totalSimPoints - 1) setSimIndex(0);
-              setIsSimPlaying((p) => !p);
+              if (simIndex >= totalSimPoints - 1) {
+                setSimIndex(0);
+                setIsSimPlaying(true);
+              } else {
+                setIsSimPlaying((p) => !p);
+              }
             }}
             className={`p-1.5 rounded transition-colors ${
               isSimPlaying

@@ -87,7 +87,7 @@ function releaseSlot() {
   if (timer) clearTimeout(timer);
   if (resolve) {
     resolve();
-  } else {
+  } else if (bufferResolveRef.length === 0) {
     bufferSlotsRef++;
   }
 }
@@ -213,6 +213,12 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         addMessage('sent', '--- Connected to printer ---');
       } catch (error) {
         console.error('Failed to connect:', error);
+        if (portRef) {
+          try {
+            await portRef.close();
+          } catch {}
+          portRef = null;
+        }
         addMessage('received', 'Error: ' + (error as Error).message);
         useSerialStore.setState({ connectionState: 'offline' });
       }
@@ -328,7 +334,12 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         let slotsReleased = 0;
         const slotsNeeded = BUFFER_SIZE - bufferSlotsRef;
         while (slotsReleased < slotsNeeded && !abortPrintRef) {
-          await new Promise<void>((r) => bufferResolveRef.push(r));
+          await Promise.race([
+            new Promise<void>((r) => bufferResolveRef.push(r)),
+            new Promise<void>((_, reject) =>
+              setTimeout(() => reject(new Error('Timeout waiting for final slots')), 30000)
+            ),
+          ]);
           slotsReleased++;
         }
 
