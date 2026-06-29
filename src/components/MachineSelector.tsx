@@ -46,7 +46,10 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
   const { confirm, ConfirmModalComponent } = useConfirmModal();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFieldChange = <K extends keyof MachineProfile>(field: K, value: MachineProfile[K]) => {
+  const handleFieldChange = <K extends keyof MachineProfile>(
+    field: K,
+    value: MachineProfile[K]
+  ) => {
     if (!activeMachine) return;
     onUpdate({ ...activeMachine, [field]: value });
   };

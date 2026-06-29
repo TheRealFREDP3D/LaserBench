@@ -1,16 +1,33 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { MachineProfile, SvgPathElement } from '../types';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import { MachineProfile, SvgPathElement, PathSegment } from '../types';
 import { usePatternStore } from '../store/usePatternStore';
-import { Crosshair, Move, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Crosshair, Move, Maximize2, ZoomIn, ZoomOut, Play, Square } from 'lucide-react';
 
 interface SVGVisualizerProps {
   svgPaths: SvgPathElement[];
+  paths?: PathSegment[];
   machine: MachineProfile;
   onJog?: (x: number, y: number) => void;
   isPrinting?: boolean;
 }
 
-const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog, isPrinting }) => {
+interface SimPoint {
+  x: number;
+  y: number;
+  segmentIndex: number;
+  pointIndex: number;
+  power: number;
+  speed: number;
+  isLaserOn: boolean;
+}
+
+const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
+  svgPaths,
+  paths,
+  machine,
+  onJog,
+  isPrinting,
+}) => {
   const p = usePatternStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const wheelThrottleRef = useRef(0);
@@ -37,6 +54,81 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isDraggingOrigin, setIsDraggingOrigin] = useState(false);
+
+  // Simulation state
+  const [isSimPlaying, setIsSimPlaying] = useState(false);
+  const [simIndex, setSimIndex] = useState(0);
+  const [isLooping, setIsLooping] = useState(false);
+  const [playSpeed, setPlaySpeed] = useState(1);
+  const simAnimRef = useRef<number>(0);
+  const simLastTimeRef = useRef(0);
+
+  // Flatten all PathSegment points into a single SimPoint array
+  const simPoints = useMemo<SimPoint[]>(() => {
+    if (!paths || paths.length === 0) return [];
+    const pts: SimPoint[] = [];
+    for (let si = 0; si < paths.length; si++) {
+      const seg = paths[si];
+      for (let pi = 0; pi < seg.points.length; pi++) {
+        const [x, y] = seg.points[pi];
+        pts.push({
+          x,
+          y,
+          segmentIndex: si,
+          pointIndex: pi,
+          power: seg.power,
+          speed: seg.speed,
+          isLaserOn: seg.isLaserOn,
+        });
+      }
+    }
+    return pts;
+  }, [paths]);
+
+  const totalSimPoints = simPoints.length;
+
+  const resetSim = useCallback(() => {
+    setIsSimPlaying(false);
+    setSimIndex(0);
+    simLastTimeRef.current = 0;
+    if (simAnimRef.current) cancelAnimationFrame(simAnimRef.current);
+  }, []);
+
+  // Animation loop
+  useEffect(() => {
+    if (!isSimPlaying || totalSimPoints === 0) return;
+
+    const tick = (timestamp: number) => {
+      if (simLastTimeRef.current === 0) simLastTimeRef.current = timestamp;
+      const dt = timestamp - simLastTimeRef.current;
+      simLastTimeRef.current = timestamp;
+
+      // Advance ~60 points/sec at 1x speed
+      const pointsToAdvance = Math.max(1, Math.round((dt / 16.67) * playSpeed));
+
+      setSimIndex((prev) => {
+        const next = prev + pointsToAdvance;
+        if (next >= totalSimPoints) {
+          if (isLooping) {
+            simLastTimeRef.current = 0;
+            return 0;
+          }
+          setIsSimPlaying(false);
+          return totalSimPoints - 1;
+        }
+        return next;
+      });
+
+      simAnimRef.current = requestAnimationFrame(tick);
+    };
+
+    simAnimRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (simAnimRef.current) cancelAnimationFrame(simAnimRef.current);
+    };
+  }, [isSimPlaying, totalSimPoints, playSpeed, isLooping]);
+
+  const hasSimData = paths && paths.length > 0 && totalSimPoints > 0;
 
   const getSVGPoint = (e: React.PointerEvent | React.MouseEvent | PointerEvent) => {
     if (!svgRef.current) return { x: 0, y: 0 };
@@ -275,18 +367,69 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
           )}
 
           <g>
-            {svgPaths.map((sp, i) => (
-              <path
-                key={i}
-                d={sp.d}
-                fill="none"
-                stroke={sp.stroke}
-                strokeWidth={sp.strokeWidth}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={isPrinting ? 0.3 : 1}
-              />
-            ))}
+            {hasSimData && simIndex > 0
+              ? (() => {
+                  const curPt = simPoints[simIndex];
+                  const curSegIdx = curPt.segmentIndex;
+                  const curPtIdx = curPt.pointIndex;
+                  return svgPaths.map((sp, i) => {
+                    if (i < curSegIdx) {
+                      return (
+                        <path
+                          key={i}
+                          d={sp.d}
+                          fill="none"
+                          stroke={sp.stroke}
+                          strokeWidth={sp.strokeWidth}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          opacity={isPrinting ? 0.3 : 1}
+                        />
+                      );
+                    }
+                    if (i === curSegIdx) {
+                      const pts = paths![i].points.slice(0, curPtIdx + 1);
+                      if (pts.length < 2) return null;
+                      const d = 'M ' + pts.map(([x, y]) => `${x} ${y}`).join(' L ');
+                      return (
+                        <path
+                          key={i}
+                          d={d}
+                          fill="none"
+                          stroke={sp.stroke}
+                          strokeWidth={sp.strokeWidth}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          opacity={isPrinting ? 0.3 : 0.9}
+                        />
+                      );
+                    }
+                    return (
+                      <path
+                        key={i}
+                        d={sp.d}
+                        fill="none"
+                        stroke={sp.stroke}
+                        strokeWidth={sp.strokeWidth}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        opacity={0.08}
+                      />
+                    );
+                  });
+                })()
+              : svgPaths.map((sp, i) => (
+                  <path
+                    key={i}
+                    d={sp.d}
+                    fill="none"
+                    stroke={sp.stroke}
+                    strokeWidth={sp.strokeWidth}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity={isPrinting ? 0.3 : 1}
+                  />
+                ))}
           </g>
 
           <g
@@ -313,6 +456,24 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
               className="animate-ping"
               style={{ transform: `translate(${p.patternPosition.x}px, ${p.patternPosition.y}px)` }}
             />
+          )}
+
+          {hasSimData && simIndex > 0 && simIndex < totalSimPoints && (
+            <g transform={`translate(${simPoints[simIndex].x}, ${simPoints[simIndex].y})`}>
+              {simPoints[simIndex].isLaserOn && (
+                <circle
+                  r="5"
+                  fill={simPoints[simIndex].power > 0 ? 'rgba(239,68,68,0.25)' : 'none'}
+                  stroke="none"
+                />
+              )}
+              <circle
+                r="2"
+                fill={simPoints[simIndex].isLaserOn ? '#ef4444' : '#22d3ee'}
+                stroke="white"
+                strokeWidth="0.5"
+              />
+            </g>
           )}
 
           {hoverPos && (
@@ -347,6 +508,79 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({ svgPaths, machine, onJog,
           )}
         </svg>
       </div>
+
+      {hasSimData && (
+        <div className="px-3 py-1.5 bg-[#0A0A0A] border-t border-white/5 flex items-center gap-3 shrink-0">
+          <button
+            onClick={() => {
+              if (simIndex >= totalSimPoints - 1) setSimIndex(0);
+              setIsSimPlaying((p) => !p);
+            }}
+            className={`p-1.5 rounded transition-colors ${
+              isSimPlaying
+                ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+            }`}
+            title={isSimPlaying ? 'Pause' : 'Play'}
+          >
+            <Play className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={resetSim}
+            className="p-1.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+            title="Stop"
+          >
+            <Square className="w-3.5 h-3.5" />
+          </button>
+
+          <label className="flex items-center gap-1.5 text-[9px] text-neutral-500 font-bold uppercase tracking-wider cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isLooping}
+              onChange={(e) => setIsLooping(e.target.checked)}
+              className="accent-emerald-500 w-3 h-3"
+            />
+            Loop
+          </label>
+
+          <div className="h-3 w-px bg-white/10" />
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-neutral-600 font-bold uppercase">Speed</span>
+            {[0.25, 0.5, 1, 2, 4].map((s) => (
+              <button
+                key={s}
+                onClick={() => setPlaySpeed(s)}
+                className={`px-1.5 py-0.5 text-[9px] font-mono rounded transition-colors ${
+                  playSpeed === s
+                    ? 'bg-white/10 text-white'
+                    : 'text-neutral-600 hover:text-neutral-400 hover:bg-white/5'
+                }`}
+              >
+                {s}x
+              </button>
+            ))}
+          </div>
+
+          <div className="h-3 w-px bg-white/10" />
+
+          <div className="flex items-center gap-2 text-[9px] font-mono text-neutral-500">
+            <span>
+              {simIndex + 1}/{totalSimPoints}
+            </span>
+            {paths && simIndex > 0 && simIndex < totalSimPoints && (
+              <span className="text-neutral-700">
+                Seg {simPoints[simIndex].segmentIndex + 1}/{paths.length}
+              </span>
+            )}
+            {simIndex > 0 && simIndex < totalSimPoints && (
+              <span className={simPoints[simIndex].isLaserOn ? 'text-red-400' : 'text-cyan-400'}>
+                {simPoints[simIndex].isLaserOn ? `L ${simPoints[simIndex].power}` : 'Rapid'}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="p-3 bg-[#0A0A0A] border-t border-white/5 flex items-center justify-between shadow-inner">
         <div className="flex items-center gap-6">

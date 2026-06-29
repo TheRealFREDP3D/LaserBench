@@ -136,7 +136,13 @@ function generateMatrix(ctx: PatternContext) {
       textLetterSpacing * SMALL_LABEL_SPACING_SCALE
     );
     const speedLabelPoints = speedLabelPaths.flat();
-    addSegment(speedLabelPoints, labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+    addSegment(
+      speedLabelPoints,
+      labelPower,
+      labelSpeed,
+      machine.zFocused + material.thickness,
+      true
+    );
 
     for (let p = 0; p < powerSteps; p++) {
       const power =
@@ -168,7 +174,13 @@ function generateMatrix(ctx: PatternContext) {
           textLetterSpacing * SMALL_LABEL_SPACING_SCALE
         );
         const pLabelPoints = pLabelPaths.flat();
-        addSegment(pLabelPoints, labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+        addSegment(
+          pLabelPoints,
+          labelPower,
+          labelSpeed,
+          machine.zFocused + material.thickness,
+          true
+        );
       }
     }
   }

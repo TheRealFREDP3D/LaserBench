@@ -11,7 +11,7 @@ coverage/
 #Ignore vscode AI rules
 
 pnpm-workspace.yaml
-/_DEV_
+/_DEV_/
 /.kiro
 /.codeviz
 /.context

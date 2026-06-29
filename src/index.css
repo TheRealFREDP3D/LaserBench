@@ -54,7 +54,9 @@ h4 {
   background-color: var(--color-elevated);
   border: 1px solid var(--color-border-strong);
   color: var(--color-text-primary);
-  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition:
+    border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
 }
 
 .elegant-input:focus {
@@ -292,8 +294,12 @@ h4 {
 button,
 select,
 input {
-  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease,
-    box-shadow 0.2s ease, opacity 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
 }
 
 :root:not(.theme-light) button:not(:disabled) {

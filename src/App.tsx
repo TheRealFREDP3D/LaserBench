@@ -316,6 +316,7 @@ export default function App() {
           <SVGVisualizer
             key={`${activeMachine.id}-${activeMachine.bedWidth}-${activeMachine.bedHeight}-${activeMachine.bedShape}`}
             svgPaths={effectiveResults.svgPaths}
+            paths={effectiveResults.paths}
             machine={activeMachine}
             onJog={handleJog}
           />
