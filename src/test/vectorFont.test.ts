@@ -25,8 +25,7 @@ describe('vectorFont', () => {
 
     it('unknown characters fall back to space (empty strokes)', () => {
       const strokes = renderTextPath('!@#', 0, 0, 4);
-      // Unknown chars should produce empty or minimal strokes
-      expect(Array.isArray(strokes)).toBe(true);
+      expect(strokes).toEqual([]);
     });
 
     it('empty string returns empty array', () => {

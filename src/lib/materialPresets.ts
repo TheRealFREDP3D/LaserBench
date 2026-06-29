@@ -24,31 +24,68 @@ export function isValidMachineProfile(m: unknown): m is MachineProfile {
     typeof obj.laserOn !== 'string' ||
     typeof obj.laserOff !== 'string' ||
     typeof obj.pwmMax !== 'number' ||
-    typeof obj.safeZ !== 'number' ||
-    typeof obj.workZ !== 'number' ||
+    !Number.isFinite(obj.pwmMax) ||
+    obj.pwmMax <= 0 ||
     typeof obj.zSecure !== 'number' ||
+    !Number.isFinite(obj.zSecure) ||
     typeof obj.zFocused !== 'number' ||
+    !Number.isFinite(obj.zFocused) ||
     typeof obj.travelSpeed !== 'number' ||
+    !Number.isFinite(obj.travelSpeed) ||
+    obj.travelSpeed <= 0 ||
     !VALID_BED_SHAPES.includes(obj.bedShape as never) ||
     typeof obj.bedWidth !== 'number' ||
+    !Number.isFinite(obj.bedWidth) ||
+    obj.bedWidth <= 0 ||
     typeof obj.bedHeight !== 'number' ||
+    !Number.isFinite(obj.bedHeight) ||
+    obj.bedHeight < 0 ||
     typeof obj.baudRate !== 'number' ||
     !Number.isFinite(obj.baudRate) ||
     obj.baudRate <= 0
   )
     return false;
 
-  if (obj.originX !== undefined && typeof obj.originX !== 'number') return false;
-  if (obj.originY !== undefined && typeof obj.originY !== 'number') return false;
-  if (obj.acceleration !== undefined && typeof obj.acceleration !== 'number') return false;
+  if (
+    obj.originX !== undefined &&
+    (typeof obj.originX !== 'number' || !Number.isFinite(obj.originX))
+  )
+    return false;
+  if (
+    obj.originY !== undefined &&
+    (typeof obj.originY !== 'number' || !Number.isFinite(obj.originY))
+  )
+    return false;
+  if (
+    obj.acceleration !== undefined &&
+    (typeof obj.acceleration !== 'number' ||
+      !Number.isFinite(obj.acceleration) ||
+      obj.acceleration <= 0)
+  )
+    return false;
   if (obj.startGCode !== undefined && typeof obj.startGCode !== 'string') return false;
   if (obj.endGCode !== undefined && typeof obj.endGCode !== 'string') return false;
   if (obj.isDelta !== undefined && typeof obj.isDelta !== 'boolean') return false;
-  if (obj.deltaRadius !== undefined && typeof obj.deltaRadius !== 'number') return false;
-  if (obj.deltaRodLength !== undefined && typeof obj.deltaRodLength !== 'number') return false;
-  if (obj.deltaTowerAngleOffset !== undefined && typeof obj.deltaTowerAngleOffset !== 'number')
+  if (
+    obj.deltaRadius !== undefined &&
+    (typeof obj.deltaRadius !== 'number' || !Number.isFinite(obj.deltaRadius))
+  )
     return false;
-  if (obj.deltaPrintRadius !== undefined && typeof obj.deltaPrintRadius !== 'number') return false;
+  if (
+    obj.deltaRodLength !== undefined &&
+    (typeof obj.deltaRodLength !== 'number' || !Number.isFinite(obj.deltaRodLength))
+  )
+    return false;
+  if (
+    obj.deltaTowerAngleOffset !== undefined &&
+    (typeof obj.deltaTowerAngleOffset !== 'number' || !Number.isFinite(obj.deltaTowerAngleOffset))
+  )
+    return false;
+  if (
+    obj.deltaPrintRadius !== undefined &&
+    (typeof obj.deltaPrintRadius !== 'number' || !Number.isFinite(obj.deltaPrintRadius))
+  )
+    return false;
 
   return true;
 }
@@ -58,9 +95,21 @@ function isValidCalibrationHistoryEntry(e: unknown): boolean {
   const obj = e as Record<string, unknown>;
   if (typeof obj.id !== 'string' || typeof obj.date !== 'string' || typeof obj.notes !== 'string')
     return false;
-  if (obj.optimalPower !== undefined && typeof obj.optimalPower !== 'number') return false;
-  if (obj.optimalSpeed !== undefined && typeof obj.optimalSpeed !== 'number') return false;
-  if (obj.optimalFocusZ !== undefined && typeof obj.optimalFocusZ !== 'number') return false;
+  if (
+    obj.optimalPower !== undefined &&
+    (typeof obj.optimalPower !== 'number' || !Number.isFinite(obj.optimalPower))
+  )
+    return false;
+  if (
+    obj.optimalSpeed !== undefined &&
+    (typeof obj.optimalSpeed !== 'number' || !Number.isFinite(obj.optimalSpeed))
+  )
+    return false;
+  if (
+    obj.optimalFocusZ !== undefined &&
+    (typeof obj.optimalFocusZ !== 'number' || !Number.isFinite(obj.optimalFocusZ))
+  )
+    return false;
   return true;
 }
 
@@ -72,6 +121,8 @@ export function isValidMaterialProfile(m: unknown): m is MaterialProfile {
     typeof obj.name !== 'string' ||
     !VALID_CATEGORIES.includes(obj.category as never) ||
     typeof obj.thickness !== 'number' ||
+    !Number.isFinite(obj.thickness) ||
+    obj.thickness < 0 ||
     typeof obj.laser !== 'string' ||
     typeof obj.engrave !== 'object' ||
     obj.engrave === null ||
@@ -81,15 +132,20 @@ export function isValidMaterialProfile(m: unknown): m is MaterialProfile {
   )
     return false;
 
-  if (obj.focusZ !== undefined && typeof obj.focusZ !== 'number') return false;
+  if (obj.focusZ !== undefined && (typeof obj.focusZ !== 'number' || !Number.isFinite(obj.focusZ)))
+    return false;
 
   const engrave = obj.engrave as Record<string, unknown>;
   const cut = obj.cut as Record<string, unknown>;
   if (
     typeof engrave.power !== 'number' ||
+    !Number.isFinite(engrave.power) ||
     typeof engrave.speed !== 'number' ||
+    !Number.isFinite(engrave.speed) ||
     typeof cut.power !== 'number' ||
-    typeof cut.speed !== 'number'
+    !Number.isFinite(cut.power) ||
+    typeof cut.speed !== 'number' ||
+    !Number.isFinite(cut.speed)
   )
     return false;
 
@@ -108,8 +164,6 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     laserOn: 'M106 S{power}',
     laserOff: 'M107',
     pwmMax: 255,
-    safeZ: 0,
-    workZ: 0,
     zSecure: 0,
     zFocused: 0,
     travelSpeed: 6000,
@@ -134,8 +188,6 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     laserOn: 'M3 S{power}',
     laserOff: 'M5',
     pwmMax: 1000,
-    safeZ: 5,
-    workZ: 0,
     zSecure: 5,
     zFocused: 0,
     travelSpeed: 4000,
@@ -156,8 +208,6 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     laserOn: 'M3 S{power}',
     laserOff: 'M5',
     pwmMax: 1000,
-    safeZ: 10,
-    workZ: 0,
     zSecure: 10,
     zFocused: 0,
     travelSpeed: 8000,
@@ -178,8 +228,6 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     laserOn: 'M106 S{power}',
     laserOff: 'M107',
     pwmMax: 255,
-    safeZ: 5,
-    workZ: 0,
     zSecure: 5,
     zFocused: 0,
     travelSpeed: 5000,

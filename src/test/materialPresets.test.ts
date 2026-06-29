@@ -20,8 +20,6 @@ const validMachine: MachineProfile = {
   laserOn: 'M3 S{power}',
   laserOff: 'M5',
   pwmMax: 1000,
-  safeZ: 5,
-  workZ: 0,
   zSecure: 5,
   zFocused: 0,
   travelSpeed: 4000,

@@ -70,5 +70,7 @@ describe('DebouncedRange', () => {
     fireEvent.change(input, { target: { value: '5' } });
     vi.advanceTimersByTime(200);
     expect(onChange).toHaveBeenCalled();
+    const calledWith = onChange.mock.calls[0][0] as number;
+    expect(calledWith).toBeGreaterThanOrEqual(10);
   });
 });

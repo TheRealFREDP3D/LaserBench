@@ -1,7 +1,8 @@
 import { Cpu, Layers, Sliders, Eye, Flame } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useUIStore, WorkflowStep } from '../../store/useUIStore';
-import { usePatternStore } from '../../store/usePatternStore';
+import { useMachineStore, selectActiveMachine } from '../../store/useMachineStore';
+import { useMaterialStore, selectActiveMaterial } from '../../store/useMaterialStore';
 
 const STAGES: { key: WorkflowStep; label: string; icon: LucideIcon; shortcut: string }[] = [
   { key: 'machine', label: 'Machine', icon: Cpu, shortcut: '1' },
@@ -13,19 +14,19 @@ const STAGES: { key: WorkflowStep; label: string; icon: LucideIcon; shortcut: st
 
 export default function WorkflowStepper() {
   const { currentStep, setStep } = useUIStore();
-  const { isMachineStepComplete, isMaterialStepComplete, isPatternStepComplete } =
-    usePatternStore();
+  const activeMachine = useMachineStore(selectActiveMachine);
+  const activeMaterial = useMaterialStore(selectActiveMaterial);
 
   const isStepComplete = (step: WorkflowStep) => {
     switch (step) {
       case 'machine':
-        return isMachineStepComplete;
+        return activeMachine !== null;
       case 'material':
-        return isMaterialStepComplete;
+        return activeMaterial !== null;
       case 'pattern':
-        return isPatternStepComplete;
+        return true;
       case 'preview':
-        return isPatternStepComplete; // Preview depends on pattern
+        return true;
       default:
         return false;
     }

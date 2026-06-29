@@ -44,11 +44,12 @@ export function estimateToolpathTime(paths: PathSegment[], machine: MachineProfi
 
       let segmentTime = 0;
       if (distance >= dAccel) {
-        // Full trapezoid: accelerate to v, cruise, decelerate to 0
-        // Equivalent to: 2*(v/a) + (distance - dAccel)/v
+        // Full trapezoid: accelerate 0→v, cruise, decelerate v→0
+        // Expanded: 2*(v/a) + (distance - dAccel)/v
+        // Simplified: v/a + distance/v  (accel + decel time collapse to v/a)
         segmentTime = v / a + distance / v;
       } else {
-        // Limited by acceleration (cannot reach full G-code speed)
+        // Triangle profile: cannot reach full speed, accel then immediately decel
         segmentTime = 2 * Math.sqrt(distance / a);
       }
 
@@ -72,7 +73,7 @@ export function formatEstimatedTime(seconds: number): string {
   if (seconds <= 0) return '0s';
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
-  const secs = Math.ceil(seconds % 60);
+  const secs = Math.floor(seconds % 60);
 
   const parts: string[] = [];
   if (hrs > 0) {

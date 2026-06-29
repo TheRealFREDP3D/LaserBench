@@ -10,8 +10,6 @@ const mockMachine: MachineProfile = {
   laserOn: 'M3 S{power}',
   laserOff: 'M5',
   pwmMax: 1000,
-  safeZ: 5,
-  workZ: 0,
   zSecure: 5,
   zFocused: 0,
   travelSpeed: 4000,
@@ -92,16 +90,17 @@ describe('gcodeGenerator', () => {
   });
 
   describe('G-code structure', () => {
-    it('starts with G21 (mm units) and G90 (absolute)', () => {
+    it('starts with G21 (mm units) and G91 (incremental)', () => {
       const res = generatePatternPaths('matrix', mockMachine, mockMaterial, {});
       expect(res.gcode).toContain('G21');
-      expect(res.gcode).toContain('G90');
+      expect(res.gcode).toContain('G91');
     });
 
-    it('ends with safe Z and home', () => {
+    it('ends with laser off, coolant off, and home', () => {
       const res = generatePatternPaths('matrix', mockMachine, mockMaterial, {});
-      expect(res.gcode).toContain(`G0 Z${mockMachine.safeZ}`);
-      expect(res.gcode).toContain('G0 X0 Y0');
+      expect(res.gcode).toContain('M106 S0');
+      expect(res.gcode).toContain('M9');
+      expect(res.gcode).toContain('G28');
     });
 
     it('uses custom startGCode when provided', () => {
@@ -130,7 +129,7 @@ describe('gcodeGenerator', () => {
         powerMax: 150,
       });
       expect(res.gcode).toContain('M106 S50');
-      expect(res.gcode).toContain('M107');
+      expect(res.gcode).toContain('M106 S0');
     });
 
     it('generates M4/M5 laser commands for M3_M4_M5 mode', () => {
@@ -142,9 +141,9 @@ describe('gcodeGenerator', () => {
       expect(res.gcode).toContain('M5');
     });
 
-    it('includes travel speed in G0 moves', () => {
+    it('uses F0 for rapid moves', () => {
       const res = generatePatternPaths('matrix', mockMachine, mockMaterial, {});
-      expect(res.gcode).toContain(`F${mockMachine.travelSpeed}`);
+      expect(res.gcode).toContain('F0');
     });
 
     it('clamps power values to integer', () => {
@@ -241,15 +240,21 @@ describe('gcodeGenerator', () => {
   describe('patternPosition offset', () => {
     it('applies position offset to generated paths', () => {
       const offset = { x: 50, y: 25 };
-      const res = generatePatternPaths('matrix', mockMachine, mockMaterial, {
+      const noOffset = generatePatternPaths('matrix', mockMachine, mockMaterial, {
+        powerSteps: 2,
+        speedSteps: 2,
+      });
+      const withOffset = generatePatternPaths('matrix', mockMachine, mockMaterial, {
         patternPosition: offset,
         powerSteps: 2,
         speedSteps: 2,
       });
-      expect(res.offsetX).toBe(offset.x);
-      expect(res.offsetY).toBe(offset.y);
-      expect(res.gcode).toContain(`X${offset.x}`);
-      expect(res.gcode).toContain(`Y${offset.y}`);
+      expect(withOffset.offsetX).toBe(offset.x);
+      expect(withOffset.offsetY).toBe(offset.y);
+      const noOffsetFirst = noOffset.paths[0].points[0];
+      const withOffsetFirst = withOffset.paths[0].points[0];
+      expect(withOffsetFirst[0]).toBe(noOffsetFirst[0] + offset.x);
+      expect(withOffsetFirst[1]).toBe(noOffsetFirst[1] + offset.y);
     });
   });
 
@@ -296,9 +301,9 @@ describe('gcodeGenerator', () => {
         zMax: 5,
         zSteps: 3,
       });
-      expect(res.gcode).toContain('Z1');
-      expect(res.gcode).toContain('Z3');
-      expect(res.gcode).toContain('Z5');
+      expect(res.gcode).toContain('Z-4.000');
+      expect(res.gcode).toContain('Z2.000');
+      expect(res.gcode).toContain('Z5.000');
     });
   });
 

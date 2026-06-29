@@ -33,12 +33,6 @@ interface PatternState {
   setZMax: (val: number) => void;
   setZSteps: (val: number) => void;
   setPatternPosition: (pos: { x: number; y: number }) => void;
-
-  // Validation checks for "green lights"
-  isMachineStepComplete: boolean;
-  isMaterialStepComplete: boolean;
-  isPatternStepComplete: boolean;
-  setStepComplete: (step: 'machine' | 'material' | 'pattern', complete: boolean) => void;
 }
 
 export const usePatternStore = create<PatternState>((set) => ({
@@ -58,28 +52,19 @@ export const usePatternStore = create<PatternState>((set) => ({
   zSteps: 5,
   patternPosition: { x: 0, y: 0 },
 
-  isMachineStepComplete: true, // Defaults to true since we have initial machines
-  isMaterialStepComplete: true,
-  isPatternStepComplete: false,
-
   setPatternType: (type) => set({ selectedPattern: type }),
-  setPowerMin: (val) => set({ powerMin: val }),
-  setPowerMax: (val) => set({ powerMax: val }),
-  setSpeedMin: (val) => set({ speedMin: val }),
-  setSpeedMax: (val) => set({ speedMax: val }),
-  setPowerSteps: (val) => set({ powerSteps: val }),
-  setSpeedSteps: (val) => set({ speedSteps: val }),
-  setBlockSize: (val) => set({ blockSize: val }),
-  setTextSize: (val) => set({ textSize: val }),
-  setNominalThickness: (val) => set({ nominalThickness: val }),
-  setKerfValues: (vals) => set({ kerfValues: vals }),
+  setPowerMin: (val) => set({ powerMin: Math.max(0, Math.round(val)) }),
+  setPowerMax: (val) => set({ powerMax: Math.max(0, Math.round(val)) }),
+  setSpeedMin: (val) => set({ speedMin: Math.max(1, Math.round(val)) }),
+  setSpeedMax: (val) => set({ speedMax: Math.max(1, Math.round(val)) }),
+  setPowerSteps: (val) => set({ powerSteps: Math.max(1, Math.round(val)) }),
+  setSpeedSteps: (val) => set({ speedSteps: Math.max(1, Math.round(val)) }),
+  setBlockSize: (val) => set({ blockSize: Math.max(1, Math.round(val)) }),
+  setTextSize: (val) => set({ textSize: Math.max(1, Math.round(val)) }),
+  setNominalThickness: (val) => set({ nominalThickness: Math.max(0.1, val) }),
+  setKerfValues: (vals) => set({ kerfValues: vals.length > 0 ? vals : [0.1] }),
   setZMin: (val) => set({ zMin: val }),
   setZMax: (val) => set({ zMax: val }),
-  setZSteps: (val) => set({ zSteps: val }),
+  setZSteps: (val) => set({ zSteps: Math.max(1, Math.round(val)) }),
   setPatternPosition: (pos) => set({ patternPosition: pos }),
-  setStepComplete: (step, complete) =>
-    set((state) => ({
-      ...state,
-      [`is${step.charAt(0).toUpperCase() + step.slice(1)}StepComplete`]: complete,
-    })),
 }));

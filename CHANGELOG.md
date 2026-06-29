@@ -6,6 +6,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.8.0] — 2026-06-29
+
+### Added
+- **`useSerialStore`** — consolidated Web Serial logic (connect, disconnect, send, print, abort, flow control) into a single Zustand store at `src/store/useSerialStore.ts`. Replaces `useWebSerial` hook
+- **Docker Compose files** — `compose.yaml` (production) and `compose.debug.yaml` (debug) for containerized deployment
+- **Additional tests** — expanded from 198 to 277 tests across 23 files. New coverage for `downloadGCode`, `gcodeFileUpload`, `useConfirmModal`, `themeContext`, `layoutShell`, `statusBar`, `machineSelector`, `materialDatabase`, `keyboardShortcuts`, `gcodeOutput`, and `generateFAB`
+
+### Changed
+- **G-code incremental positioning** — switched from absolute to incremental positioning (`G91`) with end-of-file absolute restore. Laser on/off commands updated for bidirectional mode
+- **Laser power logic** — improved power ramp and speed ramp generation with tighter per-block control
+- **Dockerfile simplified** — production-only build, reduced layers, `node:22-alpine`, exposed port 3000, non-root user
+- **`.gitignore` hardened** — added patterns for `.vscode`, `.vault-intelligence`, build artifacts, and `_DEV_/` directory (with trailing slash fix)
+- **CSP `font-src`** — added `fonts.googleapis.com` and `fonts.gstatic.com` to `index.html` Content Security Policy
+- **ESLint config** — migrated to flat config format (`eslint.config.js`)
+- **CSS overhaul** — refactored `index.css` for tighter spacing and improved dark/light theme consistency
+- **Test infrastructure** — `vitest.config.ts` alias path fix, `themeContext.test.tsx` and `useConfirmModal.test.tsx` added
+
+### Removed
+- **`useWebSerial` hook** — deleted `src/lib/useWebSerial.ts` (328 lines). All serial logic now lives in `useSerialStore`
+- **Stale `.gcode` files** — removed `laserbench_matrix_birch_plywood_3mm.gcode` and `matrix_lightburn.gc` from repo
+
+### Fixed
+- **Ring buffer HMR singleton** — `ringBuffer` moved inside `create()` closure so it's recreated on hot-reload, preventing message divergence between ring buffer and store state
+- **`addMessage` forward reference** — eliminated fragile coupling to `useSerialStore` by assigning `addMessage` inside the store creator using `get`/`set` parameters
+- **Machine selector validation** — improved `isValidMachineProfile` checks
+- **Batch import dedup** — profile import uses id-based deduplication to prevent duplicate entries
+
+---
+
 ## [0.7.2] — 2026-06-25
 
 ### Added

@@ -11,15 +11,15 @@ coverage/
 #Ignore vscode AI rules
 
 pnpm-workspace.yaml
-/_DEV_
+/_DEV_/
 /.kiro
 /.codeviz
 /.context
 /.github/copilot-instructions.md
 /metadata.json
-/REVIEW_v0.4.1.md
 /AGENTS.md
 /.obsidian
 /attachments
 /.smart-env
 /.vault-intelligence
+/.vscode

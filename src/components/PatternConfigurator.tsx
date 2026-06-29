@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { PatternType } from '../types';
 import { usePatternStore } from '../store/usePatternStore';
-import { useMachineStore } from '../store/useMachineStore';
+import { useMachineStore, selectActiveMachine } from '../store/useMachineStore';
 import { ParameterField } from './ParameterField';
 import { Sliders, Zap, Gauge, Layers, Move } from 'lucide-react';
 
-const PATTERNS = [
+const PATTERNS: { id: PatternType; label: string; icon: typeof Sliders }[] = [
   { id: 'matrix', label: 'Power-Speed Matrix', icon: Sliders },
   { id: 'power_ramp', label: 'Power Ramp', icon: Zap },
   { id: 'speed_ramp', label: 'Speed Ramp', icon: Gauge },
@@ -15,8 +15,17 @@ const PATTERNS = [
 
 const PatternConfigurator: React.FC = () => {
   const p = usePatternStore();
-  const { getActiveMachine } = useMachineStore();
-  const machine = getActiveMachine();
+  const machine = useMachineStore(selectActiveMachine);
+  const isFocusLadder = p.selectedPattern === 'focus_ladder';
+  const prevPatternRef = useRef(p.selectedPattern);
+
+  useEffect(() => {
+    if (isFocusLadder && prevPatternRef.current !== 'focus_ladder' && machine) {
+      p.setZMin(machine.zFocused - 5);
+      p.setZMax(machine.zFocused + 5);
+    }
+    prevPatternRef.current = p.selectedPattern;
+  }, [isFocusLadder, machine, p]);
 
   return (
     <div className="space-y-6" data-tour="pattern-config">
@@ -32,7 +41,7 @@ const PatternConfigurator: React.FC = () => {
             return (
               <button
                 key={pat.id}
-                onClick={() => p.setPatternType(pat.id as PatternType)}
+                onClick={() => p.setPatternType(pat.id)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all ${
                   isActive
                     ? 'bg-red-950/20 border-red-500/50 text-white shadow-[0_0_15px_rgba(220,38,38,0.1)]'
@@ -52,64 +61,88 @@ const PatternConfigurator: React.FC = () => {
           Parameters
         </h3>
         <div className="space-y-1">
-          <ParameterField
-            label="Min Power"
-            id="pwr-min"
-            min={0}
-            max={p.powerMax - 1}
-            value={p.powerMin}
-            onChange={p.setPowerMin}
-          />
-          <ParameterField
-            label="Max Power"
-            id="pwr-max"
-            min={p.powerMin + 1}
-            max={machine?.pwmMax || 255}
-            value={p.powerMax}
-            onChange={p.setPowerMax}
-          />
+          {isFocusLadder ? (
+            <>
+              <ParameterField
+                label="Power"
+                id="pwr-min"
+                min={0}
+                max={machine?.pwmMax || 255}
+                value={p.powerMin}
+                onChange={p.setPowerMin}
+              />
+              <ParameterField
+                label="Engraving Speed"
+                id="spd-min"
+                min={100}
+                max={machine?.travelSpeed || 5000}
+                value={p.speedMin}
+                onChange={p.setSpeedMin}
+                unit="F"
+              />
+            </>
+          ) : (
+            <>
+              <ParameterField
+                label="Min Power"
+                id="pwr-min"
+                min={0}
+                max={p.powerMax - 1}
+                value={p.powerMin}
+                onChange={p.setPowerMin}
+              />
+              <ParameterField
+                label="Max Power"
+                id="pwr-max"
+                min={p.powerMin + 1}
+                max={machine?.pwmMax || 255}
+                value={p.powerMax}
+                onChange={p.setPowerMax}
+              />
 
-          {p.selectedPattern === 'matrix' && (
-            <ParameterField
-              label="Power Steps"
-              id="pwr-steps"
-              min={2}
-              max={10}
-              value={p.powerSteps}
-              onChange={p.setPowerSteps}
-            />
-          )}
+              {p.selectedPattern === 'matrix' && (
+                <ParameterField
+                  label="Power Steps"
+                  id="pwr-steps"
+                  min={2}
+                  max={10}
+                  value={p.powerSteps}
+                  onChange={p.setPowerSteps}
+                />
+              )}
 
-          <div className="my-4 border-t border-white/5" />
+              <div className="my-4 border-t border-white/5" />
 
-          <ParameterField
-            label="Min Speed"
-            id="spd-min"
-            min={100}
-            max={p.speedMax - 1}
-            value={p.speedMin}
-            onChange={p.setSpeedMin}
-            unit="F"
-          />
-          <ParameterField
-            label="Max Speed"
-            id="spd-max"
-            min={p.speedMin + 1}
-            max={machine?.travelSpeed || 5000}
-            value={p.speedMax}
-            onChange={p.setSpeedMax}
-            unit="F"
-          />
+              <ParameterField
+                label="Min Speed"
+                id="spd-min"
+                min={100}
+                max={p.speedMax - 1}
+                value={p.speedMin}
+                onChange={p.setSpeedMin}
+                unit="F"
+              />
+              <ParameterField
+                label="Max Speed"
+                id="spd-max"
+                min={p.speedMin + 1}
+                max={machine?.travelSpeed || 5000}
+                value={p.speedMax}
+                onChange={p.setSpeedMax}
+                unit="F"
+              />
 
-          {(p.selectedPattern === 'matrix' || p.selectedPattern === 'speed_ramp') && (
-            <ParameterField
-              label="Speed Steps"
-              id="spd-steps"
-              min={2}
-              max={10}
-              value={p.speedSteps}
-              onChange={p.setSpeedSteps}
-            />
+              {(p.selectedPattern === 'matrix' || p.selectedPattern === 'speed_ramp') && (
+                <ParameterField
+                  label="Speed Steps"
+                  id="spd-steps"
+                  min={2}
+                  max={10}
+                  value={p.speedSteps}
+                  onChange={p.setSpeedSteps}
+                />
+              )}
+            </>
           )}
 
           <div className="my-4 border-t border-white/5" />
@@ -132,6 +165,41 @@ const PatternConfigurator: React.FC = () => {
             onChange={p.setTextSize}
             unit="mm"
           />
+
+          {isFocusLadder && (
+            <>
+              <div className="my-4 border-t border-white/5" />
+
+              <ParameterField
+                label="MinWorkZ"
+                id="z-min"
+                min={-20}
+                max={p.zMax - 0.1}
+                step={0.1}
+                value={p.zMin}
+                onChange={p.setZMin}
+                unit="mm"
+              />
+              <ParameterField
+                label="MaxWorkZ"
+                id="z-max"
+                min={p.zMin + 0.1}
+                max={20}
+                step={0.1}
+                value={p.zMax}
+                onChange={p.setZMax}
+                unit="mm"
+              />
+              <ParameterField
+                label="Steps Count"
+                id="z-steps"
+                min={2}
+                max={20}
+                value={p.zSteps}
+                onChange={p.setZSteps}
+              />
+            </>
+          )}
         </div>
       </section>
     </div>

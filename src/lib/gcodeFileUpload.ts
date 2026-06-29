@@ -10,8 +10,8 @@ export function parseGCodeFile(fileContent: string, pwmMax: number = 1000): Gene
     gcode: fileContent,
     svgPaths: result.svgPaths,
     paths: result.paths,
-    width: width || 100,
-    height: height || 100,
+    width,
+    height,
     offsetX: -result.bounds.minX,
     offsetY: -result.bounds.minY,
   };

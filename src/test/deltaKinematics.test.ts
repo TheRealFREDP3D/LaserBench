@@ -59,12 +59,7 @@ describe('DeltaKinematics', () => {
     it('returns null when rod length is too short for the XY distance', () => {
       const shortRodDk = new DeltaKinematics({ deltaRodLength: 10, printRadius: 200 });
       const result = shortRodDk.inverseKinematics(0, 0, 0);
-      // Rod length 10 might be too short for the default radius
-      if (result === null) {
-        expect(result).toBeNull();
-      } else {
-        expect(typeof result.a).toBe('number');
-      }
+      expect(result).toBeNull();
     });
 
     it('tower heights are symmetric for center point', () => {

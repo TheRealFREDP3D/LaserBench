@@ -478,14 +478,12 @@ export function renderTextPath(
     const char = currentText[i];
     const glyphStrokes = GLYPHS[char] || GLYPHS[' '];
 
-    if (glyphStrokes) {
-      for (const stroke of glyphStrokes) {
-        const transformedStroke: [number, number][] = stroke.map(([gx, gy]) => [
-          startX + offsetX + gx * scale,
-          startY + gy * scale,
-        ]);
-        allStrokes.push(transformedStroke);
-      }
+    for (const stroke of glyphStrokes) {
+      const transformedStroke: [number, number][] = stroke.map(([gx, gy]) => [
+        startX + offsetX + gx * scale,
+        startY + gy * scale,
+      ]);
+      allStrokes.push(transformedStroke);
     }
     offsetX += charWidth + letterSpacing;
   }

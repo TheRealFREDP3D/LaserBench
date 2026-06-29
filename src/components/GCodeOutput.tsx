@@ -1,14 +1,12 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { MachineProfile, MaterialProfile, PathSegment, PatternType } from '../types';
-import { FileCode, Copy, Download, Pencil, Check, X } from 'lucide-react';
+import { MaterialProfile, PatternType } from '../types';
+import { FileCode, Copy, Download, Pencil, Check, X, RotateCcw } from 'lucide-react';
 import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
 
 interface GCodeOutputProps {
   gcode: string;
   patternType: PatternType;
-  machine: MachineProfile;
   material: MaterialProfile;
-  paths: PathSegment[];
   onEdit?: (editedGcode: string) => void;
 }
 
@@ -17,8 +15,12 @@ const GCodeOutput: React.FC<GCodeOutputProps> = ({ gcode, patternType, material,
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(gcode);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(gcode);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(gcode);
+    } catch {
+      // clipboard unavailable
+    }
   };
 
   const handleDownload = () => {
@@ -67,7 +69,7 @@ const GCodeOutput: React.FC<GCodeOutputProps> = ({ gcode, patternType, material,
                 className="p-1.5 hover:bg-white/5 rounded text-neutral-500 hover:text-amber-400 transition-colors"
                 title="Reset to original"
               >
-                <X className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={handleCancelEdit}

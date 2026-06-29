@@ -8,13 +8,13 @@ interface MachineState {
   setActiveMachineId: (id: string) => void;
   updateMachine: (updated: MachineProfile) => void;
   addMachine: (machine: MachineProfile) => void;
+  addMachines: (machines: MachineProfile[]) => void;
   deleteMachine: (id: string) => void;
-  getActiveMachine: () => MachineProfile | null;
 }
 
 const initialMachines = getStoredMachines();
 
-export const useMachineStore = create<MachineState>((set, get) => ({
+export const useMachineStore = create<MachineState>((set) => ({
   machines: initialMachines,
   activeMachineId: initialMachines[0]?.id || null,
   setActiveMachineId: (id) => set({ activeMachineId: id }),
@@ -28,6 +28,13 @@ export const useMachineStore = create<MachineState>((set, get) => ({
   addMachine: (machine) => {
     set((state) => {
       const newMachines = [...state.machines, machine];
+      saveStoredMachines(newMachines);
+      return { machines: newMachines };
+    });
+  },
+  addMachines: (machines) => {
+    set((state) => {
+      const newMachines = [...state.machines, ...machines];
       saveStoredMachines(newMachines);
       return { machines: newMachines };
     });
@@ -46,8 +53,11 @@ export const useMachineStore = create<MachineState>((set, get) => ({
       return { machines: newMachines, activeMachineId: nextId };
     });
   },
-  getActiveMachine: () => {
-    const { machines, activeMachineId } = get();
-    return machines.find((m) => m.id === activeMachineId) || machines[0] || null;
-  },
 }));
+
+export function selectActiveMachine(state: {
+  machines: MachineProfile[];
+  activeMachineId: string | null;
+}): MachineProfile | null {
+  return state.machines.find((m) => m.id === state.activeMachineId) || state.machines[0] || null;
+}

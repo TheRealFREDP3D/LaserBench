@@ -1,6 +1,7 @@
 import {
   useState,
   useEffect,
+  useRef,
   memo,
   type FormEvent,
   type MouseEvent as ReactMouseEvent,
@@ -196,6 +197,13 @@ export default memo(function PresetManager({
   const [newPresetDesc, setNewPresetDesc] = useState('');
   const [justSaved, setJustSaved] = useState(false);
   const [loadedPresetId, setLoadedPresetId] = useState<string | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   // Load custom presets on mount
   useEffect(() => {
@@ -251,7 +259,8 @@ export default memo(function PresetManager({
     setNewPresetDesc('');
     setJustSaved(true);
     setLoadedPresetId(newPreset.id);
-    setTimeout(() => setJustSaved(false), 2500);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setJustSaved(false), 2500);
   };
 
   const handleDeletePreset = async (id: string, e: ReactMouseEvent) => {

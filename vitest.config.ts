@@ -4,6 +4,9 @@ import {defineConfig} from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __APP_VERSION__: JSON.stringify('0.7.1'),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
@@ -11,7 +14,6 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    globals: true,
     setupFiles: ['./src/test/setup.ts'],
     exclude: ['_DEV_/**', 'node_modules/**'],
   },

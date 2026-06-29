@@ -9,6 +9,8 @@ import globals from "globals";
 
 export default [
   js.configs.recommended,
+  ...ts.configs['flat/recommended'],
+  react.configs.flat.recommended,
   {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
@@ -29,17 +31,14 @@ export default [
       prettier,
     },
     rules: {
-      ...ts.configs.recommended.rules,
-      ...react.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
       "react/no-unescaped-entities": "off",
       "prettier/prettier": "warn",
       "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
       "@typescript-eslint/no-explicit-any": "warn",
-      "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
     },
     settings: {
       react: {

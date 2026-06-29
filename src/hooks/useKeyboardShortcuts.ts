@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 
 interface KeyboardShortcutHandlers {
   onEStop?: () => void;
@@ -13,7 +13,20 @@ interface KeyboardShortcutHandlers {
   onAbortPrint?: () => void;
 }
 
-export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
+export function useKeyboardShortcuts({
+  onEStop,
+  onFire,
+  onStopFire,
+  onHome,
+  onJogUp,
+  onJogDown,
+  onJogLeft,
+  onJogRight,
+  onConnect,
+  onAbortPrint,
+}: KeyboardShortcutHandlers) {
+  const fireActiveRef = useRef(false);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (
@@ -26,13 +39,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
 
       if (e.ctrlKey && e.key === 'Escape') {
         e.preventDefault();
-        handlers.onEStop?.();
+        onEStop?.();
         return;
       }
 
       if (e.key === 'Escape') {
         e.preventDefault();
-        handlers.onAbortPrint?.();
+        onAbortPrint?.();
         return;
       }
 
@@ -40,40 +53,41 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
         case 'h':
           if (!e.ctrlKey && !e.altKey && !e.metaKey) {
             e.preventDefault();
-            handlers.onHome?.();
+            onHome?.();
           }
           break;
         case 'f':
           if (!e.ctrlKey && !e.altKey && !e.metaKey) {
             e.preventDefault();
-            handlers.onFire?.();
+            fireActiveRef.current = true;
+            onFire?.();
           }
           break;
         case 'arrowup':
           e.preventDefault();
-          handlers.onJogUp?.();
+          onJogUp?.();
           break;
         case 'arrowdown':
           e.preventDefault();
-          handlers.onJogDown?.();
+          onJogDown?.();
           break;
         case 'arrowleft':
           e.preventDefault();
-          handlers.onJogLeft?.();
+          onJogLeft?.();
           break;
         case 'arrowright':
           e.preventDefault();
-          handlers.onJogRight?.();
+          onJogRight?.();
           break;
         case 'c':
           if (!e.ctrlKey && !e.altKey && !e.metaKey) {
             e.preventDefault();
-            handlers.onConnect?.();
+            onConnect?.();
           }
           break;
       }
     },
-    [handlers]
+    [onEStop, onAbortPrint, onHome, onFire, onJogUp, onJogDown, onJogLeft, onJogRight, onConnect]
   );
 
   const handleKeyUp = useCallback(
@@ -86,11 +100,12 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
         return;
       }
 
-      if (e.key.toLowerCase() === 'f') {
-        handlers.onStopFire?.();
+      if (e.key.toLowerCase() === 'f' && fireActiveRef.current) {
+        fireActiveRef.current = false;
+        onStopFire?.();
       }
     },
-    [handlers]
+    [onStopFire]
   );
 
   useEffect(() => {

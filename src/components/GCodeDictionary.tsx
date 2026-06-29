@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Book, Search, X, Check, Copy, Settings, CornerDownRight } from 'lucide-react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useTheme } from '../lib/themeContext';
@@ -17,8 +17,23 @@ export default function GCodeDictionary({ onClose }: GCodeDictionaryProps) {
   );
   const [selectedEntry, setSelectedEntry] = useState<GCodeEntry | null>(GCODE_DATABASE[0]);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   const trapRef = useFocusTrap<HTMLDivElement>(true);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose]);
 
   const filteredEntries = GCODE_DATABASE.filter((entry) => {
     const matchesSearch =
@@ -34,7 +49,8 @@ export default function GCodeDictionary({ onClose }: GCodeDictionaryProps) {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedText(text);
-      setTimeout(() => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = setTimeout(() => {
         setCopiedText(null);
       }, 2000);
     } catch {

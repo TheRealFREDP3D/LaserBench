@@ -34,7 +34,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.getElementById('root');
     if (root) {
-      root.id = 'laserbench-root';
       if (theme === 'light') {
         root.classList.add('theme-light');
       } else {

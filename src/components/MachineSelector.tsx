@@ -28,6 +28,7 @@ interface MachineSelectorProps {
   onSelect: (id: string) => void;
   onUpdate: (m: MachineProfile) => void;
   onCreate: (m: MachineProfile) => void;
+  onCreateBatch: (m: MachineProfile[]) => void;
   onDelete: (id: string) => void;
 }
 
@@ -38,15 +39,16 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
   onUpdate,
   onDelete,
   onCreate,
+  onCreateBatch,
 }) => {
   const activeMachine = machines.find((m) => m.id === selectedId) || machines[0];
   const [showAdvanced, setShowAdvanced] = useState(false);
   const { confirm, ConfirmModalComponent } = useConfirmModal();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFieldChange = (
-    field: keyof MachineProfile,
-    value: MachineProfile[keyof MachineProfile]
+  const handleFieldChange = <K extends keyof MachineProfile>(
+    field: K,
+    value: MachineProfile[K]
   ) => {
     if (!activeMachine) return;
     onUpdate({ ...activeMachine, [field]: value });
@@ -90,9 +92,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
     try {
       const result = await importMachineProfilesFromFile(file, machines);
       if (result.profiles.length > 0) {
-        for (const p of result.profiles) {
-          onCreate(p);
-        }
+        onCreateBatch(result.profiles);
       }
       const parts: string[] = [];
       if (result.profiles.length > 0) parts.push(`${result.profiles.length} imported`);
@@ -117,9 +117,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
     try {
       const result = await importProfilesFromClipboard('machine', isValidMachineProfile, machines);
       if (result.profiles.length > 0) {
-        for (const p of result.profiles) {
-          onCreate(p);
-        }
+        onCreateBatch(result.profiles);
         await confirm(`${result.profiles.length} profile(s) imported`);
       } else if (result.duplicates > 0) {
         await confirm('Profile already exists');
@@ -216,6 +214,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
             </button>
             <button
               onClick={handleDelete}
+              aria-label="Delete machine profile"
               className="text-neutral-600 hover:text-red-500 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -338,6 +337,62 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
               unit="mm"
             />
           </div>
+
+          <div className="flex items-center gap-3 py-2 border-b border-white/5">
+            <label className="text-[10px] uppercase tracking-wider font-bold text-neutral-400">
+              Delta Kinematics
+            </label>
+            <button
+              onClick={() => handleFieldChange('isDelta', !activeMachine.isDelta)}
+              className={`relative w-9 h-5 rounded-full transition-colors ${activeMachine.isDelta ? 'bg-red-600' : 'bg-[#222]'}`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${activeMachine.isDelta ? 'translate-x-4' : ''}`}
+              />
+            </button>
+          </div>
+
+          {activeMachine.isDelta && (
+            <div className="space-y-1 animate-fade-in">
+              <ParameterField
+                label="Delta Radius"
+                id="delta-radius"
+                min={50}
+                max={500}
+                value={activeMachine.deltaRadius ?? 150}
+                onChange={(v) => handleFieldChange('deltaRadius', v)}
+                unit="mm"
+              />
+              <ParameterField
+                label="Rod Length"
+                id="delta-rod"
+                min={50}
+                max={500}
+                value={activeMachine.deltaRodLength ?? 217}
+                onChange={(v) => handleFieldChange('deltaRodLength', v)}
+                unit="mm"
+              />
+              <ParameterField
+                label="Tower Angle Offset"
+                id="delta-tower"
+                min={-10}
+                max={10}
+                step={0.1}
+                value={activeMachine.deltaTowerAngleOffset ?? 0}
+                onChange={(v) => handleFieldChange('deltaTowerAngleOffset', v)}
+                unit="deg"
+              />
+              <ParameterField
+                label="Print Radius"
+                id="delta-print"
+                min={50}
+                max={500}
+                value={activeMachine.deltaPrintRadius ?? 120}
+                onChange={(v) => handleFieldChange('deltaPrintRadius', v)}
+                unit="mm"
+              />
+            </div>
+          )}
 
           <div className="pt-2">
             <button

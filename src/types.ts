@@ -9,8 +9,6 @@ export interface MachineProfile {
   laserOn: string;
   laserOff: string;
   pwmMax: number;
-  safeZ: number;
-  workZ: number;
   zSecure: number;
   zFocused: number;
   travelSpeed: number;
@@ -73,6 +71,7 @@ export interface PathSegment {
   speed: number;
   z: number;
   isLaserOn: boolean;
+  postSegmentGCode?: string;
 }
 
 export type PatternType =
