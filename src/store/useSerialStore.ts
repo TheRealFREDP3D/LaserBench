@@ -46,7 +46,7 @@ class RingBuffer<T> {
   }
 }
 
-const ringBuffer = new RingBuffer<SerialMessage>(MAX_MESSAGES);
+let ringBuffer: RingBuffer<SerialMessage>;
 
 let portRef: SerialPort | null = null;
 let readerRef: ReadableStreamDefaultReader<string> | null = null;
@@ -175,176 +175,180 @@ async function readLoop() {
   }
 }
 
-export const useSerialStore = create<SerialState>()(() => ({
-  isConnected: false,
-  connectionState: 'offline' as const,
-  messages: [],
-  isPrinting: false,
-  progress: 0,
-  movementMode: 'G90' as const,
+export const useSerialStore = create<SerialState>()(() => {
+  ringBuffer = new RingBuffer<SerialMessage>(MAX_MESSAGES);
 
-  connect: async (baudRate?: number) => {
-    if (!('serial' in navigator)) {
-      addMessage('received', 'Error: Web Serial API is not supported in this browser.');
-      return;
-    }
-    const resolvedBaud = Math.floor(Number(baudRate || 250000)) || 250000;
-    try {
-      useSerialStore.setState({ connectionState: 'connecting' });
-      const port = await navigator.serial.requestPort();
-      await port.open({ baudRate: resolvedBaud });
-      portRef = port;
-      useSerialStore.setState({ connectionState: 'connected' });
+  return {
+    isConnected: false,
+    connectionState: 'offline' as const,
+    messages: [],
+    isPrinting: false,
+    progress: 0,
+    movementMode: 'G90' as const,
 
-      const encoder = new TextEncoderStream();
-      if (port.writable) {
-        encoder.readable.pipeTo(port.writable).catch(() => {});
+    connect: async (baudRate?: number) => {
+      if (!('serial' in navigator)) {
+        addMessage('received', 'Error: Web Serial API is not supported in this browser.');
+        return;
       }
-      writerRef = encoder.writable.getWriter();
+      const resolvedBaud = Math.floor(Number(baudRate || 250000)) || 250000;
+      try {
+        useSerialStore.setState({ connectionState: 'connecting' });
+        const port = await navigator.serial.requestPort();
+        await port.open({ baudRate: resolvedBaud });
+        portRef = port;
+        useSerialStore.setState({ connectionState: 'connected' });
 
-      useSerialStore.setState({ isConnected: true, movementMode: 'G90' });
-      keepReadingRef = true;
-      readLoop();
-      addMessage('sent', '--- Connected to printer ---');
-    } catch (error) {
-      console.error('Failed to connect:', error);
-      addMessage('received', 'Error: ' + (error as Error).message);
-      useSerialStore.setState({ connectionState: 'offline' });
-    }
-  },
-
-  disconnect: async () => {
-    keepReadingRef = false;
-    try {
-      if (readerRef) {
-        await readerRef.cancel();
-      }
-      if (writerRef) {
-        await writerRef.close();
-      }
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      if (portRef) {
-        await portRef.close();
-      }
-    } catch (error) {
-      console.error('Error during disconnect:', error);
-    } finally {
-      portRef = null;
-      useSerialStore.setState({ isConnected: false, connectionState: 'offline' });
-      clearPendingTimeouts();
-      bufferSlotsRef = BUFFER_SIZE;
-      bufferResolveRef = [];
-      addMessage('sent', '--- Disconnected ---');
-    }
-  },
-
-  send: async (command: string, silent = false, skipFlowControl = false) => {
-    const { isConnected } = useSerialStore.getState();
-    if (!writerRef || !isConnected) {
-      throw new Error('Not connected to printer');
-    }
-    if (!silent) {
-      const now = Date.now();
-      const elapsed = now - lastSendTimeRef;
-      if (elapsed < MIN_SEND_INTERVAL_MS) {
-        await new Promise((r) => setTimeout(r, MIN_SEND_INTERVAL_MS - elapsed));
-      }
-      lastSendTimeRef = Date.now();
-    }
-    if (!skipFlowControl) {
-      await waitForSlot();
-    }
-    await writerRef.write(command + '\n');
-    const upper = command.toUpperCase();
-    if (/\bG90\b/.test(upper)) useSerialStore.setState({ movementMode: 'G90' });
-    if (/\bG91\b/.test(upper)) useSerialStore.setState({ movementMode: 'G91' });
-    if (!silent) {
-      addMessage('sent', command);
-    }
-  },
-
-  abortPrint: () => {
-    const { isPrinting } = useSerialStore.getState();
-    if (!isPrinting) return;
-    abortPrintRef = true;
-    while (bufferResolveRef.length > 0) {
-      const resolve = bufferResolveRef.shift();
-      if (resolve) resolve();
-    }
-    addMessage('sent', '--- Print Aborted by User ---');
-  },
-
-  printGCode: async (gcode: string) => {
-    const { isConnected, isPrinting } = useSerialStore.getState();
-    if (!isConnected || isPrinting) return;
-
-    useSerialStore.setState({ isPrinting: true, progress: 0 });
-    isPrintingRef = true;
-    bufferSlotsRef = BUFFER_SIZE;
-    bufferResolveRef = [];
-    try {
-      const lines = gcode
-        .split('\n')
-        .map((line) => {
-          const stripped = line.split(';')[0].trim();
-          return stripped;
-        })
-        .filter((line) => {
-          if (line.length === 0) return false;
-          if (line.toUpperCase().startsWith('M30')) return false;
-          return true;
-        });
-      const totalLines = lines.length;
-
-      abortPrintRef = false;
-
-      for (let i = 0; i < totalLines; i++) {
-        if (!keepReadingRef || abortPrintRef) break;
-
-        const line = lines[i];
-        try {
-          await waitForSlot();
-        } catch (e) {
-          if (e instanceof Error && e.message.includes('Timed out')) {
-            addMessage('received', 'Printer not responding — aborting print.');
-            abortPrintRef = true;
-            break;
-          }
-          throw e;
+        const encoder = new TextEncoderStream();
+        if (port.writable) {
+          encoder.readable.pipeTo(port.writable).catch(() => {});
         }
-        if (!keepReadingRef || abortPrintRef) break;
+        writerRef = encoder.writable.getWriter();
 
-        const { send } = useSerialStore.getState();
-        await send(line, false, true);
-
-        useSerialStore.setState({ progress: Math.round(((i + 1) / totalLines) * 100) });
+        useSerialStore.setState({ isConnected: true, movementMode: 'G90' });
+        keepReadingRef = true;
+        readLoop();
+        addMessage('sent', '--- Connected to printer ---');
+      } catch (error) {
+        console.error('Failed to connect:', error);
+        addMessage('received', 'Error: ' + (error as Error).message);
+        useSerialStore.setState({ connectionState: 'offline' });
       }
+    },
 
-      let slotsReleased = 0;
-      const slotsNeeded = BUFFER_SIZE - bufferSlotsRef;
-      while (slotsReleased < slotsNeeded && !abortPrintRef) {
-        await new Promise<void>((r) => bufferResolveRef.push(r));
-        slotsReleased++;
+    disconnect: async () => {
+      keepReadingRef = false;
+      try {
+        if (readerRef) {
+          await readerRef.cancel();
+        }
+        if (writerRef) {
+          await writerRef.close();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        if (portRef) {
+          await portRef.close();
+        }
+      } catch (error) {
+        console.error('Error during disconnect:', error);
+      } finally {
+        portRef = null;
+        useSerialStore.setState({ isConnected: false, connectionState: 'offline' });
+        clearPendingTimeouts();
+        bufferSlotsRef = BUFFER_SIZE;
+        bufferResolveRef = [];
+        addMessage('sent', '--- Disconnected ---');
       }
+    },
 
-      if (!abortPrintRef) {
-        addMessage('sent', '--- Print Job Finished ---');
+    send: async (command: string, silent = false, skipFlowControl = false) => {
+      const { isConnected } = useSerialStore.getState();
+      if (!writerRef || !isConnected) {
+        throw new Error('Not connected to printer');
       }
-    } catch (error) {
-      console.error('Printing failed:', error);
-      addMessage('received', 'Print error: ' + (error as Error).message);
-    } finally {
-      clearPendingTimeouts();
-      useSerialStore.setState({ isPrinting: false });
-      isPrintingRef = false;
-      abortPrintRef = false;
+      if (!silent) {
+        const now = Date.now();
+        const elapsed = now - lastSendTimeRef;
+        if (elapsed < MIN_SEND_INTERVAL_MS) {
+          await new Promise((r) => setTimeout(r, MIN_SEND_INTERVAL_MS - elapsed));
+        }
+        lastSendTimeRef = Date.now();
+      }
+      if (!skipFlowControl) {
+        await waitForSlot();
+      }
+      await writerRef.write(command + '\n');
+      const upper = command.toUpperCase();
+      if (/\bG90\b/.test(upper)) useSerialStore.setState({ movementMode: 'G90' });
+      if (/\bG91\b/.test(upper)) useSerialStore.setState({ movementMode: 'G91' });
+      if (!silent) {
+        addMessage('sent', command);
+      }
+    },
+
+    abortPrint: () => {
+      const { isPrinting } = useSerialStore.getState();
+      if (!isPrinting) return;
+      abortPrintRef = true;
+      while (bufferResolveRef.length > 0) {
+        const resolve = bufferResolveRef.shift();
+        if (resolve) resolve();
+      }
+      addMessage('sent', '--- Print Aborted by User ---');
+    },
+
+    printGCode: async (gcode: string) => {
+      const { isConnected, isPrinting } = useSerialStore.getState();
+      if (!isConnected || isPrinting) return;
+
+      useSerialStore.setState({ isPrinting: true, progress: 0 });
+      isPrintingRef = true;
       bufferSlotsRef = BUFFER_SIZE;
       bufferResolveRef = [];
-    }
-  },
+      try {
+        const lines = gcode
+          .split('\n')
+          .map((line) => {
+            const stripped = line.split(';')[0].trim();
+            return stripped;
+          })
+          .filter((line) => {
+            if (line.length === 0) return false;
+            if (line.toUpperCase().startsWith('M30')) return false;
+            return true;
+          });
+        const totalLines = lines.length;
 
-  clearMessages: () => {
-    ringBuffer.clear();
-    useSerialStore.setState({ messages: [] });
-  },
-}));
+        abortPrintRef = false;
+
+        for (let i = 0; i < totalLines; i++) {
+          if (!keepReadingRef || abortPrintRef) break;
+
+          const line = lines[i];
+          try {
+            await waitForSlot();
+          } catch (e) {
+            if (e instanceof Error && e.message.includes('Timed out')) {
+              addMessage('received', 'Printer not responding — aborting print.');
+              abortPrintRef = true;
+              break;
+            }
+            throw e;
+          }
+          if (!keepReadingRef || abortPrintRef) break;
+
+          const { send } = useSerialStore.getState();
+          await send(line, false, true);
+
+          useSerialStore.setState({ progress: Math.round(((i + 1) / totalLines) * 100) });
+        }
+
+        let slotsReleased = 0;
+        const slotsNeeded = BUFFER_SIZE - bufferSlotsRef;
+        while (slotsReleased < slotsNeeded && !abortPrintRef) {
+          await new Promise<void>((r) => bufferResolveRef.push(r));
+          slotsReleased++;
+        }
+
+        if (!abortPrintRef) {
+          addMessage('sent', '--- Print Job Finished ---');
+        }
+      } catch (error) {
+        console.error('Printing failed:', error);
+        addMessage('received', 'Print error: ' + (error as Error).message);
+      } finally {
+        clearPendingTimeouts();
+        useSerialStore.setState({ isPrinting: false });
+        isPrintingRef = false;
+        abortPrintRef = false;
+        bufferSlotsRef = BUFFER_SIZE;
+        bufferResolveRef = [];
+      }
+    },
+
+    clearMessages: () => {
+      ringBuffer.clear();
+      useSerialStore.setState({ messages: [] });
+    },
+  };
+});

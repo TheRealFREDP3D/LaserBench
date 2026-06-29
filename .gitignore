@@ -17,9 +17,9 @@ pnpm-workspace.yaml
 /.context
 /.github/copilot-instructions.md
 /metadata.json
-/REVIEW_v0.4.1.md
 /AGENTS.md
 /.obsidian
 /attachments
 /.smart-env
 /.vault-intelligence
+/.vscode
