@@ -74,14 +74,7 @@ interface SerialState {
   clearMessages: () => void;
 }
 
-function addMessage(type: 'sent' | 'received', text: string) {
-  const msg: SerialMessage = { type, text, timestamp: Date.now() };
-  ringBuffer.push(msg);
-  const prev = useSerialStore.getState().messages;
-  useSerialStore.setState({
-    messages: prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg] : [...prev, msg],
-  });
-}
+let addMessage: (type: 'sent' | 'received', text: string) => void;
 
 function clearPendingTimeouts() {
   for (const t of bufferTimeoutRef) clearTimeout(t);
@@ -175,8 +168,17 @@ async function readLoop() {
   }
 }
 
-export const useSerialStore = create<SerialState>()(() => {
+export const useSerialStore = create<SerialState>()((set, get) => {
   ringBuffer = new RingBuffer<SerialMessage>(MAX_MESSAGES);
+
+  addMessage = (type, text) => {
+    const msg: SerialMessage = { type, text, timestamp: Date.now() };
+    ringBuffer.push(msg);
+    const prev = get().messages;
+    set({
+      messages: prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg] : [...prev, msg],
+    });
+  };
 
   return {
     isConnected: false,
