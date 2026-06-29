@@ -433,7 +433,7 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
           </g>
 
           <g
-            transform={`translate(${p.patternPosition.x}, ${p.patternPosition.y})`}
+            transform={`translate(${p.patternPosition.x}, ${-p.patternPosition.y})`}
             style={{ cursor: isDraggingOrigin ? 'grabbing' : 'grab' }}
           >
             <circle r="10" fill="transparent" />
@@ -454,12 +454,14 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
               r="4"
               fill="red"
               className="animate-ping"
-              style={{ transform: `translate(${p.patternPosition.x}px, ${p.patternPosition.y}px)` }}
+              style={{
+                transform: `translate(${p.patternPosition.x}px, ${-p.patternPosition.y}px)`,
+              }}
             />
           )}
 
           {hasSimData && simIndex > 0 && simIndex < totalSimPoints && (
-            <g transform={`translate(${simPoints[simIndex].x}, ${simPoints[simIndex].y})`}>
+            <g transform={`translate(${simPoints[simIndex].x}, ${-simPoints[simIndex].y})`}>
               {simPoints[simIndex].isLaserOn && (
                 <circle
                   r="5"
@@ -477,7 +479,7 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
           )}
 
           {hoverPos && (
-            <g transform={`translate(${hoverPos.x}, ${hoverPos.y})`}>
+            <g transform={`translate(${hoverPos.x}, ${-hoverPos.y})`}>
               <line
                 x1="-1000"
                 y1="0"
