@@ -75,8 +75,12 @@ interface SerialState {
 }
 
 function addMessage(type: 'sent' | 'received', text: string) {
-  ringBuffer.push({ type, text, timestamp: Date.now() });
-  useSerialStore.setState({ messages: ringBuffer.toArray() });
+  const msg: SerialMessage = { type, text, timestamp: Date.now() };
+  ringBuffer.push(msg);
+  const prev = useSerialStore.getState().messages;
+  useSerialStore.setState({
+    messages: prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg] : [...prev, msg],
+  });
 }
 
 function clearPendingTimeouts() {

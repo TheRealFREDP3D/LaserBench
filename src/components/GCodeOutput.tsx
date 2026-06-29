@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { MaterialProfile, PatternType } from '../types';
-import { FileCode, Copy, Download, Pencil, Check, X } from 'lucide-react';
+import { FileCode, Copy, Download, Pencil, Check, X, RotateCcw } from 'lucide-react';
 import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
 
 interface GCodeOutputProps {
@@ -69,7 +69,7 @@ const GCodeOutput: React.FC<GCodeOutputProps> = ({ gcode, patternType, material,
                 className="p-1.5 hover:bg-white/5 rounded text-neutral-500 hover:text-amber-400 transition-colors"
                 title="Reset to original"
               >
-                <X className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={handleCancelEdit}

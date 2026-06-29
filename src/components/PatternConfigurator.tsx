@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { PatternType } from '../types';
 import { usePatternStore } from '../store/usePatternStore';
 import { useMachineStore, selectActiveMachine } from '../store/useMachineStore';
-import { useMaterialStore, selectActiveMaterial } from '../store/useMaterialStore';
 import { ParameterField } from './ParameterField';
 import { Sliders, Zap, Gauge, Layers, Move } from 'lucide-react';
 
@@ -17,7 +16,6 @@ const PATTERNS: { id: PatternType; label: string; icon: typeof Sliders }[] = [
 const PatternConfigurator: React.FC = () => {
   const p = usePatternStore();
   const machine = useMachineStore(selectActiveMachine);
-  const activeMaterial = useMaterialStore(selectActiveMaterial);
   const isFocusLadder = p.selectedPattern === 'focus_ladder';
   const prevPatternRef = useRef(p.selectedPattern);
 
@@ -27,7 +25,7 @@ const PatternConfigurator: React.FC = () => {
       p.setZMax(machine.zFocused + 5);
     }
     prevPatternRef.current = p.selectedPattern;
-  }, [isFocusLadder, machine]);
+  }, [isFocusLadder, machine, p]);
 
   return (
     <div className="space-y-6" data-tour="pattern-config">
