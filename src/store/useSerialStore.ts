@@ -1,63 +1,5 @@
 import { create } from 'zustand';
-
-export interface SerialMessage {
-  type: 'sent' | 'received';
-  text: string;
-  timestamp: number;
-}
-
-const BUFFER_SIZE = 4;
-const MIN_SEND_INTERVAL_MS = 50;
-const SLOT_TIMEOUT_MS = 10_000;
-const MAX_MESSAGES = 500;
-
-class RingBuffer<T> {
-  private buffer: T[];
-  private head = 0;
-  private count = 0;
-  private capacity: number;
-
-  constructor(capacity: number) {
-    this.capacity = capacity;
-    this.buffer = new Array(capacity);
-  }
-
-  push(item: T): void {
-    this.buffer[(this.head + this.count) % this.capacity] = item;
-    if (this.count < this.capacity) {
-      this.count++;
-    } else {
-      this.head = (this.head + 1) % this.capacity;
-    }
-  }
-
-  toArray(): T[] {
-    if (this.count === 0) return [];
-    const result: T[] = [];
-    for (let i = 0; i < this.count; i++) {
-      result.push(this.buffer[(this.head + i) % this.capacity]);
-    }
-    return result;
-  }
-
-  clear(): void {
-    this.head = 0;
-    this.count = 0;
-  }
-}
-
-let ringBuffer: RingBuffer<SerialMessage>;
-
-let portRef: SerialPort | null = null;
-let readerRef: ReadableStreamDefaultReader<string> | null = null;
-let writerRef: WritableStreamDefaultWriter<string> | null = null;
-let keepReadingRef = true;
-let abortPrintRef = false;
-let bufferSlotsRef = BUFFER_SIZE;
-let bufferResolveRef: (() => void)[] = [];
-let bufferTimeoutRef: ReturnType<typeof setTimeout>[] = [];
-let lastSendTimeRef = 0;
-let isPrintingRef = false;
+import { SerialMessage } from '../types';
 
 interface SerialState {
   isConnected: boolean;
@@ -73,6 +15,46 @@ interface SerialState {
   abortPrint: () => void;
   clearMessages: () => void;
 }
+
+const BUFFER_SIZE = 8; // Increased from 4 to 8 for better throughput
+const MIN_SEND_INTERVAL_MS = 10; // Reduced from 50 to 10 for faster manual commands
+const SLOT_TIMEOUT_MS = 10_000;
+const MAX_MESSAGES = 500;
+
+class RingBuffer<T> {
+  private buffer: T[];
+  private head = 0;
+  private count = 0;
+  private capacity: number;
+
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.buffer = new Array(capacity);
+  }
+
+  push(item: T) {
+    this.buffer[this.head] = item;
+    this.head = (this.head + 1) % this.capacity;
+    if (this.count < this.capacity) this.count++;
+  }
+
+  clear() {
+    this.head = 0;
+    this.count = 0;
+  }
+}
+
+let portRef: SerialPort | null = null;
+let readerRef: ReadableStreamDefaultReader<string> | null = null;
+let writerRef: WritableStreamDefaultWriter<string> | null = null;
+let keepReadingRef = true;
+let abortPrintRef = false;
+let ringBuffer: RingBuffer<SerialMessage>;
+let bufferSlotsRef = BUFFER_SIZE;
+let bufferResolveRef: (() => void)[] = [];
+let bufferTimeoutRef: ReturnType<typeof setTimeout>[] = [];
+let lastSendTimeRef = 0;
+let isPrintingRef = false;
 
 let addMessage: (type: 'sent' | 'received', text: string) => void;
 
@@ -102,7 +84,8 @@ function waitForSlot(): Promise<void> {
     const timer = setTimeout(() => {
       const idx = bufferResolveRef.indexOf(resolve);
       if (idx !== -1) bufferResolveRef.splice(idx, 1);
-      bufferTimeoutRef.splice(bufferTimeoutRef.indexOf(timer), 1);
+      const tIdx = bufferTimeoutRef.indexOf(timer);
+      if (tIdx !== -1) bufferTimeoutRef.splice(tIdx, 1);
       reject(new Error('Timed out waiting for printer response'));
     }, SLOT_TIMEOUT_MS);
     bufferTimeoutRef.push(timer);
@@ -326,7 +309,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
           if (!keepReadingRef || abortPrintRef) break;
 
           const { send } = useSerialStore.getState();
-          await send(line, false, true);
+          await send(line, true, true); // Use silent=true for G-code streaming to avoid interval lag
 
           useSerialStore.setState({ progress: Math.round(((i + 1) / totalLines) * 100) });
         }

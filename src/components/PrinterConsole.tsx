@@ -1,11 +1,22 @@
-import React, { useState, useCallback } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import type { SerialMessage } from '../store/useSerialStore';
-import type { MachineProfile } from '../types';
-import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import React, { useState, useCallback, memo } from 'react';
+import {
+  Terminal,
+  Play,
+  Square,
+  RefreshCw,
+  Home,
+  Zap,
+  AlertTriangle,
+  Move,
+  Trash2,
+  Book,
+} from 'lucide-react';
+import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
 import { FireControls } from './console/FireControls';
 import { SerialLog } from './console/SerialLog';
+import { validateGCode } from '../lib/gcodeDatabase';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 interface PrinterConsoleProps {
   isConnected: boolean;
@@ -14,7 +25,7 @@ interface PrinterConsoleProps {
   progress: number;
   onConnect: () => void;
   onDisconnect: () => void;
-  onSend: (cmd: string) => void | Promise<void>;
+  onSend: (command: string) => Promise<void>;
   onClear: () => void;
   onAbortPrint: () => void;
   onPrint?: (gcode: string) => void;
@@ -23,61 +34,7 @@ interface PrinterConsoleProps {
   onJogRelative: (dx: number, dy: number) => void;
 }
 
-function validateGCode(cmd: string): { level: 'safe' | 'warn' | 'block'; message: string } {
-  const trimmed = cmd.trim().toUpperCase();
-  const letter = trimmed[0];
-
-  if (letter === 'M') {
-    const code = parseInt(trimmed.slice(1), 10);
-    if (code === 112 || code === 81) {
-      return { level: 'safe', message: '' };
-    }
-    if (code === 3 || code === 4) {
-      const sMatch = trimmed.match(/S(\d+(?:\.\d+)?)/);
-      const sValue = sMatch ? parseFloat(sMatch[1]) : 0;
-      if (sValue > 0) {
-        return {
-          level: 'block',
-          message: `This command will fire the laser at power ${Math.round(sValue)}.`,
-        };
-      }
-    }
-    if (code === 80 || code === 240 || code === 241) {
-      return {
-        level: 'warn',
-        message:
-          'This command controls machine power/driver state and may cause unexpected motion.',
-      };
-    }
-    if (code === 92) {
-      return {
-        level: 'warn',
-        message:
-          'This sets the current position as a new origin, which can cause unexpected motion.',
-      };
-    }
-  }
-
-  if (letter === 'G') {
-    const code = parseInt(trimmed.slice(1), 10);
-    if (code === 10) {
-      return {
-        level: 'warn',
-        message: 'This sets work coordinate offsets, which may cause unexpected motion.',
-      };
-    }
-    if (code === 53) {
-      return {
-        level: 'warn',
-        message: 'G53 moves in machine coordinates and may ignore soft limits.',
-      };
-    }
-  }
-
-  return { level: 'safe', message: '' };
-}
-
-const PrinterConsoleComponent = React.memo(function PrinterConsole({
+const PrinterConsoleComponent = memo(function PrinterConsole({
   isConnected,
   messages,
   isPrinting,
@@ -104,7 +61,7 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
     (axis: string, dist: number) => {
       if (axis === 'Z') {
         onSend('G91');
-        onSend(`G0 Z${dist}`);
+        onSend(`G0 Z${dist} F${activeMachine?.travelSpeed || 4000}`);
         onSend('G90');
         return;
       }
@@ -115,9 +72,14 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
     [onSend, onJogRelative]
   );
 
-  const handleHome = useCallback(() => {
-    onSend('G28');
-  }, [onSend]);
+  const handleHome = useCallback(async () => {
+    await onSend('G28');
+    if (activeMachine?.zSecure !== undefined) {
+      // Ensure absolute mode and move to secure Z after homing
+      await onSend('G90');
+      await onSend(`G0 Z${activeMachine.zSecure} F${activeMachine.travelSpeed}`);
+    }
+  }, [onSend, activeMachine]);
 
   const handleFire = useCallback(() => {
     const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
@@ -267,7 +229,7 @@ const PrinterConsoleComponent = React.memo(function PrinterConsole({
             <div className="flex gap-1.5 shrink-0">
               <button
                 onClick={async () => {
-                  await onSend('G28');
+                  await handleHome();
                   handleRunJob();
                 }}
                 className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] rounded font-bold transition"

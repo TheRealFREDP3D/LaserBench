@@ -349,9 +349,9 @@ function generateFocusLadder(ctx: PatternContext) {
 
     let postGCode: string | undefined;
     if (isLast) {
-      postGCode = `G90\nG0 F0 Z${machine.zSecure.toFixed(3)}\nG91`;
+      postGCode = `G90\nG0 F${machine.travelSpeed} Z${machine.zSecure.toFixed(3)}\nG91`;
     } else {
-      postGCode = `G0 F0 Z${stepSize.toFixed(3)}`;
+      postGCode = `G0 F${machine.travelSpeed} Z${stepSize.toFixed(3)}`;
     }
 
     addSegment(
@@ -586,7 +586,7 @@ export function generatePatternPaths(
     const deltaY0 = p0[1] - prevY;
     const deltaZ0 = g.z - currentZ;
     gcodeLines.push(
-      `G0 F0 X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${deltaZ0.toFixed(3)}` : ''}`
+      `G0 F${machine.travelSpeed} X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${deltaZ0.toFixed(3)}` : ''}`
     );
     prevX = p0[0];
     prevY = p0[1];
@@ -640,7 +640,7 @@ export function generatePatternPaths(
     gcodeLines.push(endOffCmd);
     gcodeLines.push('M9');
     gcodeLines.push('G90');
-    gcodeLines.push(`G0 X0 Y0 Z${machine.zSecure.toFixed(3)} F0`);
+    gcodeLines.push(`G0 X0 Y0 Z${machine.zSecure.toFixed(3)} F${machine.travelSpeed}`);
     gcodeLines.push('G28');
   }
 

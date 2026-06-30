@@ -1,25 +1,50 @@
-export interface GCodeEntry {
+export type GCodeCategory = 'motion' | 'laser' | 'coords' | 'system';
+
+export interface GCodeDefinition {
   code: string;
   name: string;
-  category: 'motion' | 'laser' | 'coords' | 'system';
+  category: GCodeCategory;
   description: string;
   syntax: string;
   example: string;
   explanation: string;
-  compatibility: 'GRBL & Marlin' | 'GRBL Only' | 'Marlin Only';
+  compatibility: string;
 }
 
-export const GCODE_DATABASE: GCodeEntry[] = [
+export function validateGCode(command: string): {
+  level: 'safe' | 'warn' | 'block';
+  message: string;
+} {
+  const upper = command.toUpperCase().trim();
+  if (!upper) return { level: 'safe', message: '' };
+
+  if (upper === 'M112') {
+    return { level: 'warn', message: 'This is an Emergency Stop command.' };
+  }
+
+  const blocked = ['M500', 'M501', 'M502', 'M503'];
+  if (blocked.some((b) => upper.startsWith(b))) {
+    return { level: 'block', message: 'Firmware modification commands are restricted.' };
+  }
+
+  const risky = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G92'];
+  if (risky.some((r) => upper.startsWith(r))) {
+    return { level: 'warn', message: 'Coordinate offset commands can be dangerous.' };
+  }
+
+  return { level: 'safe', message: '' };
+}
+
+export const GCODE_DICTIONARY: GCodeDefinition[] = [
   {
     code: 'G0',
-    name: 'Rapid Positioning (Non-cutting Move)',
+    name: 'Rapid Linear Motion',
     category: 'motion',
-    description:
-      'Moves the laser head at maximum machine travel feedrate to the target coordinate without firing the laser.',
+    description: 'Moves the laser carriage at maximum travel speed to a target coordinate.',
     syntax: 'G0 X[pos] Y[pos] Z[pos]',
-    example: 'G0 X15.00 Y25.50',
+    example: 'G0 X10.5 Y20.0',
     explanation:
-      'Safely and rapidly shifts the laser nozzle between separate burning segments. By default, laser controllers shut off the beam completely during G0 travel commands to prevent unwanted scorch marks.',
+      'G0 is used for non-cutting travel moves. The laser is automatically disabled (M5) before execution to prevent unintended marking of the material while repositioning.',
     compatibility: 'GRBL & Marlin',
   },
   {
