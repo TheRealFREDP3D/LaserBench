@@ -163,10 +163,10 @@ export default function App() {
       if (!isConnected) return;
       const nx = Math.round((jogPos.x + dx) * 100) / 100;
       const ny = Math.round((jogPos.y + dy) * 100) / 100;
-      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)}`);
+      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine?.travelSpeed || 4000}`);
       setJogPos({ x: nx, y: ny });
     },
-    [isConnected, send, jogPos]
+    [isConnected, send, jogPos, activeMachine?.travelSpeed]
   );
 
   const configPanel = (
@@ -351,7 +351,7 @@ export default function App() {
           {configPanel}
         </div>
         {svgPanel}
-        <div className="w-[280px] xl:w-[340px] 2xl:w-[400px] border-l border-white/8 bg-[#0A0A0A] overflow-y-auto shrink-0">
+        <div className="w-[320px] xl:w-[400px] 2xl:w-[480px] border-l border-white/8 bg-[#0A0A0A] overflow-y-auto shrink-0">
           {consolePanel}
         </div>
       </div>
