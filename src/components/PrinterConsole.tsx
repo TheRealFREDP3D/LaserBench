@@ -58,18 +58,18 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   } | null>(null);
 
   const jog = useCallback(
-    (axis: string, dist: number) => {
+    async (axis: string, dist: number) => {
       if (axis === 'Z') {
-        onSend('G91');
-        onSend(`G0 Z${dist} F${activeMachine?.travelSpeed || 4000}`);
-        onSend('G90');
+        await onSend('G91');
+        await onSend(`G0 Z${dist} F${activeMachine?.travelSpeed || 4000}`);
+        await onSend('G90');
         return;
       }
       const dx = axis === 'X' ? dist : 0;
       const dy = axis === 'Y' ? dist : 0;
       onJogRelative(dx, dy);
     },
-    [onSend, onJogRelative]
+    [onSend, onJogRelative, activeMachine?.travelSpeed]
   );
 
   const handleHome = useCallback(async () => {
@@ -77,7 +77,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
     if (activeMachine?.zSecure !== undefined) {
       // Ensure absolute mode and move to secure Z after homing
       await onSend('G90');
-      await onSend(`G0 Z${activeMachine.zSecure} F${activeMachine.travelSpeed}`);
+      await onSend(`G0 Z${activeMachine.zSecure} F${activeMachine.travelSpeed || 4000}`);
     }
   }, [onSend, activeMachine]);
 

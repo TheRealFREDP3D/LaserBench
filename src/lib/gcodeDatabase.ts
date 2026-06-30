@@ -27,9 +27,41 @@ export function validateGCode(command: string): {
     return { level: 'block', message: 'Firmware modification commands are restricted.' };
   }
 
+  if (upper.startsWith('M3') || upper.startsWith('M4')) {
+    const sMatch = upper.match(/S(\d+(?:\.\d+)?)/);
+    const sValue = sMatch ? parseFloat(sMatch[1]) : 0;
+    if (sValue > 0) {
+      return {
+        level: 'block',
+        message: `This command will fire the laser at power ${Math.round(sValue)}.`,
+      };
+    }
+  }
+
+  if (/^M(80|240|241)\b/.test(upper)) {
+    return {
+      level: 'warn',
+      message: 'This command controls machine power/driver state and may cause unexpected motion.',
+    };
+  }
+
   const risky = ['G54', 'G55', 'G56', 'G57', 'G58', 'G59', 'G92'];
   if (risky.some((r) => upper.startsWith(r))) {
     return { level: 'warn', message: 'Coordinate offset commands can be dangerous.' };
+  }
+
+  if (upper.startsWith('G10')) {
+    return {
+      level: 'warn',
+      message: 'This sets work coordinate offsets, which may cause unexpected motion.',
+    };
+  }
+
+  if (upper.startsWith('G53')) {
+    return {
+      level: 'warn',
+      message: 'G53 moves in machine coordinates and may ignore soft limits.',
+    };
   }
 
   return { level: 'safe', message: '' };

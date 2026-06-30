@@ -144,6 +144,7 @@ describe('gcodeGenerator', () => {
     it('uses machine travel speed for rapid moves', () => {
       const res = generatePatternPaths('matrix', mockMachine, mockMaterial, {});
       expect(res.gcode).toContain(`F${mockMachine.travelSpeed}`);
+      expect(res.gcode).not.toContain('F0');
     });
 
     it('clamps power values to integer', () => {

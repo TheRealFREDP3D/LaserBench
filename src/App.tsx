@@ -166,7 +166,7 @@ export default function App() {
       send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine?.travelSpeed || 4000}`);
       setJogPos({ x: nx, y: ny });
     },
-    [isConnected, send, jogPos]
+    [isConnected, send, jogPos, activeMachine?.travelSpeed]
   );
 
   const configPanel = (
