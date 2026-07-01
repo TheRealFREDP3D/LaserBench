@@ -1,6 +1,6 @@
 export type GCodeCategory = 'motion' | 'laser' | 'coords' | 'system';
 
-export interface GCodeDefinition {
+export interface GCodeEntry {
   code: string;
   name: string;
   category: GCodeCategory;
@@ -27,7 +27,7 @@ export function validateGCode(command: string): {
     return { level: 'block', message: 'Firmware modification commands are restricted.' };
   }
 
-  if (upper.startsWith('M3') || upper.startsWith('M4')) {
+  if (upper.startsWith('M3') || upper.startsWith('M4') || upper.startsWith('M106')) {
     const sMatch = upper.match(/S(\d+(?:\.\d+)?)/);
     const sValue = sMatch ? parseFloat(sMatch[1]) : 0;
     if (sValue > 0) {
@@ -67,7 +67,7 @@ export function validateGCode(command: string): {
   return { level: 'safe', message: '' };
 }
 
-export const GCODE_DICTIONARY: GCodeDefinition[] = [
+export const GCODE_DATABASE: GCodeEntry[] = [
   {
     code: 'G0',
     name: 'Rapid Linear Motion',
