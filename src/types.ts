@@ -127,3 +127,9 @@ export interface Pattern {
   name: string;
   description: string;
 }
+
+export interface SerialMessage {
+  type: 'sent' | 'received';
+  text: string;
+  timestamp: number;
+}

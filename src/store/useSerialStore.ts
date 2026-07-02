@@ -199,7 +199,9 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         if (portRef) {
           try {
             await portRef.close();
-          } catch {}
+          } catch (e) {
+            /* ignore */
+          }
           portRef = null;
         }
         addMessage('received', 'Error: ' + (error as Error).message);
