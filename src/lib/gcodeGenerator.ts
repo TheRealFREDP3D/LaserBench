@@ -628,19 +628,19 @@ let laserOn = false;
       gcodeLines.push(offCmd);
       laserOn = false;
     }
+  });
 
   // Ensure head returns to Z secure height (absolute) before final commands
   gcodeLines.push('G90');
   gcodeLines.push(`G0 Z${machine.zSecure.toFixed(3)}`);
   gcodeLines.push('G91');
-    let endOffCmd = '';
-    if (machine.laserMode === 'M3_M5') endOffCmd = 'M5';
-    else if (machine.laserMode === 'M106_M107') endOffCmd = 'M106 S0';
-    else if (machine.laserMode === 'M3_M4_M5') endOffCmd = 'M5';
-    gcodeLines.push(endOffCmd);
-    gcodeLines.push('M9');
-    // No additional moves; leave head at its current position.
-  }
+  let endOffCmd = '';
+  if (machine.laserMode === 'M3_M5') endOffCmd = 'M5';
+  else if (machine.laserMode === 'M106_M107') endOffCmd = 'M106 S0';
+  else if (machine.laserMode === 'M3_M4_M5') endOffCmd = 'M5';
+  gcodeLines.push(endOffCmd);
+  gcodeLines.push('M9');
+  // No additional moves; leave head at its current position.
 
   const svgPaths: SvgPathElement[] = pathGroups.map((g: PathSegment) => {
     const d =
