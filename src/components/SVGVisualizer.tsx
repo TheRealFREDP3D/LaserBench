@@ -138,10 +138,14 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
     pt.y = e.clientY;
     const ctm = svgRef.current.getScreenCTM();
     if (!ctm) return { x: 0, y: 0 };
-    const inverse = ctm.inverse();
-    if (!inverse) return { x: 0, y: 0 };
-    const svgP = pt.matrixTransform(inverse);
-    return { x: svgP.x, y: -svgP.y };
+    try {
+      const inverse = ctm.inverse();
+      if (!inverse) return { x: 0, y: 0 };
+      const svgP = pt.matrixTransform(inverse);
+      return { x: svgP.x, y: svgP.y };
+    } catch {
+      return { x: 0, y: 0 };
+    }
   };
 
   const isNearOrigin = (pt: { x: number; y: number }) => {
@@ -482,7 +486,7 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
           )}
 
           {hoverPos && (
-            <g transform={`translate(${hoverPos.x}, ${-hoverPos.y})`}>
+            <g transform={`translate(${hoverPos.x}, ${hoverPos.y})`}>
               <line
                 x1="-1000"
                 y1="0"

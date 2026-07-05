@@ -1,7 +1,7 @@
 {
   "name": "laserbench",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.8.2",
   "description": "Web-based laser cutter control interface with G-code generation and serial communication",
   "type": "module",
   "engines": {

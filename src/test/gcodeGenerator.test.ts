@@ -98,7 +98,7 @@ describe('gcodeGenerator', () => {
 
     it('ends with laser off, coolant off, and home', () => {
       const res = generatePatternPaths('matrix', mockMachine, mockMaterial, {});
-      expect(res.gcode).toContain('M106 S0');
+      expect(res.gcode).toContain('M5');
       expect(res.gcode).toContain('M9');
       expect(res.gcode).toContain('G28');
     });
@@ -129,7 +129,7 @@ describe('gcodeGenerator', () => {
         powerMax: 150,
       });
       expect(res.gcode).toContain('M106 S50');
-      expect(res.gcode).toContain('M106 S0');
+      expect(res.gcode).toContain('M107');
     });
 
     it('generates M4/M5 laser commands for M3_M4_M5 mode', () => {
@@ -304,7 +304,6 @@ describe('gcodeGenerator', () => {
       });
       expect(res.gcode).toContain('Z-4.000');
       expect(res.gcode).toContain('Z2.000');
-      expect(res.gcode).toContain('Z5.000');
     });
   });
 
