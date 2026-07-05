@@ -5,7 +5,7 @@
   "description": "Web-based laser cutter control interface with G-code generation and serial communication",
   "type": "module",
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
