@@ -215,9 +215,15 @@ export function parseGCode(gcode: string, pwmMax: number = 1000): ParseResult {
           moved = true;
         }
       } else if (cmd.code === 92) {
-        if (cmd.params.X !== undefined) newX = cmd.params.X;
-        if (cmd.params.Y !== undefined) newY = cmd.params.Y;
-        moved = true;
+        // G92 redefines the coordinate system — it does NOT move the head.
+        // Update the logical position tracker without creating a path segment.
+        flushSegment();
+        if (cmd.params.X !== undefined) segX = cmd.params.X;
+        if (cmd.params.Y !== undefined) segY = cmd.params.Y;
+        if (cmd.params.Z !== undefined) currentZ = cmd.params.Z;
+        newX = segX;
+        newY = segY;
+        // moved stays false — no path point added
       }
     }
 

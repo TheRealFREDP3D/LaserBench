@@ -240,7 +240,6 @@ function generatePowerRamp(ctx: PatternContext) {
     );
   }
 
-  const labelOffset = LABEL_OFFSET_MM * patternScale;
   const label = `PWR RAMP: ${Math.round(powerMin)}-${Math.round(powerMax)} F${Math.round(speedMin)}`;
   const lp = renderTextPath(
     label,
@@ -523,8 +522,9 @@ export function generatePatternPaths(
     pathGroups.push({ points: movedPoints, power, speed, z, isLaserOn, postSegmentGCode });
   }
 
-const labelPower = Math.round(material.cut.power);
-const labelSpeed = material.cut.speed;
+  // Use engrave settings for labels — cut power/speed would over-burn fine text
+  const labelPower = Math.round(material.engrave.power);
+  const labelSpeed = material.engrave.speed;
 
   const ctx: PatternContext = {
     machine,
@@ -574,12 +574,13 @@ const labelSpeed = material.cut.speed;
   }
 
   const gcodeLines: string[] = [];
-  if (machine.startGCode) gcodeLines.push(sanitizeGCodeBlock(machine.startGCode));
-  else {
+  if (machine.startGCode) {
+    gcodeLines.push(sanitizeGCodeBlock(machine.startGCode));
+  } else {
     gcodeLines.push('G21');
     gcodeLines.push('M106 S0');
   }
-
+  // Always switch to relative mode for generated moves, regardless of startGCode
   gcodeLines.push('G91');
 
   const laserOffCmd = sanitizeGCodeLine(machine.laserOff) || 'M5';
@@ -588,7 +589,7 @@ const labelSpeed = material.cut.speed;
   let currentFeed = 0;
   let prevX = 0;
   let prevY = 0;
-  pathGroups.forEach((g: PathSegment, idx: number) => {
+  pathGroups.forEach((g: PathSegment) => {
     const p0 = g.points[0];
     const zChanged = g.z !== currentZ;
     const deltaX0 = p0[0] - prevX;

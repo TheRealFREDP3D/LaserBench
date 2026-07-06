@@ -9,7 +9,7 @@ const STAGES: { key: WorkflowStep; label: string; icon: LucideIcon; shortcut: st
   { key: 'material', label: 'Material', icon: Layers, shortcut: '2' },
   { key: 'pattern', label: 'Pattern', icon: Sliders, shortcut: '3' },
   { key: 'preview', label: 'Preview', icon: Eye, shortcut: '4' },
-  { key: 'operate', label: 'Operate', icon: Flame, shortcut: '6' },
+  { key: 'operate', label: 'Operate', icon: Flame, shortcut: '5' },
 ];
 
 export default function WorkflowStepper() {

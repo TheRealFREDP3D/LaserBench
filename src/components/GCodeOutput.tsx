@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { MaterialProfile, PatternType } from '../types';
 import { FileCode, Copy, Download, Pencil, Check, X, RotateCcw } from 'lucide-react';
 import { downloadGCode, makeGCodeFilename } from '../lib/downloadGCode';
@@ -14,6 +14,14 @@ const GCodeOutput: React.FC<GCodeOutputProps> = ({ gcode, patternType, material,
   const lines = useMemo(() => gcode.split('\n'), [gcode]);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(gcode);
+
+  // Sync draft when the source gcode changes externally (e.g. pattern/machine switch)
+  // while not in edit mode, so stale edits don't get applied on confirm.
+  useEffect(() => {
+    if (!isEditing) {
+      setDraft(gcode);
+    }
+  }, [gcode, isEditing]);
 
   const handleCopy = async () => {
     try {

@@ -66,5 +66,11 @@ export const usePatternStore = create<PatternState>((set) => ({
   setZMin: (val) => set({ zMin: val }),
   setZMax: (val) => set({ zMax: val }),
   setZSteps: (val) => set({ zSteps: Math.max(1, Math.round(val)) }),
-  setPatternPosition: (pos) => set({ patternPosition: pos }),
+  setPatternPosition: (pos) =>
+    set({
+      patternPosition: {
+        x: Number.isFinite(pos.x) ? pos.x : 0,
+        y: Number.isFinite(pos.y) ? pos.y : 0,
+      },
+    }),
 }));

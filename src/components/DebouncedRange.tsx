@@ -48,7 +48,7 @@ export default function DebouncedRange({
       step={step}
       value={localValue}
       onChange={(e) => {
-        const v = parseInt(e.target.value, 10);
+        const v = parseFloat(e.target.value);
         handleChange(Number.isFinite(v) ? v : min);
       }}
       aria-label={ariaLabel}
