@@ -1,7 +1,7 @@
-import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import { memo, useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { MachineProfile, SvgPathElement, PathSegment } from '../types';
 import { usePatternStore } from '../store/usePatternStore';
-import { Crosshair, Move, Maximize2, ZoomIn, ZoomOut, Play, Square } from 'lucide-react';
+import { Crosshair, Move, Maximize2, ZoomIn, ZoomOut, Play, Pause, Square } from 'lucide-react';
 
 interface SVGVisualizerProps {
   svgPaths: SvgPathElement[];
@@ -21,13 +21,13 @@ interface SimPoint {
   isLaserOn: boolean;
 }
 
-const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
+const SVGVisualizer = ({
   svgPaths,
   paths,
   machine,
   onJog,
   isPrinting,
-}) => {
+}: SVGVisualizerProps) => {
   const p = usePatternStore();
   const svgRef = useRef<SVGSVGElement>(null);
   const wheelThrottleRef = useRef(0);
@@ -536,7 +536,11 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
             }`}
             title={isSimPlaying ? 'Pause' : 'Play'}
           >
-            <Play className="w-3.5 h-3.5" />
+            {isSimPlaying ? (
+              <Pause className="w-3.5 h-3.5" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
           </button>
           <button
             onClick={resetSim}
@@ -654,4 +658,4 @@ const SVGVisualizer: React.FC<SVGVisualizerProps> = ({
   );
 };
 
-export default React.memo(SVGVisualizer);
+export default memo(SVGVisualizer);

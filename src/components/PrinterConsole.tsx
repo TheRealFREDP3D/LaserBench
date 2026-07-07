@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
@@ -137,10 +137,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
     if (isConnected && !isPrinting) handleFire();
   }, [isConnected, isPrinting, handleFire]);
 
-  const handleStopFireKey = useCallback(() => {
-    handleStopFire();
-  }, [handleStopFire]);
-
+  // Collapsed: no extra logic needed beyond calling handleStopFire directly
   const handleHomeKey = useCallback(() => {
     if (isConnected && !isPrinting) handleHome();
   }, [isConnected, isPrinting, handleHome]);
@@ -164,7 +161,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   useKeyboardShortcuts({
     onEStop: handleEStop,
     onFire: handleFireKey,
-    onStopFire: handleStopFireKey,
+    onStopFire: handleStopFire,
     onHome: handleHomeKey,
     onJogUp: handleJogUp,
     onJogDown: handleJogDown,

@@ -147,7 +147,10 @@ export function parseGCode(gcode: string, pwmMax: number = 1000): ParseResult {
           currentZ = relativeMode ? currentZ + cmd.params.Z : cmd.params.Z;
         }
       } else if (cmd.code === 28) {
+        // G28 is a homing command — always moves to machine origin (0,0) in
+        // absolute terms regardless of the current positioning mode.
         flushSegment();
+        relativeMode = false; // homing resets to absolute positioning
         newX = 0;
         newY = 0;
         moved = true;
@@ -157,11 +160,37 @@ export function parseGCode(gcode: string, pwmMax: number = 1000): ParseResult {
         const endY =
           cmd.params.Y !== undefined ? (relativeMode ? segY + cmd.params.Y : cmd.params.Y) : segY;
 
-        let cx: number;
-        let cy: number;
         if (cmd.params.I !== undefined && cmd.params.J !== undefined) {
-          cx = segX + cmd.params.I;
-          cy = segY + cmd.params.J;
+          const cx = segX + cmd.params.I;
+          const cy = segY + cmd.params.J;
+          // Tessellate the arc using the I/J-derived center
+          const ijStartAngle = Math.atan2(segY - cy, segX - cx);
+          const ijEndAngle = Math.atan2(endY - cy, endX - cx);
+          let ijSweep = ijEndAngle - ijStartAngle;
+          if (cmd.code === 2) {
+            if (ijSweep > 0) ijSweep -= 2 * Math.PI;
+            if (ijSweep === 0) ijSweep = -2 * Math.PI;
+          } else {
+            if (ijSweep < 0) ijSweep += 2 * Math.PI;
+            if (ijSweep === 0) ijSweep = 2 * Math.PI;
+          }
+          const ijRadius = Math.sqrt((segX - cx) ** 2 + (segY - cy) ** 2);
+          const ijSteps = Math.max(8, Math.ceil(Math.abs(ijSweep) / (Math.PI / 32)));
+          for (let s = 1; s <= ijSteps; s++) {
+            const angle = ijStartAngle + (ijSweep * s) / ijSteps;
+            newX = cx + ijRadius * Math.cos(angle);
+            newY = cy + ijRadius * Math.sin(angle);
+            if (segPoints.length === 0) {
+              segPoints.push([segX, segY]);
+              segPower = laserOn ? currentPower : 0;
+              segSpeed = currentSpeed;
+              segLaserOn = laserOn;
+            }
+            segPoints.push([newX, newY]);
+            updateBounds(newX, newY);
+            segX = newX;
+            segY = newY;
+          }
         } else if (cmd.params.R !== undefined && cmd.params.R !== 0) {
           const dx = endX - segX;
           const dy = endY - segY;
@@ -178,9 +207,12 @@ export function parseGCode(gcode: string, pwmMax: number = 1000): ParseResult {
             const my = (segY + endY) / 2;
             const nx = -dy / Math.sqrt(dSq);
             const ny = dx / Math.sqrt(dSq);
-            const sign = cmd.code === 2 ? 1 : -1;
-            cx = mx + sign * h * nx;
-            cy = my + sign * h * ny;
+            // G2=CW: center is to the right of the chord direction → sign = -1
+            // G3=CCW: center is to the left → sign = +1
+            // Positive R selects the minor arc (< 180°).
+            const sign = (cmd.code === 2 ? -1 : 1) * (cmd.params.R > 0 ? 1 : -1);
+            const cx = mx + sign * h * nx;
+            const cy = my + sign * h * ny;
             const startAngle = Math.atan2(segY - cy, segX - cx);
             const endAngle = Math.atan2(endY - cy, endX - cx);
             let sweep = endAngle - startAngle;

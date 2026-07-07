@@ -175,11 +175,11 @@ function generateMatrix(ctx: PatternContext) {
           textSize * SMALL_LABEL_TEXT_SCALE,
           textLetterSpacing * SMALL_LABEL_SPACING_SCALE
         );
-pLabelPaths.forEach(stroke => {
-  if (stroke.length > 0) {
-    addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
-  }
-});
+        pLabelPaths.forEach(stroke => {
+          if (stroke.length > 0) {
+            addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+          }
+        });
       }
     }
   }
@@ -606,11 +606,17 @@ export function generatePatternPaths(
     currentZ = g.z;
 
     let onCmd = '';
-    if (machine.laserMode === 'M3_M5') onCmd = `M3 S${g.power}`;
-    else if (machine.laserMode === 'M106_M107') onCmd = `M106 S${g.power}`;
-    else if (machine.laserMode === 'M3_M4_M5') onCmd = `M4 S${g.power}`;
+    // Build the laser-on command from the profile template so that user
+    // customizations to machine.laserOn are honoured in generated G-code,
+    // matching the behaviour of the manual Fire button in the console.
+    onCmd = sanitizeGCodeLine(machine.laserOn.replace('{power}', String(g.power)));
+    // Fallback: if sanitize strips everything (e.g. bad template), derive from laserMode
+    if (!onCmd) {
+      if (machine.laserMode === 'M3_M5') onCmd = `M3 S${g.power}`;
+      else if (machine.laserMode === 'M106_M107') onCmd = `M106 S${g.power}`;
+      else if (machine.laserMode === 'M3_M4_M5') onCmd = `M4 S${g.power}`;
+    }
     gcodeLines.push(onCmd);
-
     for (let i = 1; i < g.points.length; i++) {
       const p = g.points[i];
       const firstCut = i === 1;
@@ -626,7 +632,14 @@ export function generatePatternPaths(
   });
 
   gcodeLines.push(laserOffCmd);
-  gcodeLines.push('G28');
+  // Only emit G28 (home) in the footer if startGCode didn't already issue one,
+  // and if endGCode doesn't contain one — prevents a double-home on machines
+  // that include G28 in their custom start block.
+  const startHasHome = (machine.startGCode ?? '').toUpperCase().includes('G28');
+  const endHasHome = (machine.endGCode ?? '').toUpperCase().includes('G28');
+  if (!startHasHome && !endHasHome) {
+    gcodeLines.push('G28');
+  }
   gcodeLines.push('M9');
   if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));
 

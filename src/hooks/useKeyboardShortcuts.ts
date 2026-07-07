@@ -64,20 +64,28 @@ export function useKeyboardShortcuts({
           }
           break;
         case 'arrowup':
-          e.preventDefault();
-          onJogUp?.();
+          if (!e.repeat) {
+            e.preventDefault();
+            onJogUp?.();
+          }
           break;
         case 'arrowdown':
-          e.preventDefault();
-          onJogDown?.();
+          if (!e.repeat) {
+            e.preventDefault();
+            onJogDown?.();
+          }
           break;
         case 'arrowleft':
-          e.preventDefault();
-          onJogLeft?.();
+          if (!e.repeat) {
+            e.preventDefault();
+            onJogLeft?.();
+          }
           break;
         case 'arrowright':
-          e.preventDefault();
-          onJogRight?.();
+          if (!e.repeat) {
+            e.preventDefault();
+            onJogRight?.();
+          }
           break;
         case 'c':
           if (!e.ctrlKey && !e.altKey && !e.metaKey) {

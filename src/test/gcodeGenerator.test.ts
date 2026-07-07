@@ -44,6 +44,7 @@ const m3m4Machine: MachineProfile = {
   ...mockMachine,
   id: 'm3m4',
   laserMode: 'M3_M4_M5',
+  laserOn: 'M4 S{power}',
 };
 
 const deltaMachine: MachineProfile = {
