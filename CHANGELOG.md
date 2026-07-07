@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.8.2] — 2026-07-05
+
+### Fixed
+- **Preview cursor tracking** — removed inverted Y-axis on the hover crosshair in SVGVisualizer caused by double-negation against the CSS `scaleY(-1)` flip
+
+---
+
 ## [0.8.0] — 2026-06-29
 
 ### Added

@@ -104,8 +104,13 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
       if (result.profiles.length > 0) {
         onCreateBatch(result.profiles);
       }
+      const parts: string[] = [];
+      if (result.profiles.length > 0) parts.push(`${result.profiles.length} imported`);
+      if (result.duplicates > 0) parts.push(`${result.duplicates} skipped (duplicates)`);
+      if (result.invalid > 0) parts.push(`${result.invalid} invalid`);
+      await confirm(parts.length > 0 ? parts.join(', ') : 'No new profiles found');
     } catch (err) {
-      window.alert(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      await confirm(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -114,7 +119,7 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
     try {
       await copyProfileToClipboard(activeMaterial, 'material');
     } catch {
-      window.alert('Failed to copy to clipboard');
+      await confirm('Failed to copy to clipboard');
     }
   };
 
@@ -127,13 +132,14 @@ const MaterialDatabase: React.FC<MaterialDatabaseProps> = ({
       );
       if (result.profiles.length > 0) {
         onCreateBatch(result.profiles);
+        await confirm(`${result.profiles.length} profile(s) imported`);
       } else if (result.duplicates > 0) {
-        window.alert('Profile already exists');
+        await confirm('Profile already exists');
       } else {
-        window.alert('No valid material profile found on clipboard');
+        await confirm('No valid material profile found on clipboard');
       }
     } catch (err) {
-      window.alert(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      await confirm(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 

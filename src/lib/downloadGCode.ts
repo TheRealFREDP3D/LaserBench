@@ -1,9 +1,10 @@
 import type { PatternType } from '../types';
 
-/** Shared G-code download utility — deduplicates GCodeOutput and App handleDownloadGCode */
-export function downloadGCode(gcode: string, filename: string) {
-  const blob = new Blob([gcode], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
+/**
+ * Shared download trigger — creates a temporary anchor, clicks it, and revokes
+ * the object URL after a short delay. Used by both gcode and JSON downloads.
+ */
+export function triggerDownload(url: string, filename: string): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
@@ -11,6 +12,12 @@ export function downloadGCode(gcode: string, filename: string) {
   link.click();
   document.body.removeChild(link);
   setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+/** Shared G-code download utility */
+export function downloadGCode(gcode: string, filename: string): void {
+  const url = URL.createObjectURL(new Blob([gcode], { type: 'text/plain;charset=utf-8' }));
+  triggerDownload(url, filename);
 }
 
 export function makeGCodeFilename(patternType: PatternType, materialName: string): string {

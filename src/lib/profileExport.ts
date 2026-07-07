@@ -5,6 +5,7 @@ import {
   isValidMachineProfile,
   isValidMaterialProfile,
 } from './materialPresets';
+import { triggerDownload } from './downloadGCode';
 
 export type ProfileType = 'machine' | 'material';
 
@@ -27,15 +28,10 @@ function isExportEnvelope(obj: unknown): obj is ExportEnvelope<unknown> {
 }
 
 function downloadJson(filename: string, data: unknown): void {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 100);
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  );
+  triggerDownload(url, filename);
 }
 
 function generateFilename(type: ProfileType): string {

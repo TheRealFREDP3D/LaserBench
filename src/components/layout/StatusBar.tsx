@@ -1,4 +1,3 @@
-import React from 'react';
 import { Wifi, WifiOff, Cpu, Layers, Clock, Activity, Move } from 'lucide-react';
 
 interface StatusBarProps {
@@ -14,7 +13,7 @@ interface StatusBarProps {
   onDisconnect: () => void;
 }
 
-const StatusBar: React.FC<StatusBarProps> = ({
+const StatusBar = ({
   isConnected,
   machineName,
   firmware,
@@ -25,7 +24,7 @@ const StatusBar: React.FC<StatusBarProps> = ({
   movementMode,
   onConnect,
   onDisconnect,
-}) => {
+}: StatusBarProps) => {
   return (
     <div className="h-8 bg-[#0D0D0D] border-t border-white/8 flex items-center px-4 justify-between text-[10px] uppercase tracking-wider font-bold select-none">
       <div className="flex items-center gap-6">

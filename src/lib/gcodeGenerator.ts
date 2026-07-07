@@ -147,15 +147,19 @@ function generateMatrix(ctx: PatternContext) {
         powerSteps > 1 ? powerMin + (powerMax - powerMin) * (p / (powerSteps - 1)) : powerMin;
       const py = startY + p * (blockSize + gap);
 
-      const points: [number, number][] = [
-        [px, py],
-        [px + blockSize, py],
-        [px + blockSize, py + blockSize],
-        [px, py + blockSize],
-        [px, py],
-      ];
+      const stepover = 0.2 * patternScale;
+      const lines = Math.ceil(blockSize / stepover);
+      const rasterPoints: [number, number][] = [];
+      for (let i = 0; i <= lines; i++) {
+        const y = py + i * stepover;
+        if (i % 2 === 0) {
+          rasterPoints.push([px, y], [px + blockSize, y]);
+        } else {
+          rasterPoints.push([px + blockSize, y], [px, y]);
+        }
+      }
       addSegment(
-        points,
+        rasterPoints,
         Math.round(power),
         Math.round(speed),
         machine.zFocused + material.thickness,
@@ -171,11 +175,11 @@ function generateMatrix(ctx: PatternContext) {
           textSize * SMALL_LABEL_TEXT_SCALE,
           textLetterSpacing * SMALL_LABEL_SPACING_SCALE
         );
-pLabelPaths.forEach(stroke => {
-  if (stroke.length > 0) {
-    addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
-  }
-});
+        pLabelPaths.forEach(stroke => {
+          if (stroke.length > 0) {
+            addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+          }
+        });
       }
     }
   }
@@ -236,13 +240,19 @@ function generatePowerRamp(ctx: PatternContext) {
     );
   }
 
-  const labelOffset = LABEL_OFFSET_MM * patternScale;
   const label = `PWR RAMP: ${Math.round(powerMin)}-${Math.round(powerMax)} F${Math.round(speedMin)}`;
-lp.forEach(stroke => {
-  if (stroke.length > 0) {
-    addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
-  }
-});
+  const lp = renderTextPath(
+    label,
+    startX - label.length * textSize * 0.4,
+    startY + blockSize + LABEL_OFFSET_MM * patternScale,
+    textSize * LABEL_TEXT_SCALE,
+    textLetterSpacing * LABEL_SPACING_SCALE
+  );
+  lp.forEach(stroke => {
+    if (stroke.length > 0) {
+      addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+    }
+  });
 
   return { patternWidth: rampLen, patternHeight: blockSize + 10 * patternScale };
 }
@@ -291,11 +301,11 @@ function generateSpeedRamp(ctx: PatternContext) {
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
-  lp.forEach(stroke => {
-  if (stroke.length > 0) {
-    addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
-  }
-});
+    lp.forEach(stroke => {
+      if (stroke.length > 0) {
+        addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+      }
+    });
   }
 
   const title = `SPEED RAMP (S${Math.round(powerMin)})`;
@@ -306,11 +316,11 @@ function generateSpeedRamp(ctx: PatternContext) {
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
-tp.forEach(stroke => {
-  if (stroke.length > 0) {
-    addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
-  }
-});
+  tp.forEach(stroke => {
+    if (stroke.length > 0) {
+      addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+    }
+  });
 
   return { patternWidth: lineLen + 20 * patternScale, patternHeight: totalH + 10 * patternScale };
 }
@@ -337,13 +347,11 @@ function generateFocusLadder(ctx: PatternContext) {
   const startX = -lineLen / 2;
   const startY = -totalH / 2;
   const workingZ = machine.zFocused + material.thickness;
-  const stepSize = zSteps > 1 ? (zMax - zMin) / (zSteps - 1) : 0;
 
   for (let i = 0; i < zSteps; i++) {
     const z = zSteps > 1 ? zMin + (zMax - zMin) * (i / (zSteps - 1)) : zMin;
     const y = startY + i * lineGap;
 
-    // Add cutting segment; Z changes handled by main loop via z parameter
     addSegment(
       [
         [startX, y],
@@ -363,11 +371,11 @@ function generateFocusLadder(ctx: PatternContext) {
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
-  lp.forEach(stroke => {
-  if (stroke.length > 0) {
-    addSegment(stroke as [number, number][], labelPower, labelSpeed, workingZ, true);
-  }
-});
+    lp.forEach(stroke => {
+      if (stroke.length > 0) {
+        addSegment(stroke as [number, number][], labelPower, labelSpeed, z, true);
+      }
+    });
   }
 
   const title = `FOCUS LADDER (P:${engravePower} S:${engraveSpeed})`;
@@ -378,11 +386,11 @@ function generateFocusLadder(ctx: PatternContext) {
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
-tp.forEach(stroke => {
-  if (stroke.length > 0) {
-    addSegment(stroke as [number, number][], labelPower, labelSpeed, workingZ, true);
-  }
-});
+  tp.forEach(stroke => {
+    if (stroke.length > 0) {
+      addSegment(stroke as [number, number][], labelPower, labelSpeed, workingZ, true);
+    }
+  });
 
   return { patternWidth: lineLen + 30 * patternScale, patternHeight: totalH + 15 * patternScale };
 }
@@ -432,11 +440,11 @@ function generateKerfTest(ctx: PatternContext, nominal: number) {
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
-lp.forEach(stroke => {
-  if (stroke.length > 0) {
-    addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
-  }
-});
+    lp.forEach(stroke => {
+      if (stroke.length > 0) {
+        addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+      }
+    });
   });
 
   return { patternWidth: totalW, patternHeight: slotH + 10 * patternScale };
@@ -514,8 +522,9 @@ export function generatePatternPaths(
     pathGroups.push({ points: movedPoints, power, speed, z, isLaserOn, postSegmentGCode });
   }
 
-const labelPower = Math.round(material.cut.power);
-const labelSpeed = material.cut.speed;
+  // Use engrave settings for labels — cut power/speed would over-burn fine text
+  const labelPower = Math.round(material.engrave.power);
+  const labelSpeed = material.engrave.speed;
 
   const ctx: PatternContext = {
     machine,
@@ -565,25 +574,30 @@ const labelSpeed = material.cut.speed;
   }
 
   const gcodeLines: string[] = [];
-  if (machine.startGCode) gcodeLines.push(sanitizeGCodeBlock(machine.startGCode));
-  else {
+  if (machine.startGCode) {
+    gcodeLines.push(sanitizeGCodeBlock(machine.startGCode));
+  } else {
     gcodeLines.push('G21');
     gcodeLines.push('M106 S0');
   }
-
+  // Always switch to relative mode for generated moves, regardless of startGCode
   gcodeLines.push('G91');
+
+  const laserOffCmd = sanitizeGCodeLine(machine.laserOff) || 'M5';
 
   let currentZ = machine.zSecure;
   let currentFeed = 0;
-let laserOn = false;
   let prevX = 0;
   let prevY = 0;
-  pathGroups.forEach((g: PathSegment, idx: number) => {
+  pathGroups.forEach((g: PathSegment) => {
     const p0 = g.points[0];
     const zChanged = g.z !== currentZ;
     const deltaX0 = p0[0] - prevX;
     const deltaY0 = p0[1] - prevY;
     const deltaZ0 = g.z - currentZ;
+
+    gcodeLines.push(laserOffCmd);
+
     gcodeLines.push(
       `G0 F${machine.travelSpeed} X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${deltaZ0.toFixed(3)}` : ''}`
     );
@@ -592,20 +606,17 @@ let laserOn = false;
     currentZ = g.z;
 
     let onCmd = '';
-    if (machine.laserMode === 'M3_M5') onCmd = `M3 S${g.power}`;
-    else if (machine.laserMode === 'M106_M107') onCmd = `M106 S${g.power}`;
-    else if (machine.laserMode === 'M3_M4_M5') onCmd = `M4 S${g.power}`;
-
-    const prev = idx > 0 ? pathGroups[idx - 1] : null;
-    const next = idx < pathGroups.length - 1 ? pathGroups[idx + 1] : null;
-    const isEndOfGroup =
-      !next || next.power !== g.power || next.speed !== g.speed || next.z !== g.z;
-
-    const needOn = !laserOn || (prev && (prev.power !== g.power || prev.speed !== g.speed));
-    if (needOn) {
-      gcodeLines.push(onCmd);
-      laserOn = true;
+    // Build the laser-on command from the profile template so that user
+    // customizations to machine.laserOn are honoured in generated G-code,
+    // matching the behaviour of the manual Fire button in the console.
+    onCmd = sanitizeGCodeLine(machine.laserOn.replace('{power}', String(g.power)));
+    // Fallback: if sanitize strips everything (e.g. bad template), derive from laserMode
+    if (!onCmd) {
+      if (machine.laserMode === 'M3_M5') onCmd = `M3 S${g.power}`;
+      else if (machine.laserMode === 'M106_M107') onCmd = `M106 S${g.power}`;
+      else if (machine.laserMode === 'M3_M4_M5') onCmd = `M4 S${g.power}`;
     }
+    gcodeLines.push(onCmd);
     for (let i = 1; i < g.points.length; i++) {
       const p = g.points[i];
       const firstCut = i === 1;
@@ -618,29 +629,19 @@ let laserOn = false;
       prevY = p[1];
       currentFeed = g.speed;
     }
-
-    if (isEndOfGroup) {
-      let offCmd = '';
-      if (machine.laserMode === 'M3_M5') offCmd = 'M5';
-      else if (machine.laserMode === 'M106_M107') offCmd = 'M106 S0';
-      else if (machine.laserMode === 'M3_M4_M5') offCmd = 'M5';
-      else offCmd = sanitizeGCodeLine(machine.laserOff);
-      gcodeLines.push(offCmd);
-      laserOn = false;
-    }
   });
 
-  // Ensure head returns to Z secure height (absolute) before final commands
-  gcodeLines.push('G90');
-  gcodeLines.push(`G0 Z${machine.zSecure.toFixed(3)}`);
-  gcodeLines.push('G91');
-  let endOffCmd = '';
-  if (machine.laserMode === 'M3_M5') endOffCmd = 'M5';
-  else if (machine.laserMode === 'M106_M107') endOffCmd = 'M106 S0';
-  else if (machine.laserMode === 'M3_M4_M5') endOffCmd = 'M5';
-  gcodeLines.push(endOffCmd);
+  gcodeLines.push(laserOffCmd);
+  // Only emit G28 (home) in the footer if startGCode didn't already issue one,
+  // and if endGCode doesn't contain one — prevents a double-home on machines
+  // that include G28 in their custom start block.
+  const startHasHome = (machine.startGCode ?? '').toUpperCase().includes('G28');
+  const endHasHome = (machine.endGCode ?? '').toUpperCase().includes('G28');
+  if (!startHasHome && !endHasHome) {
+    gcodeLines.push('G28');
+  }
   gcodeLines.push('M9');
-  // No additional moves; leave head at its current position.
+  if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));
 
   const svgPaths: SvgPathElement[] = pathGroups.map((g: PathSegment) => {
     const d =

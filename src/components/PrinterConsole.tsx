@@ -1,16 +1,5 @@
-import React, { useState, useCallback, memo } from 'react';
-import {
-  Terminal,
-  Play,
-  Square,
-  RefreshCw,
-  Home,
-  Zap,
-  AlertTriangle,
-  Move,
-  Trash2,
-  Book,
-} from 'lucide-react';
+import { useState, useCallback, memo } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
 import { FireControls } from './console/FireControls';
@@ -59,15 +48,20 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
 
   const jog = useCallback(
     async (axis: string, dist: number) => {
-      if (axis === 'Z') {
-        await onSend('G91');
-        await onSend(`G0 Z${dist} F${activeMachine?.travelSpeed || 4000}`);
-        await onSend('G90');
-        return;
+      try {
+        if (axis === 'Z') {
+          await onSend('G91');
+          await onSend(`G0 Z${dist} F${activeMachine?.travelSpeed || 4000}`);
+          await onSend('G90');
+          return;
+        }
+        const dx = axis === 'X' ? dist : 0;
+        const dy = axis === 'Y' ? dist : 0;
+        onJogRelative(dx, dy);
+      } catch {
+        // Connection dropped between jog initiation and send — ignore silently;
+        // the serial store already logs the disconnect event.
       }
-      const dx = axis === 'X' ? dist : 0;
-      const dy = axis === 'Y' ? dist : 0;
-      onJogRelative(dx, dy);
     },
     [onSend, onJogRelative, activeMachine?.travelSpeed]
   );
@@ -143,10 +137,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
     if (isConnected && !isPrinting) handleFire();
   }, [isConnected, isPrinting, handleFire]);
 
-  const handleStopFireKey = useCallback(() => {
-    handleStopFire();
-  }, [handleStopFire]);
-
+  // Collapsed: no extra logic needed beyond calling handleStopFire directly
   const handleHomeKey = useCallback(() => {
     if (isConnected && !isPrinting) handleHome();
   }, [isConnected, isPrinting, handleHome]);
@@ -170,7 +161,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   useKeyboardShortcuts({
     onEStop: handleEStop,
     onFire: handleFireKey,
-    onStopFire: handleStopFireKey,
+    onStopFire: handleStopFire,
     onHome: handleHomeKey,
     onJogUp: handleJogUp,
     onJogDown: handleJogDown,

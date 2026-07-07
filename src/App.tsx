@@ -90,6 +90,8 @@ export default function App() {
     if (!base) return null;
     if (editedGCode !== null) {
       const parsed = parseGCode(editedGCode, activeMachine?.pwmMax || 1000);
+      const hasRealBounds = parsed.bounds.minX !== 0 || parsed.bounds.minY !== 0 ||
+        parsed.bounds.maxX !== 100 || parsed.bounds.maxY !== 100;
       const width = parsed.bounds.maxX - parsed.bounds.minX;
       const height = parsed.bounds.maxY - parsed.bounds.minY;
       return {
@@ -99,8 +101,11 @@ export default function App() {
         paths: parsed.paths,
         width: width || base.width,
         height: height || base.height,
-        offsetX: -parsed.bounds.minX,
-        offsetY: -parsed.bounds.minY,
+        // Only override offsets when the parser found real movement commands;
+        // the fallback bounds (0,0→100,100) mean no moves were found so we
+        // keep the base offsets to avoid clobbering a valid uploaded file.
+        offsetX: hasRealBounds ? -parsed.bounds.minX : base.offsetX,
+        offsetY: hasRealBounds ? -parsed.bounds.minY : base.offsetY,
       };
     }
     return base;
@@ -150,23 +155,29 @@ export default function App() {
   const handleJog = useCallback(
     (x: number, y: number) => {
       if (!isConnected) return;
-      const dx = Math.round((x - jogPos.x) * 100) / 100;
-      const dy = Math.round((y - jogPos.y) * 100) / 100;
-      send(`G0 X${(jogPos.x + dx).toFixed(2)} Y${(jogPos.y + dy).toFixed(2)}`);
-      setJogPos({ x: jogPos.x + dx, y: jogPos.y + dy });
+      setJogPos((prev) => {
+        const dx = Math.round((x - prev.x) * 100) / 100;
+        const dy = Math.round((y - prev.y) * 100) / 100;
+        const nx = prev.x + dx;
+        const ny = prev.y + dy;
+        send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)}`);
+        return { x: nx, y: ny };
+      });
     },
-    [isConnected, send, jogPos]
+    [isConnected, send]
   );
 
   const handleJogRelative = useCallback(
     (dx: number, dy: number) => {
       if (!isConnected) return;
-      const nx = Math.round((jogPos.x + dx) * 100) / 100;
-      const ny = Math.round((jogPos.y + dy) * 100) / 100;
-      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine?.travelSpeed || 4000}`);
-      setJogPos({ x: nx, y: ny });
+      setJogPos((prev) => {
+        const nx = Math.round((prev.x + dx) * 100) / 100;
+        const ny = Math.round((prev.y + dy) * 100) / 100;
+        send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine?.travelSpeed || 4000}`);
+        return { x: nx, y: ny };
+      });
     },
-    [isConnected, send, jogPos, activeMachine?.travelSpeed]
+    [isConnected, send, activeMachine?.travelSpeed]
   );
 
   const configPanel = (
@@ -319,6 +330,7 @@ export default function App() {
             paths={effectiveResults.paths}
             machine={activeMachine}
             onJog={handleJog}
+            isPrinting={isPrinting}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-neutral-800 text-sm font-mono tracking-widest uppercase opacity-20">

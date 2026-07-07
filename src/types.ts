@@ -40,7 +40,7 @@ export type MaterialCategory =
 export interface CalibrationHistoryEntry {
   id: string;
   date: string;
-  patternType: string;
+  patternType: PatternType | string;
   optimalPower?: number;
   optimalSpeed?: number;
   optimalFocusZ?: number;

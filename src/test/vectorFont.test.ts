@@ -23,17 +23,13 @@ describe('vectorFont', () => {
       expect(multiChar.length).toBeGreaterThanOrEqual(singleChar.length);
     });
 
-    it('unknown characters fall back to space (empty strokes)', () => {
+    it('unknown characters render as "?" substitution (visible, not blank)', () => {
+      // '!', '@', '#' have no glyph — they should each render as '?' strokes, not empty
       const strokes = renderTextPath('!@#', 0, 0, 4);
-      expect(strokes).toEqual([]);
+      expect(strokes.length).toBeGreaterThan(0);
     });
 
-    it('empty string returns empty array', () => {
-      const strokes = renderTextPath('', 0, 0, 4);
-      expect(strokes).toEqual([]);
-    });
-
-    it('space character produces no strokes', () => {
+    it('space character still produces no strokes', () => {
       const strokes = renderTextPath(' ', 0, 0, 4);
       expect(strokes).toEqual([]);
     });

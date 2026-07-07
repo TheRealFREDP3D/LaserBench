@@ -454,12 +454,28 @@ const GLYPHS: Record<string, number[][][]> = {
     ],
   ],
   ' ': [],
+  '?': [
+    [
+      [0, 8],
+      [4, 8],
+      [4, 4],
+      [2, 4],
+      [2, 2],
+    ],
+    [
+      [2, 0],
+      [2, 1],
+    ],
+  ],
 };
 
 /**
  * Returns an array of paths (strokes), where each path is an array of [x, y] coordinates.
  * Coordinates are computed such that the text starts at startX, startY.
  * Font glyph size (bounding box maximum height) is governed by size.
+ *
+ * Characters not present in the glyph table render as '?' so missing characters
+ * are visible rather than silently swallowed.
  */
 export function renderTextPath(
   text: string,
@@ -476,7 +492,8 @@ export function renderTextPath(
   let offsetX = 0;
   for (let i = 0; i < currentText.length; i++) {
     const char = currentText[i];
-    const glyphStrokes = GLYPHS[char] || GLYPHS[' '];
+    // Fall back to '?' for unknown chars so they render visibly, not as blank space.
+    const glyphStrokes = GLYPHS[char] ?? GLYPHS['?'] ?? GLYPHS[' '];
 
     for (const stroke of glyphStrokes) {
       const transformedStroke: [number, number][] = stroke.map(([gx, gy]) => [
