@@ -17,6 +17,7 @@ interface PatternState {
   zMax: number;
   zSteps: number;
   patternPosition: { x: number; y: number };
+  rasterStepover: number;
 
   setPatternType: (type: PatternType) => void;
   setPowerMin: (val: number) => void;
@@ -33,6 +34,7 @@ interface PatternState {
   setZMax: (val: number) => void;
   setZSteps: (val: number) => void;
   setPatternPosition: (pos: { x: number; y: number }) => void;
+  setRasterStepover: (val: number) => void;
 }
 
 export const usePatternStore = create<PatternState>((set) => ({
@@ -51,6 +53,7 @@ export const usePatternStore = create<PatternState>((set) => ({
   zMax: 5,
   zSteps: 5,
   patternPosition: { x: 0, y: 0 },
+  rasterStepover: 0.2,
 
   setPatternType: (type) => set({ selectedPattern: type }),
   setPowerMin: (val) => set({ powerMin: Math.max(0, Math.round(val)) }),
@@ -66,6 +69,7 @@ export const usePatternStore = create<PatternState>((set) => ({
   setZMin: (val) => set({ zMin: val }),
   setZMax: (val) => set({ zMax: val }),
   setZSteps: (val) => set({ zSteps: Math.max(1, Math.round(val)) }),
+  setRasterStepover: (val) => set({ rasterStepover: Math.max(0.01, val) }),
   setPatternPosition: (pos) =>
     set({
       patternPosition: {

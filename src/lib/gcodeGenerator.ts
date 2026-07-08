@@ -94,6 +94,7 @@ interface PatternContext {
   zMax: number;
   zSteps: number;
   kerfValues: number[];
+  rasterStepover: number;
 }
 
 function generateMatrix(ctx: PatternContext) {
@@ -113,6 +114,7 @@ function generateMatrix(ctx: PatternContext) {
     labelSpeed,
     machine,
     material,
+    rasterStepover,
   } = ctx;
 
   const gap = MATRIX_BLOCK_GAP_MM * patternScale;
@@ -135,19 +137,24 @@ function generateMatrix(ctx: PatternContext) {
       textSize * SMALL_LABEL_TEXT_SCALE,
       textLetterSpacing * SMALL_LABEL_SPACING_SCALE
     );
-    speedLabelPaths.forEach(stroke => {
+    speedLabelPaths.forEach((stroke) => {
       if (stroke.length > 0) {
-        addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+        addSegment(
+          stroke as [number, number][],
+          labelPower,
+          labelSpeed,
+          machine.zFocused + material.thickness,
+          true
+        );
       }
     });
-
 
     for (let p = 0; p < powerSteps; p++) {
       const power =
         powerSteps > 1 ? powerMin + (powerMax - powerMin) * (p / (powerSteps - 1)) : powerMin;
       const py = startY + p * (blockSize + gap);
 
-      const stepover = 0.2 * patternScale;
+      const stepover = rasterStepover;
       const lines = Math.ceil(blockSize / stepover);
       const rasterPoints: [number, number][] = [];
       for (let i = 0; i <= lines; i++) {
@@ -175,9 +182,15 @@ function generateMatrix(ctx: PatternContext) {
           textSize * SMALL_LABEL_TEXT_SCALE,
           textLetterSpacing * SMALL_LABEL_SPACING_SCALE
         );
-        pLabelPaths.forEach(stroke => {
+        pLabelPaths.forEach((stroke) => {
           if (stroke.length > 0) {
-            addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+            addSegment(
+              stroke as [number, number][],
+              labelPower,
+              labelSpeed,
+              machine.zFocused + material.thickness,
+              true
+            );
           }
         });
       }
@@ -248,9 +261,15 @@ function generatePowerRamp(ctx: PatternContext) {
     textSize * LABEL_TEXT_SCALE,
     textLetterSpacing * LABEL_SPACING_SCALE
   );
-  lp.forEach(stroke => {
+  lp.forEach((stroke) => {
     if (stroke.length > 0) {
-      addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+      addSegment(
+        stroke as [number, number][],
+        labelPower,
+        labelSpeed,
+        machine.zFocused + material.thickness,
+        true
+      );
     }
   });
 
@@ -301,9 +320,15 @@ function generateSpeedRamp(ctx: PatternContext) {
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
-    lp.forEach(stroke => {
+    lp.forEach((stroke) => {
       if (stroke.length > 0) {
-        addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+        addSegment(
+          stroke as [number, number][],
+          labelPower,
+          labelSpeed,
+          machine.zFocused + material.thickness,
+          true
+        );
       }
     });
   }
@@ -316,9 +341,15 @@ function generateSpeedRamp(ctx: PatternContext) {
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
-  tp.forEach(stroke => {
+  tp.forEach((stroke) => {
     if (stroke.length > 0) {
-      addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+      addSegment(
+        stroke as [number, number][],
+        labelPower,
+        labelSpeed,
+        machine.zFocused + material.thickness,
+        true
+      );
     }
   });
 
@@ -371,7 +402,7 @@ function generateFocusLadder(ctx: PatternContext) {
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
-    lp.forEach(stroke => {
+    lp.forEach((stroke) => {
       if (stroke.length > 0) {
         addSegment(stroke as [number, number][], labelPower, labelSpeed, z, true);
       }
@@ -386,7 +417,7 @@ function generateFocusLadder(ctx: PatternContext) {
     textSize * TITLE_TEXT_SCALE,
     textLetterSpacing * TITLE_SPACING_SCALE
   );
-  tp.forEach(stroke => {
+  tp.forEach((stroke) => {
     if (stroke.length > 0) {
       addSegment(stroke as [number, number][], labelPower, labelSpeed, workingZ, true);
     }
@@ -440,9 +471,15 @@ function generateKerfTest(ctx: PatternContext, nominal: number) {
       textSize * LABEL_TEXT_SCALE,
       textLetterSpacing * LABEL_SPACING_SCALE
     );
-    lp.forEach(stroke => {
+    lp.forEach((stroke) => {
       if (stroke.length > 0) {
-        addSegment(stroke as [number, number][], labelPower, labelSpeed, machine.zFocused + material.thickness, true);
+        addSegment(
+          stroke as [number, number][],
+          labelPower,
+          labelSpeed,
+          machine.zFocused + material.thickness,
+          true
+        );
       }
     });
   });
@@ -469,6 +506,7 @@ export function generatePatternPaths(
     zMax?: number;
     zSteps?: number;
     patternPosition?: { x: number; y: number };
+    rasterStepover?: number;
   }
 ): GeneratedData {
   const powerMin = Math.min(config.powerMin ?? 50, config.powerMax ?? machine.pwmMax);
@@ -482,6 +520,7 @@ export function generatePatternPaths(
   const zMax = config.zMax ?? 5;
   const zSteps = config.zSteps ?? 5;
   const kerfValues = config.kerfValues ?? [0.1, 0.15, 0.2, 0.25];
+  const rasterStepover = config.rasterStepover ?? 0.2;
   const pos = config.patternPosition ?? { x: 0, y: 0 };
 
   const textSize = Math.max(2, config.textSize ?? blockSize * 0.4);
@@ -546,6 +585,7 @@ export function generatePatternPaths(
     zMax,
     zSteps,
     kerfValues,
+    rasterStepover,
   };
 
   let patternWidth = 100;
@@ -580,10 +620,21 @@ export function generatePatternPaths(
     gcodeLines.push('G21');
     gcodeLines.push('M106 S0');
   }
-  // Always switch to relative mode for generated moves, regardless of startGCode
+
+  // Move to initial position in absolute mode
+  gcodeLines.push('G90');
+  gcodeLines.push(
+    `G0 F${machine.travelSpeed} X${pos.x.toFixed(3)} Y${pos.y.toFixed(3)} Z${machine.zSecure.toFixed(3)}`
+  );
+
+  // Switch to relative mode for pattern generation
   gcodeLines.push('G91');
 
-  const laserOffCmd = sanitizeGCodeLine(machine.laserOff) || 'M5';
+  let laserOffCmd = sanitizeGCodeLine(machine.laserOff);
+  if (!laserOffCmd) {
+    if (machine.laserMode === 'M106_M107') laserOffCmd = 'M107';
+    else laserOffCmd = 'M5';
+  }
 
   let currentZ = machine.zSecure;
   let currentFeed = 0;
@@ -599,7 +650,7 @@ export function generatePatternPaths(
     gcodeLines.push(laserOffCmd);
 
     gcodeLines.push(
-      `G0 F${machine.travelSpeed} X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${deltaZ0.toFixed(3)}` : ''}`
+      `G0 X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${deltaZ0.toFixed(3)}` : ''}`
     );
     prevX = p0[0];
     prevY = p0[1];
@@ -639,6 +690,8 @@ export function generatePatternPaths(
   const endHasHome = (machine.endGCode ?? '').toUpperCase().includes('G28');
   if (!startHasHome && !endHasHome) {
     gcodeLines.push('G28');
+    gcodeLines.push('G90');
+    gcodeLines.push(`G0 Z${machine.zSecure.toFixed(3)} F${machine.travelSpeed}`);
   }
   gcodeLines.push('M9');
   if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));

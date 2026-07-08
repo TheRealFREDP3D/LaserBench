@@ -132,7 +132,8 @@ const PatternConfigurator: React.FC = () => {
                 unit="F"
               />
 
-              {(patternStore.selectedPattern === 'matrix' || patternStore.selectedPattern === 'speed_ramp') && (
+              {(patternStore.selectedPattern === 'matrix' ||
+                patternStore.selectedPattern === 'speed_ramp') && (
                 <ParameterField
                   label="Speed Steps"
                   id="spd-steps"
@@ -140,6 +141,19 @@ const PatternConfigurator: React.FC = () => {
                   max={10}
                   value={patternStore.speedSteps}
                   onChange={patternStore.setSpeedSteps}
+                />
+              )}
+
+              {patternStore.selectedPattern === 'matrix' && (
+                <ParameterField
+                  label="Raster Stepover"
+                  id="raster-stepover"
+                  min={0.01}
+                  max={2}
+                  step={0.01}
+                  value={patternStore.rasterStepover}
+                  onChange={patternStore.setRasterStepover}
+                  unit="mm"
                 />
               )}
             </>
