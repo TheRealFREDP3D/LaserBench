@@ -690,8 +690,7 @@ export function generatePatternPaths(
   const endHasHome = (machine.endGCode ?? '').toUpperCase().includes('G28');
   if (!startHasHome && !endHasHome) {
     gcodeLines.push('G28');
-    gcodeLines.push('G90');
-    gcodeLines.push(`G0 Z${machine.zSecure.toFixed(3)} F${machine.travelSpeed}`);
+    gcodeLines.splice(gcodeLines.length - 1, 0, 'G90', `G0 Z${machine.zSecure.toFixed(3)} F${machine.travelSpeed}`);
   }
   gcodeLines.push('M9');
   if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));
