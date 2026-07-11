@@ -520,7 +520,7 @@ export function generatePatternPaths(
   const zMax = config.zMax ?? 5;
   const zSteps = config.zSteps ?? 5;
   const kerfValues = config.kerfValues ?? [0.1, 0.15, 0.2, 0.25];
-  const rasterStepover = config.rasterStepover ?? 0.2;
+  const rasterStepover = Math.max(0.01, config.rasterStepover ?? 0.2);
   const pos = config.patternPosition ?? { x: 0, y: 0 };
 
   const textSize = Math.max(2, config.textSize ?? blockSize * 0.4);
