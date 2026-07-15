@@ -1,3 +1,4 @@
+import { useSerialStore } from '../store/useSerialStore';
 import { memo, useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { MachineProfile, SvgPathElement, PathSegment } from '../types';
 import { usePatternStore } from '../store/usePatternStore';
@@ -21,14 +22,9 @@ interface SimPoint {
   isLaserOn: boolean;
 }
 
-const SVGVisualizer = ({
-  svgPaths,
-  paths,
-  machine,
-  onJog,
-  isPrinting,
-}: SVGVisualizerProps) => {
+const SVGVisualizer = ({ svgPaths, paths, machine, onJog, isPrinting }: SVGVisualizerProps) => {
   const p = usePatternStore();
+  const activePathIndex = useSerialStore((s) => s.activePathIndex);
   const svgRef = useRef<SVGSVGElement>(null);
   const wheelThrottleRef = useRef(0);
 
@@ -425,18 +421,22 @@ const SVGVisualizer = ({
                     );
                   });
                 })()
-              : svgPaths.map((sp, i) => (
-                  <path
-                    key={i}
-                    d={sp.d}
-                    fill="none"
-                    stroke={sp.stroke}
-                    strokeWidth={sp.strokeWidth}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    opacity={isPrinting ? 0.3 : 1}
-                  />
-                ))}
+              : svgPaths.map((sp, i) => {
+                  const isActive = isPrinting && i === activePathIndex;
+                  return (
+                    <path
+                      key={i}
+                      d={sp.d}
+                      fill="none"
+                      stroke={isActive ? '#ffffff' : sp.stroke}
+                      strokeWidth={isActive ? parseFloat(sp.strokeWidth) * 2 : sp.strokeWidth}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity={isPrinting ? (isActive ? 1 : 0.2) : 1}
+                      className={isActive ? 'animate-pulse' : ''}
+                    />
+                  );
+                })}
           </g>
 
           <g
@@ -536,11 +536,7 @@ const SVGVisualizer = ({
             }`}
             title={isSimPlaying ? 'Pause' : 'Play'}
           >
-            {isSimPlaying ? (
-              <Pause className="w-3.5 h-3.5" />
-            ) : (
-              <Play className="w-3.5 h-3.5" />
-            )}
+            {isSimPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
           </button>
           <button
             onClick={resetSim}

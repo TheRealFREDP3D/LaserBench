@@ -9,6 +9,8 @@ export interface SerialState {
   messages: SerialMessage[];
   isPrinting: boolean;
   progress: number;
+  activePathIndex: number;
+  currentPos: { x: number; y: number; z: number };
   movementMode: 'G90' | 'G91';
   connect: (baudRate?: number) => Promise<void>;
   disconnect: () => Promise<void>;
@@ -117,8 +119,7 @@ class SerialConnection {
   pushMessage(type: 'sent' | 'received', text: string) {
     const msg: SerialMessage = { type, text, timestamp: Date.now() };
     const prev = this.messages;
-    this.messages =
-      prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg] : [...prev, msg];
+    this.messages = prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg] : [...prev, msg];
     this.setState({ messages: this.messages });
   }
 
@@ -199,6 +200,8 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     messages: [],
     isPrinting: false,
     progress: 0,
+    activePathIndex: -1,
+    currentPos: { x: 0, y: 0, z: 0 },
     movementMode: 'G90' as const,
 
     // ── connect ────────────────────────────────────────────────────────────
@@ -228,7 +231,11 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       } catch (error) {
         console.error('Failed to connect:', error);
         if (conn.port) {
-          try { await conn.port.close(); } catch { /* ignore */ }
+          try {
+            await conn.port.close();
+          } catch {
+            /* ignore */
+          }
           conn.port = null;
         }
         conn.pushMessage('received', 'Error: ' + (error as Error).message);
@@ -310,7 +317,14 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         // so the drain phase waits for exactly that many 'ok' responses.
         let unacknowledged = 0;
 
+        let pathCounter = -1;
         for (let i = 0; i < totalLines; i++) {
+          const line = lines[i].toUpperCase();
+          // Each G0 (except the initial setup moves) typically corresponds to a new PathSegment starting
+          if (line.startsWith('G0') && !line.includes('Z')) {
+            pathCounter++;
+            set({ activePathIndex: pathCounter });
+          }
           if (!conn.keepReading || conn.abortingPrint) break;
 
           try {
@@ -351,7 +365,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         conn.pushMessage('received', 'Print error: ' + (error as Error).message);
       } finally {
         conn.resetFlowControl();
-        set({ isPrinting: false });
+        set({ isPrinting: false, activePathIndex: -1 });
         conn.printing = false;
         conn.abortingPrint = false;
       }
