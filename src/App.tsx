@@ -1,3 +1,4 @@
+import MachineFrontView from './components/MachineFrontView';
 import {
   useMemo,
   useCallback,
@@ -44,6 +45,7 @@ export default function App() {
     messages,
     isPrinting,
     progress,
+    currentPos,
     movementMode,
     connect,
     disconnect,
@@ -69,7 +71,6 @@ export default function App() {
   const activeMachine = useMachineStore(selectActiveMachine);
   const activeMaterial = useMaterialStore(selectActiveMaterial);
 
-  const [jogPos, setJogPos] = useState({ x: 0, y: 0 });
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
   const [showDictionary, setShowDictionary] = useState(false);
   const [uploadedGCode, setUploadedGCode] = useState<GeneratedData | null>(null);
@@ -90,8 +91,11 @@ export default function App() {
     if (!base) return null;
     if (editedGCode !== null) {
       const parsed = parseGCode(editedGCode, activeMachine?.pwmMax || 1000);
-      const hasRealBounds = parsed.bounds.minX !== 0 || parsed.bounds.minY !== 0 ||
-        parsed.bounds.maxX !== 100 || parsed.bounds.maxY !== 100;
+      const hasRealBounds =
+        parsed.bounds.minX !== 0 ||
+        parsed.bounds.minY !== 0 ||
+        parsed.bounds.maxX !== 100 ||
+        parsed.bounds.maxY !== 100;
       const width = parsed.bounds.maxX - parsed.bounds.minX;
       const height = parsed.bounds.maxY - parsed.bounds.minY;
       return {
@@ -155,29 +159,23 @@ export default function App() {
   const handleJog = useCallback(
     (x: number, y: number) => {
       if (!isConnected) return;
-      setJogPos((prev) => {
-        const dx = Math.round((x - prev.x) * 100) / 100;
-        const dy = Math.round((y - prev.y) * 100) / 100;
-        const nx = prev.x + dx;
-        const ny = prev.y + dy;
-        send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)}`);
-        return { x: nx, y: ny };
-      });
+      const dx = Math.round((x - currentPos.x) * 100) / 100;
+      const dy = Math.round((y - currentPos.y) * 100) / 100;
+      const nx = currentPos.x + dx;
+      const ny = currentPos.y + dy;
+      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)}`);
     },
-    [isConnected, send]
+    [isConnected, send, currentPos]
   );
 
   const handleJogRelative = useCallback(
     (dx: number, dy: number) => {
       if (!isConnected) return;
-      setJogPos((prev) => {
-        const nx = Math.round((prev.x + dx) * 100) / 100;
-        const ny = Math.round((prev.y + dy) * 100) / 100;
-        send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine?.travelSpeed || 4000}`);
-        return { x: nx, y: ny };
-      });
+      const nx = Math.round((currentPos.x + dx) * 100) / 100;
+      const ny = Math.round((currentPos.y + dy) * 100) / 100;
+      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine?.travelSpeed || 4000}`);
     },
-    [isConnected, send, activeMachine?.travelSpeed]
+    [isConnected, send, activeMachine, currentPos]
   );
 
   const configPanel = (
@@ -324,14 +322,19 @@ export default function App() {
     <div className="flex-1 flex flex-col min-w-0 bg-[#000] items-center justify-center">
       <div className="flex-1 relative w-full h-full">
         {effectiveResults && activeMachine && activeMaterial ? (
-          <SVGVisualizer
-            key={`${activeMachine.id}-${activeMachine.bedWidth}-${activeMachine.bedHeight}-${activeMachine.bedShape}`}
-            svgPaths={effectiveResults.svgPaths}
-            paths={effectiveResults.paths}
-            machine={activeMachine}
-            onJog={handleJog}
-            isPrinting={isPrinting}
-          />
+          <>
+            <SVGVisualizer
+              key={`${activeMachine.id}-${activeMachine.bedWidth}-${activeMachine.bedHeight}-${activeMachine.bedShape}`}
+              svgPaths={effectiveResults.svgPaths}
+              paths={effectiveResults.paths}
+              machine={activeMachine}
+              onJog={handleJog}
+              isPrinting={isPrinting}
+            />
+            <div className="absolute bottom-4 right-4 z-10 pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
+              <MachineFrontView machine={activeMachine} currentPos={currentPos} />
+            </div>
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-neutral-800 text-sm font-mono tracking-widest uppercase opacity-20">
             Waiting for generation...
