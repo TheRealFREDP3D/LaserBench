@@ -11,6 +11,11 @@ export interface GCodeEntry {
   compatibility: string;
 }
 
+function getSValue(command: string): number {
+  const sMatch = command.match(/S(\d+(?:\.\d+)?)/);
+  return sMatch ? parseFloat(sMatch[1]) : 0;
+}
+
 export function validateGCode(command: string): {
   level: 'safe' | 'warn' | 'block';
   message: string;
@@ -34,8 +39,7 @@ export function validateGCode(command: string): {
     upper === 'M4' ||
     /^M106\b/.test(upper)
   ) {
-    const sMatch = upper.match(/S(\d+(?:\.\d+)?)/);
-    const sValue = sMatch ? parseFloat(sMatch[1]) : 0;
+    const sValue = getSValue(upper);
     if (sValue > 0) {
       return {
         level: 'block',
