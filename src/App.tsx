@@ -158,22 +158,52 @@ export default function App() {
 
   const handleJog = useCallback(
     (x: number, y: number) => {
-      if (!isConnected) return;
-      const dx = Math.round((x - currentPos.x) * 100) / 100;
-      const dy = Math.round((y - currentPos.y) * 100) / 100;
+      if (!isConnected || !activeMachine) return;
+      // Clamp to bed bounds
+      let clampedX = x;
+      let clampedY = y;
+      if (activeMachine.bedShape === 'circular') {
+        const r = activeMachine.bedWidth / 2;
+        const dist = Math.sqrt(x * x + y * y);
+        if (dist > r) {
+          clampedX = (x / dist) * r;
+          clampedY = (y / dist) * r;
+        }
+      } else {
+        clampedX = Math.max(0, Math.min(activeMachine.bedWidth, x));
+        clampedY = Math.max(0, Math.min(activeMachine.bedHeight, y));
+      }
+      const dx = Math.round((clampedX - currentPos.x) * 100) / 100;
+      const dy = Math.round((clampedY - currentPos.y) * 100) / 100;
       const nx = currentPos.x + dx;
       const ny = currentPos.y + dy;
-      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)}`);
+      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine.travelSpeed || 4000}`);
     },
-    [isConnected, send, currentPos]
+    [isConnected, send, currentPos, activeMachine]
   );
 
   const handleJogRelative = useCallback(
     (dx: number, dy: number) => {
-      if (!isConnected) return;
-      const nx = Math.round((currentPos.x + dx) * 100) / 100;
-      const ny = Math.round((currentPos.y + dy) * 100) / 100;
-      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine?.travelSpeed || 4000}`);
+      if (!isConnected || !activeMachine) return;
+      const targetX = currentPos.x + dx;
+      const targetY = currentPos.y + dy;
+      // Clamp to bed bounds
+      let clampedX = targetX;
+      let clampedY = targetY;
+      if (activeMachine.bedShape === 'circular') {
+        const r = activeMachine.bedWidth / 2;
+        const dist = Math.sqrt(targetX * targetX + targetY * targetY);
+        if (dist > r) {
+          clampedX = (targetX / dist) * r;
+          clampedY = (targetY / dist) * r;
+        }
+      } else {
+        clampedX = Math.max(0, Math.min(activeMachine.bedWidth, targetX));
+        clampedY = Math.max(0, Math.min(activeMachine.bedHeight, targetY));
+      }
+      const nx = Math.round(clampedX * 100) / 100;
+      const ny = Math.round(clampedY * 100) / 100;
+      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine.travelSpeed || 4000}`);
     },
     [isConnected, send, activeMachine, currentPos]
   );

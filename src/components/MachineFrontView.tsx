@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { MachineProfile } from '../types';
 import { DeltaKinematics } from '../lib/deltaKinematics';
 
@@ -9,12 +9,12 @@ interface MachineFrontViewProps {
   height?: number;
 }
 
-const MachineFrontView: React.FC<MachineFrontViewProps> = ({
+function MachineFrontView({
   machine,
   currentPos,
   width = 300,
   height = 200,
-}) => {
+}: MachineFrontViewProps) {
   const isDelta = !!machine.isDelta;
 
   // Z Scale: Bed at 0, max height at maybe machine.zSecure + 50
@@ -24,6 +24,14 @@ const MachineFrontView: React.FC<MachineFrontViewProps> = ({
 
   const deltaKin = useMemo(() => {
     if (!isDelta) return null;
+    if (
+      machine.deltaRadius == null ||
+      machine.deltaRodLength == null ||
+      machine.deltaTowerAngleOffset == null ||
+      machine.deltaPrintRadius == null
+    ) {
+      return null;
+    }
     return new DeltaKinematics({
       deltaRadius: machine.deltaRadius,
       deltaRodLength: machine.deltaRodLength,
@@ -153,6 +161,6 @@ const MachineFrontView: React.FC<MachineFrontViewProps> = ({
       </svg>
     </div>
   );
-};
+}
 
 export default MachineFrontView;

@@ -154,7 +154,7 @@ function generateMatrix(ctx: PatternContext) {
         powerSteps > 1 ? powerMin + (powerMax - powerMin) * (p / (powerSteps - 1)) : powerMin;
       const py = startY + p * (blockSize + gap);
 
-      const stepover = rasterStepover;
+      const stepover = rasterStepover * patternScale;
       const lines = Math.ceil(blockSize / stepover);
       const rasterPoints: [number, number][] = [];
       for (let i = 0; i <= lines; i++) {
@@ -691,7 +691,6 @@ export function generatePatternPaths(
   if (!startHasHome && !endHasHome) {
     gcodeLines.push('G28');
     gcodeLines.push('G90');
-    gcodeLines.push(`G0 Z${machine.zSecure.toFixed(3)} F${machine.travelSpeed}`);
   }
   gcodeLines.push('M9');
   if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));

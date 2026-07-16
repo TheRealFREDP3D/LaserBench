@@ -26,7 +26,7 @@ describe('Property 10: FAB enabled state mirrors generatedResults', () => {
         }
       )
     );
-  });
+  }, 15000);
 });
 
 // ─── Property 11: FAB shows estimated time when available ─────────

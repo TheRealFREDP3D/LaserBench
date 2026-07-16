@@ -148,6 +148,28 @@ class SerialConnection {
 
             this.pushMessage('received', trimmed);
 
+            // Parse GRBL status reports: <State|MPos:x,y,z|...> or <State|WPos:x,y,z|...>
+            const grblStatusMatch = trimmed.match(/^<(\w+)\|([MW])Pos:([-\d.]+),([-\d.]+),([-\d.]+)/i);
+            if (grblStatusMatch) {
+              const x = parseFloat(grblStatusMatch[3]);
+              const y = parseFloat(grblStatusMatch[4]);
+              const z = parseFloat(grblStatusMatch[5]);
+              if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+                this.setState({ currentPos: { x, y, z } });
+              }
+            }
+
+            // Parse Marlin M114 response: X:0.00 Y:0.00 Z:0.00 E:0.00 Count X:0 Y:0 Z:0
+            const marlinPosMatch = trimmed.match(/X:([-\d.]+)\s+Y:([-\d.]+)\s+Z:([-\d.]+)/i);
+            if (marlinPosMatch && !grblStatusMatch) {
+              const x = parseFloat(marlinPosMatch[1]);
+              const y = parseFloat(marlinPosMatch[2]);
+              const z = parseFloat(marlinPosMatch[3]);
+              if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+                this.setState({ currentPos: { x, y, z } });
+              }
+            }
+
             if (trimmed.toLowerCase().startsWith('ok')) {
               this.releaseSlot();
             } else if (
@@ -318,10 +340,18 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         let unacknowledged = 0;
 
         let pathCounter = -1;
+        let inRelativeMode = false;
         for (let i = 0; i < totalLines; i++) {
           const line = lines[i].toUpperCase();
-          // Each G0 (except the initial setup moves) typically corresponds to a new PathSegment starting
-          if (line.startsWith('G0') && !line.includes('Z')) {
+          // Track when we switch to relative mode (G91) — pattern moves start here
+          if (line.startsWith('G91')) {
+            inRelativeMode = true;
+          } else if (line.startsWith('G90')) {
+            inRelativeMode = false;
+          }
+          // Each G0 in relative mode starts a new PathSegment.
+          // G0 lines before G91 are absolute positioning moves and are skipped.
+          if (inRelativeMode && line.startsWith('G0') && !line.includes('Z')) {
             pathCounter++;
             set({ activePathIndex: pathCounter });
           }
