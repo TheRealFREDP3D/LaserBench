@@ -148,3 +148,15 @@ Web Serial API is required for printer connection:
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
+
+## ** Images **
+
+- Full workflow - Focus Ladder Patern - Realtime Preview
+
+![Full workflow - Focus Ladder Patern - Realtime Preview](images/pattern_focus_ladder_full_workflow.gif)
+
+- Focus Ladder Result
+
+![Focus Ladder Result ](images/result_focus_ladder.jpg)
+
+---
