@@ -32,7 +32,7 @@ export function validateGCode(command: string): {
     upper === 'M3' ||
     upper.startsWith('M4 ') ||
     upper === 'M4' ||
-    upper.startsWith('M106')
+    /^M106\b/.test(upper)
   ) {
     const sMatch = upper.match(/S(\d+(?:\.\d+)?)/);
     const sValue = sMatch ? parseFloat(sMatch[1]) : 0;

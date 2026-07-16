@@ -156,26 +156,62 @@ export default function App() {
     connect(activeMachine?.baudRate);
   }, [connect, activeMachine]);
 
+  const clampToBed = useCallback(
+    (machine: MachineProfile, x: number, y: number): { x: number; y: number } => {
+      if (machine.bedShape === 'circular') {
+        const r = machine.bedWidth / 2;
+        const dist = Math.sqrt(x * x + y * y);
+        if (dist > r) {
+          return {
+            x: (x / dist) * r,
+            y: (y / dist) * r,
+          };
+        }
+        return { x, y };
+      }
+
+      return {
+        x: Math.max(0, Math.min(machine.bedWidth, x)),
+        y: Math.max(0, Math.min(machine.bedHeight, y)),
+      };
+    },
+    []
+  );
+
+  const buildJogCommand = useCallback(
+    (x: number, y: number, machine: MachineProfile): string => {
+      const nx = Math.round(x * 100) / 100;
+      const ny = Math.round(y * 100) / 100;
+      const feed = machine.travelSpeed || 4000;
+      return `G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${feed}`;
+    },
+    []
+  );
+
   const handleJog = useCallback(
     (x: number, y: number) => {
-      if (!isConnected) return;
-      const dx = Math.round((x - currentPos.x) * 100) / 100;
-      const dy = Math.round((y - currentPos.y) * 100) / 100;
-      const nx = currentPos.x + dx;
-      const ny = currentPos.y + dy;
-      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)}`);
+      if (!isConnected || !activeMachine) return;
+
+      const { x: clampedX, y: clampedY } = clampToBed(activeMachine, x, y);
+      const targetX = currentPos.x + Math.round((clampedX - currentPos.x) * 100) / 100;
+      const targetY = currentPos.y + Math.round((clampedY - currentPos.y) * 100) / 100;
+
+      send(buildJogCommand(targetX, targetY, activeMachine));
     },
-    [isConnected, send, currentPos]
+    [isConnected, send, currentPos, activeMachine, clampToBed, buildJogCommand]
   );
 
   const handleJogRelative = useCallback(
     (dx: number, dy: number) => {
-      if (!isConnected) return;
-      const nx = Math.round((currentPos.x + dx) * 100) / 100;
-      const ny = Math.round((currentPos.y + dy) * 100) / 100;
-      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine?.travelSpeed || 4000}`);
+      if (!isConnected || !activeMachine) return;
+
+      const targetX = currentPos.x + dx;
+      const targetY = currentPos.y + dy;
+      const { x: clampedX, y: clampedY } = clampToBed(activeMachine, targetX, targetY);
+
+      send(buildJogCommand(clampedX, clampedY, activeMachine));
     },
-    [isConnected, send, activeMachine, currentPos]
+    [isConnected, send, currentPos, activeMachine, clampToBed, buildJogCommand]
   );
 
   const configPanel = (
