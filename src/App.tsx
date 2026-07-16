@@ -47,6 +47,7 @@ export default function App() {
     progress,
     currentPos,
     movementMode,
+    isHomed,
     connect,
     disconnect,
     send,
@@ -442,6 +443,7 @@ export default function App() {
         isPrinting={isPrinting}
         progress={progress}
         movementMode={movementMode}
+        isHomed={isHomed}
         onConnect={handleConnect}
         onDisconnect={disconnect}
       />

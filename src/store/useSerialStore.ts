@@ -12,6 +12,7 @@ export interface SerialState {
   activePathIndex: number;
   currentPos: { x: number; y: number; z: number };
   movementMode: 'G90' | 'G91';
+  isHomed: boolean;
   connect: (baudRate?: number) => Promise<void>;
   disconnect: () => Promise<void>;
   send: (command: string, silent?: boolean, skipFlowControl?: boolean) => Promise<void>;
@@ -225,6 +226,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     activePathIndex: -1,
     currentPos: { x: 0, y: 0, z: 0 },
     movementMode: 'G90' as const,
+    isHomed: false,
 
     // ── connect ────────────────────────────────────────────────────────────
     connect: async (baudRate?: number) => {
@@ -246,7 +248,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         }
         conn.writer = encoder.writable.getWriter();
 
-        set({ isConnected: true, movementMode: 'G90' });
+        set({ isConnected: true, movementMode: 'G90', isHomed: false });
         conn.keepReading = true;
         conn.startReadLoop();
         conn.pushMessage('sent', '--- Connected to printer ---');
@@ -278,7 +280,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         console.error('Error during disconnect:', error);
       } finally {
         conn.port = null;
-        set({ isConnected: false, connectionState: 'offline' });
+        set({ isConnected: false, connectionState: 'offline', isHomed: false });
         conn.resetFlowControl();
         conn.pushMessage('sent', '--- Disconnected ---');
       }
@@ -304,6 +306,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       const upper = command.toUpperCase();
       if (/\bG90\b/.test(upper)) set({ movementMode: 'G90' });
       if (/\bG91\b/.test(upper)) set({ movementMode: 'G91' });
+      if (/\bG28\b/.test(upper)) set({ isHomed: true });
       if (!silent) {
         conn.pushMessage('sent', command);
       }

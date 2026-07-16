@@ -39,6 +39,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   onJogRelative,
 }: PrinterConsoleProps) {
   const [showHomingWarning, setShowHomingWarning] = useState(false);
+  const [showSafeZPrompt, setShowSafeZPrompt] = useState(false);
   const [jogStep, setJogStep] = useState(10);
   const [pendingWarning, setPendingWarning] = useState<{
     command: string;
@@ -69,9 +70,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   const handleHome = useCallback(async () => {
     await onSend('G28');
     if (activeMachine?.zSecure !== undefined) {
-      // Ensure absolute mode and move to secure Z after homing
-      await onSend('G90');
-      await onSend(`G0 Z${activeMachine.zSecure} F${activeMachine.travelSpeed || 4000}`);
+      setShowSafeZPrompt(true);
     }
   }, [onSend, activeMachine]);
 
@@ -84,6 +83,18 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   const handleStopFire = useCallback(() => {
     onSend(activeMachine?.laserOff ?? 'M5');
   }, [activeMachine, onSend]);
+
+  const handleMoveToSafeZ = useCallback(async () => {
+    setShowSafeZPrompt(false);
+    if (activeMachine?.zSecure !== undefined) {
+      await onSend('G90');
+      await onSend(`G0 Z${activeMachine.zSecure} F${activeMachine.travelSpeed || 4000}`);
+    }
+  }, [onSend, activeMachine]);
+
+  const handleCancelSafeZ = useCallback(() => {
+    setShowSafeZPrompt(false);
+  }, []);
 
   const handleEStop = useCallback(() => {
     if (isConnected) onSend('M112');
@@ -238,6 +249,28 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
                 className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-[10px] rounded font-bold transition"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showSafeZPrompt && !isPrinting && (
+          <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 bg-blue-950/60 border border-blue-800/50 rounded-lg text-xs">
+            <div className="flex items-center gap-2 text-blue-300">
+              <span>Move to safe Z position ({activeMachine?.zSecure}mm)?</span>
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              <button
+                onClick={handleMoveToSafeZ}
+                className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] rounded font-bold transition"
+              >
+                Move to Safe Z
+              </button>
+              <button
+                onClick={handleCancelSafeZ}
+                className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-[10px] rounded font-bold transition"
+              >
+                Skip
               </button>
             </div>
           </div>
