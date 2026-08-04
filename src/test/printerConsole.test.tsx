@@ -34,6 +34,7 @@ const defaultProps = {
   onAbortPrint: vi.fn(),
   onJogRelative: vi.fn(),
   activeMachine: mockMachine,
+  onHome: vi.fn(),
 };
 
 function renderConsole(overrides = {}) {
@@ -191,5 +192,83 @@ describe('PrinterConsole', () => {
     renderConsole({ isConnected: true, isHomed: false, onJogRelative });
     fireEvent.keyDown(document, { key: 'ArrowUp' });
     expect(onJogRelative).toHaveBeenCalledWith(0, 10);
+  });
+
+  it('shows Safe Z prompt after homing when zSecure is configured', async () => {
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    const onHome = vi.fn();
+
+    renderConsole({
+      isConnected: true,
+      isHomed: false,
+      onSend,
+      onHome,
+      activeMachine: mockMachine, // Use the mockMachine which has zSecure: 5
+    });
+
+    // Trigger homing via the Home button
+    fireEvent.click(screen.getByTitle('Home (H)'));
+
+    // onHome callback should be called
+    expect(onHome).toHaveBeenCalled();
+
+    // Homing command should be sent
+    expect(onSend).toHaveBeenCalledWith('G28');
+
+    // Safe Z prompt should be visible after homing
+    expect(screen.getByText(/Safe Z/i)).toBeInTheDocument();
+  });
+
+  it('moves to Safe Z when chosen from the prompt', async () => {
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    const onHome = vi.fn();
+
+    renderConsole({
+      isConnected: true,
+      isHomed: false,
+      onSend,
+      onHome,
+      activeMachine: mockMachine, // Use the mockMachine which has zSecure: 5
+    });
+
+    // Trigger homing via the Home button
+    fireEvent.click(screen.getByTitle('Home (H)'));
+
+    // Safe Z prompt is shown
+    expect(screen.getByText(/Safe Z/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText(/Move to Safe Z/i));
+
+    // Expect absolute positioning and move to safe Z height
+    expect(onSend).toHaveBeenCalledWith('G90');
+    expect(onSend).toHaveBeenCalledWith('G0 Z5 F4000');
+  });
+
+  it('skips Safe Z move when Skip is chosen from the prompt', async () => {
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    const onHome = vi.fn();
+
+    renderConsole({
+      isConnected: true,
+      isHomed: false,
+      onSend,
+      onHome,
+      activeMachine: mockMachine, // Use the mockMachine which has zSecure: 5
+    });
+
+    // Trigger homing via the Home button
+    fireEvent.click(screen.getByTitle('Home (H)'));
+
+    // Safe Z prompt is shown
+    expect(screen.getByText(/Safe Z/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText(/Skip/i));
+
+    // Prompt should be dismissed
+    expect(screen.queryByText(/Safe Z/i)).not.toBeInTheDocument();
+
+    // No additional movement commands beyond homing should be sent
+    const sendCommands = onSend.mock.calls.map(args => args[0]);
+    expect(sendCommands.filter(cmd => cmd !== 'G28')).toHaveLength(0);
   });
 });

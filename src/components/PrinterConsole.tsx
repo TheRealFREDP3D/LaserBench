@@ -1,15 +1,13 @@
-import { useState, useCallback, useRef, useEffect, memo } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
 import { FireControls } from './console/FireControls';
 import { SerialLog } from './console/SerialLog';
+import { SafeZPrompt } from './console/SafeZPrompt';
 import { validateGCode } from '../lib/gcodeDatabase';
-import { sanitizeGCodeLine } from '../lib/gcodeGenerator';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-
-/** Max continuous FIRE duration before the laser is force-stopped (dead-man). */
-const MAX_FIRE_MS = 60_000;
+import { useDeadManFire } from '../hooks/useDeadManFire';
 
 interface PrinterConsoleProps {
   isConnected: boolean;
@@ -55,43 +53,8 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
     level: 'warn' | 'block';
   } | null>(null);
 
-  // Dead-man timer that force-stops the laser if FIRE is held too long.
-  const fireTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Canonical laser-off command for the active machine (safety paths use this
-  // directly instead of a hardcoded M5). Sanitized to a single line so a
-  // crafted profile can't inject extra commands through the release path.
-  const laserOffCmd = (activeMachine && sanitizeGCodeLine(activeMachine.laserOff)) || 'M5';
-
-  const handleStopFire = useCallback(() => {
-    if (fireTimerRef.current) {
-      clearTimeout(fireTimerRef.current);
-      fireTimerRef.current = null;
-    }
-    onSend(laserOffCmd).catch(() => {});
-  }, [onSend, laserOffCmd]);
-
-  const stopFireRef = useRef(handleStopFire);
-  stopFireRef.current = handleStopFire;
-
-  const handleFire = useCallback(() => {
-    const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
-    const cmd = activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
-    onSend(cmd).catch(() => {});
-    if (fireTimerRef.current) clearTimeout(fireTimerRef.current);
-    // Dead-man cutoff: the laser can never stay on longer than MAX_FIRE_MS.
-    fireTimerRef.current = setTimeout(() => {
-      fireTimerRef.current = null;
-      stopFireRef.current();
-    }, MAX_FIRE_MS);
-  }, [activeMachine, onSend]);
-
-  // Cancel the dead-man timer on unmount so a pending fire can't outlive the UI.
-  useEffect(() => {
-    return () => {
-      if (fireTimerRef.current) clearTimeout(fireTimerRef.current);
-    };
-  }, []);
+  // Extract dead-man FIRE logic into a dedicated hook
+  const { fire: handleFire, stopFire: handleStopFire } = useDeadManFire(activeMachine, onSend);
 
   // X/Y jogging is owned by App (onJogRelative), which enforces homing with a
   // single confirm-gate for every entry point (buttons, keyboard, canvas) —
@@ -124,18 +87,6 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
       setShowSafeZPrompt(true);
     }
   }, [onSend, activeMachine, onHome]);
-
-  const handleMoveToSafeZ = useCallback(async () => {
-    setShowSafeZPrompt(false);
-    if (activeMachine?.zSecure !== undefined) {
-      await onSend('G90');
-      await onSend(`G0 Z${activeMachine.zSecure} F${activeMachine.travelSpeed || 4000}`);
-    }
-  }, [onSend, activeMachine]);
-
-  const handleCancelSafeZ = useCallback(() => {
-    setShowSafeZPrompt(false);
-  }, []);
 
   const handleEStop = useCallback(() => {
     if (isConnected) onSend('M112');
@@ -295,26 +246,13 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
           </div>
         )}
 
-        {showSafeZPrompt && !isPrinting && (
-          <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 bg-blue-950/60 border border-blue-800/50 rounded-lg text-xs">
-            <div className="flex items-center gap-2 text-blue-300">
-              <span>Move to safe Z position ({activeMachine?.zSecure}mm)?</span>
-            </div>
-            <div className="flex gap-1.5 shrink-0">
-              <button
-                onClick={handleMoveToSafeZ}
-                className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] rounded font-bold transition"
-              >
-                Move to Safe Z
-              </button>
-              <button
-                onClick={handleCancelSafeZ}
-                className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-[10px] rounded font-bold transition"
-              >
-                Skip
-              </button>
-            </div>
-          </div>
+        {showSafeZPrompt && (
+          <SafeZPrompt
+            activeMachine={activeMachine}
+            isPrinting={isPrinting}
+            onSend={onSend}
+            onDismiss={() => setShowSafeZPrompt(false)}
+          />
         )}
 
         {pendingWarning && (

@@ -26,7 +26,7 @@ import SVGVisualizer from './components/SVGVisualizer';
 import GCodeOutput from './components/GCodeOutput';
 import { PrinterConsole } from './components/PrinterConsole';
 import { useSerialStore } from './store/useSerialStore';
-import { useConfirmModal, ConfirmSupersededError } from './hooks/useConfirmModal';
+import { useConfirmModal } from './hooks/useConfirmModal';
 import WorkflowStepper from './components/layout/WorkflowStepper';
 import StatusBar from './components/layout/StatusBar';
 import OnboardingTooltip from './components/OnboardingTooltip';
@@ -35,6 +35,8 @@ import GCodeDictionary from './components/GCodeDictionary';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { Settings, Terminal, Upload, Book } from 'lucide-react';
+import { clampToBed, buildJogCommand, getFreshCurrentPos } from './helpers/jog';
+import { useUnhomedJogGuard } from './hooks/useUnhomedJogGuard';
 
 const isVercel = import.meta.env.VERCEL === '1';
 
@@ -88,30 +90,8 @@ export default function App() {
     setLaserOffCmd(activeMachine?.laserOff ?? 'M5');
   }, [activeMachine?.laserOff, setLaserOffCmd]);
 
-  // Bypass for the "jog without homing" guard once the user explicitly accepts
-  // the risk. Stored in a ref so confirming never recreates the jog callbacks.
-  const jogOverrideRef = useRef(false);
-  const onHome = useCallback(() => {
-    jogOverrideRef.current = false;
-  }, []);
-
-  // Enforce homing before jogging. On the first unhomed jog the user is shown
-  // an explicit ConfirmModal; accepting arms a session-scoped bypass that
-  // onHome revokes. Returns true when the caller may proceed.
-  const requireHomingConfirm = useCallback(async (): Promise<boolean> => {
-    if (isHomed || jogOverrideRef.current) return true;
-    let accepted = false;
-    try {
-      accepted = await confirm(
-        'The machine has not been homed — its coordinates are unknown. Tech demo mode: jogging anyway may drive an axis into the hard stops. Jog without homing?'
-      );
-    } catch (e) {
-      if (!(e instanceof ConfirmSupersededError)) throw e;
-    }
-    if (!accepted) return false;
-    jogOverrideRef.current = true;
-    return true;
-  }, [isHomed, confirm]);
+  // Encapsulate homing confirmation logic in a dedicated hook
+  const { requireHomingConfirm, onHome } = useUnhomedJogGuard();
 
   // Deriving results using useMemo instead of useEffect+useState to avoid cascading renders
   const generatedResults = useMemo<GeneratedData | null>(() => {
@@ -196,28 +176,17 @@ export default function App() {
     async (x: number, y: number) => {
       if (!isConnected || !activeMachine) return;
       if (!(await requireHomingConfirm())) return;
-      // Re-read fresh position: the modal may have sat open for a while and
-      // the closure value captured above could be stale.
-      const pos = useSerialStore.getState().currentPos;
-      // Clamp to bed bounds
-      let clampedX = x;
-      let clampedY = y;
-      if (activeMachine.bedShape === 'circular') {
-        const r = activeMachine.bedWidth / 2;
-        const dist = Math.sqrt(x * x + y * y);
-        if (dist > r) {
-          clampedX = (x / dist) * r;
-          clampedY = (y / dist) * r;
-        }
-      } else {
-        clampedX = Math.max(0, Math.min(activeMachine.bedWidth, x));
-        clampedY = Math.max(0, Math.min(activeMachine.bedHeight, y));
-      }
+
+      const pos = getFreshCurrentPos();
+      const { x: clampedX, y: clampedY } = clampToBed(activeMachine, x, y);
+
       const dx = Math.round((clampedX - pos.x) * 100) / 100;
       const dy = Math.round((clampedY - pos.y) * 100) / 100;
-      const nx = pos.x + dx;
-      const ny = pos.y + dy;
-      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine.travelSpeed || 4000}`);
+
+      const targetX = pos.x + dx;
+      const targetY = pos.y + dy;
+
+      send(buildJogCommand(activeMachine, targetX, targetY));
     },
     [isConnected, requireHomingConfirm, send, activeMachine]
   );
@@ -226,28 +195,13 @@ export default function App() {
     async (dx: number, dy: number) => {
       if (!isConnected || !activeMachine) return;
       if (!(await requireHomingConfirm())) return;
-      // Re-read fresh position: the modal may have sat open for a while and
-      // the relative offset must apply to where the head actually is now.
-      const pos = useSerialStore.getState().currentPos;
+
+      const pos = getFreshCurrentPos();
       const targetX = pos.x + dx;
       const targetY = pos.y + dy;
-      // Clamp to bed bounds
-      let clampedX = targetX;
-      let clampedY = targetY;
-      if (activeMachine.bedShape === 'circular') {
-        const r = activeMachine.bedWidth / 2;
-        const dist = Math.sqrt(targetX * targetX + targetY * targetY);
-        if (dist > r) {
-          clampedX = (targetX / dist) * r;
-          clampedY = (targetY / dist) * r;
-        }
-      } else {
-        clampedX = Math.max(0, Math.min(activeMachine.bedWidth, targetX));
-        clampedY = Math.max(0, Math.min(activeMachine.bedHeight, targetY));
-      }
-      const nx = Math.round(clampedX * 100) / 100;
-      const ny = Math.round(clampedY * 100) / 100;
-      send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine.travelSpeed || 4000}`);
+      const { x: clampedX, y: clampedY } = clampToBed(activeMachine, targetX, targetY);
+
+      send(buildJogCommand(activeMachine, clampedX, clampedY));
     },
     [isConnected, requireHomingConfirm, send, activeMachine]
   );
