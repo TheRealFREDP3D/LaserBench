@@ -14,6 +14,7 @@ export interface SerialState {
   currentPos: { x: number; y: number; z: number };
   movementMode: 'G90' | 'G91';
   isHomed: boolean;
+  homingPending: boolean;
   connect: (baudRate?: number) => Promise<void>;
   disconnect: () => Promise<void>;
   send: (command: string, silent?: boolean, skipFlowControl?: boolean) => Promise<void>;
@@ -54,6 +55,7 @@ class SerialConnection {
   keepReading = true;
   abortingPrint = false;
   printing = false;
+  homingPending = false;
 
   // Flow-control buffer (slot-based, mirrors GRBL's rx buffer model)
   bufferSlots = BUFFER_SIZE;
@@ -94,7 +96,7 @@ class SerialConnection {
     if (resolve) {
       resolve();
     } else if (this.bufferResolves.length === 0) {
-      this.bufferSlots++;
+      this.bufferSlots = Math.min(this.bufferSlots + 1, BUFFER_SIZE);
     }
   }
 
@@ -122,6 +124,7 @@ class SerialConnection {
     // Resolve all pending waiters so they unblock immediately
     for (const resolve of this.bufferResolves) resolve();
     this.bufferResolves = [];
+    this.homingPending = false;
   }
 
   // ── Messaging ───────────────────────────────────────────────────────────────
@@ -201,6 +204,10 @@ class SerialConnection {
 
             if (trimmed.toLowerCase().startsWith('ok')) {
               this.releaseSlot();
+              if (this.homingPending) {
+                this.homingPending = false;
+                this.setState({ isHomed: true, homingPending: false });
+              }
             } else if (
               this.printing &&
               (trimmed.toLowerCase().startsWith('error') ||
@@ -210,6 +217,8 @@ class SerialConnection {
               this.pushMessage('received', `Firmware rejected command: ${trimmed}`);
               this.abortingPrint = true;
               this.resetFlowControl();
+              this.homingPending = false;
+              this.setState({ isHomed: false, homingPending: false });
             }
           }
         }
@@ -221,10 +230,13 @@ class SerialConnection {
       // Safety: the job may have been interrupted mid-burn — make sure the
       // laser is off before reporting the connection as lost.
       this.fireLaserOff();
+      this.homingPending = false;
       this.setState({
         isConnected: false,
         connectionState: 'offline',
         isPrinting: false,
+        isHomed: false,
+        homingPending: false,
       });
       this.pushMessage('received', 'Connection lost: ' + (error as Error).message);
       this.resetFlowControl();
@@ -258,6 +270,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     currentPos: { x: 0, y: 0, z: 0 },
     movementMode: 'G90' as const,
     isHomed: false,
+    homingPending: false,
 
     // ── connect ────────────────────────────────────────────────────────────
     connect: async (baudRate?: number) => {
@@ -279,12 +292,14 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         }
         conn.writer = encoder.writable.getWriter();
 
-        set({ isConnected: true, movementMode: 'G90', isHomed: false });
+        set({ isConnected: true, movementMode: 'G90', isHomed: false, homingPending: false });
         conn.keepReading = true;
         conn.startReadLoop();
         conn.pushMessage('sent', '--- Connected to printer ---');
         // Ask the firmware for its current position so jog math starts from a
         // known location instead of assuming the origin (0,0,0).
+        // Use waitForSlot to maintain flow control consistency.
+        await conn.waitForSlot();
         conn.writer
           .write('M114\n')
           .then(() => conn.pushMessage('sent', 'M114'))
@@ -319,7 +334,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         console.error('Error during disconnect:', error);
       } finally {
         conn.port = null;
-        set({ isConnected: false, connectionState: 'offline', isHomed: false });
+        set({ isConnected: false, connectionState: 'offline', isHomed: false, homingPending: false });
         conn.resetFlowControl();
         conn.pushMessage('sent', '--- Disconnected ---');
       }
@@ -345,7 +360,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       const upper = command.toUpperCase();
       if (/\bG90\b/.test(upper)) set({ movementMode: 'G90' });
       if (/\bG91\b/.test(upper)) set({ movementMode: 'G91' });
-      if (/\bG28\b/.test(upper)) set({ isHomed: true });
+      if (/\bG28\b/.test(upper)) set({ homingPending: true });
       if (!silent) {
         conn.pushMessage('sent', command);
       }
@@ -358,6 +373,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       // Safety: kill the laser immediately — do not wait for buffered moves.
       conn.fireLaserOff();
       conn.resetFlowControl();
+      set({ homingPending: false });
       conn.pushMessage('sent', '--- Print Aborted by User ---');
     },
 
@@ -439,7 +455,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         conn.pushMessage('received', 'Print error: ' + (error as Error).message);
       } finally {
         conn.resetFlowControl();
-        set({ isPrinting: false, activePathIndex: -1 });
+        set({ isPrinting: false, activePathIndex: -1, homingPending: false, isHomed: false });
         conn.printing = false;
         conn.abortingPrint = false;
       }

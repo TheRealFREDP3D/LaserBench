@@ -215,8 +215,10 @@ describe('PrinterConsole', () => {
     // Homing command should be sent
     expect(onSend).toHaveBeenCalledWith('G28');
 
-    // Safe Z prompt should be visible after homing
-    expect(screen.getByText(/Safe Z/i)).toBeInTheDocument();
+    // Wait for async state update
+    await vi.waitFor(() => {
+      expect(screen.getByText(/Move to safe Z position/i)).toBeInTheDocument();
+    });
   });
 
   it('moves to Safe Z when chosen from the prompt', async () => {
@@ -234,14 +236,25 @@ describe('PrinterConsole', () => {
     // Trigger homing via the Home button
     fireEvent.click(screen.getByTitle('Home (H)'));
 
-    // Safe Z prompt is shown
-    expect(screen.getByText(/Safe Z/i)).toBeInTheDocument();
+    // Wait for async state update
+    await vi.waitFor(() => {
+      expect(screen.getByText(/Move to safe Z position/i)).toBeInTheDocument();
+    });
 
-    fireEvent.click(screen.getByText(/Move to Safe Z/i));
+    // Click the Move to Safe Z button (not the text span)
+    const moveButtons = screen.getAllByText(/Move to Safe Z/i);
+    const button = moveButtons.find(el => el.tagName === 'BUTTON');
+    expect(button).toBeDefined();
+    if (button) {
+      fireEvent.click(button);
+    }
 
-    // Expect absolute positioning and move to safe Z height
-    expect(onSend).toHaveBeenCalledWith('G90');
-    expect(onSend).toHaveBeenCalledWith('G0 Z5 F4000');
+    // Wait for the async calls to complete
+    await vi.waitFor(() => {
+      const calls = onSend.mock.calls.map(args => args[0]);
+      expect(calls).toContain('G90');
+      expect(calls).toContain('G0 Z5 F4000');
+    });
   });
 
   it('skips Safe Z move when Skip is chosen from the prompt', async () => {
@@ -259,13 +272,15 @@ describe('PrinterConsole', () => {
     // Trigger homing via the Home button
     fireEvent.click(screen.getByTitle('Home (H)'));
 
-    // Safe Z prompt is shown
-    expect(screen.getByText(/Safe Z/i)).toBeInTheDocument();
+    // Wait for async state update
+    await vi.waitFor(() => {
+      expect(screen.getByText(/Move to safe Z position/i)).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByText(/Skip/i));
 
     // Prompt should be dismissed
-    expect(screen.queryByText(/Safe Z/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Move to safe Z position/i)).not.toBeInTheDocument();
 
     // No additional movement commands beyond homing should be sent
     const sendCommands = onSend.mock.calls.map(args => args[0]);
