@@ -4,14 +4,17 @@ import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
 import { FireControls } from './console/FireControls';
 import { SerialLog } from './console/SerialLog';
+import { SafeZPrompt } from './console/SafeZPrompt';
 import { validateGCode } from '../lib/gcodeDatabase';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useDeadManFire } from '../hooks/useDeadManFire';
 
 interface PrinterConsoleProps {
   isConnected: boolean;
   messages: SerialMessage[];
   isPrinting: boolean;
   progress: number;
+  isHomed: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
   onSend: (command: string) => Promise<void>;
@@ -21,6 +24,7 @@ interface PrinterConsoleProps {
   gcode?: string;
   activeMachine: MachineProfile | null;
   onJogRelative: (dx: number, dy: number) => void;
+  onHome?: () => void;
 }
 
 const PrinterConsoleComponent = memo(function PrinterConsole({
@@ -28,6 +32,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   messages,
   isPrinting,
   progress,
+  isHomed,
   onConnect,
   onDisconnect,
   onSend,
@@ -37,8 +42,10 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   gcode,
   activeMachine,
   onJogRelative,
+  onHome,
 }: PrinterConsoleProps) {
   const [showHomingWarning, setShowHomingWarning] = useState(false);
+  const [showSafeZPrompt, setShowSafeZPrompt] = useState(false);
   const [jogStep, setJogStep] = useState(10);
   const [pendingWarning, setPendingWarning] = useState<{
     command: string;
@@ -46,6 +53,13 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
     level: 'warn' | 'block';
   } | null>(null);
 
+  // Extract dead-man FIRE logic into a dedicated hook
+  const { fire: handleFire, stopFire: handleStopFire } = useDeadManFire(activeMachine, onSend);
+
+  // X/Y jogging is owned by App (onJogRelative), which enforces homing with a
+  // single confirm-gate for every entry point (buttons, keyboard, canvas) —
+  // do not gate it here too. Z jogging and homing stay ungated (they're how
+  // you get to a known position in the first place).
   const jog = useCallback(
     async (axis: string, dist: number) => {
       try {
@@ -67,23 +81,12 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   );
 
   const handleHome = useCallback(async () => {
+    onHome?.();
     await onSend('G28');
     if (activeMachine?.zSecure !== undefined) {
-      // Ensure absolute mode and move to secure Z after homing
-      await onSend('G90');
-      await onSend(`G0 Z${activeMachine.zSecure} F${activeMachine.travelSpeed || 4000}`);
+      setShowSafeZPrompt(true);
     }
-  }, [onSend, activeMachine]);
-
-  const handleFire = useCallback(() => {
-    const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
-    const cmd = activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
-    onSend(cmd);
-  }, [activeMachine, onSend]);
-
-  const handleStopFire = useCallback(() => {
-    onSend(activeMachine?.laserOff ?? 'M5');
-  }, [activeMachine, onSend]);
+  }, [onSend, activeMachine, onHome]);
 
   const handleEStop = useCallback(() => {
     if (isConnected) onSend('M112');
@@ -243,6 +246,15 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
           </div>
         )}
 
+        {showSafeZPrompt && (
+          <SafeZPrompt
+            activeMachine={activeMachine}
+            isPrinting={isPrinting}
+            onSend={onSend}
+            onDismiss={() => setShowSafeZPrompt(false)}
+          />
+        )}
+
         {pendingWarning && (
           <div
             className={`shrink-0 flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs border ${
@@ -303,7 +315,8 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
                   onPrint && gcode
                     ? () => {
                         if (!isConnected) return;
-                        setShowHomingWarning(true);
+                        if (isHomed) handleRunJob();
+                        else setShowHomingWarning(true);
                       }
                     : undefined
                 }

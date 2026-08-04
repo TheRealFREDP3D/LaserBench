@@ -26,6 +26,7 @@ import SVGVisualizer from './components/SVGVisualizer';
 import GCodeOutput from './components/GCodeOutput';
 import { PrinterConsole } from './components/PrinterConsole';
 import { useSerialStore } from './store/useSerialStore';
+import { useConfirmModal } from './hooks/useConfirmModal';
 import WorkflowStepper from './components/layout/WorkflowStepper';
 import StatusBar from './components/layout/StatusBar';
 import OnboardingTooltip from './components/OnboardingTooltip';
@@ -34,6 +35,8 @@ import GCodeDictionary from './components/GCodeDictionary';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { Settings, Terminal, Upload, Book } from 'lucide-react';
+import { clampToBed, buildJogCommand, getFreshCurrentPos } from './helpers/jog';
+import { useUnhomedJogGuard } from './hooks/useUnhomedJogGuard';
 
 const isVercel = import.meta.env.VERCEL === '1';
 
@@ -47,12 +50,14 @@ export default function App() {
     progress,
     currentPos,
     movementMode,
+    isHomed,
     connect,
     disconnect,
     send,
     printGCode,
     abortPrint,
     clearMessages,
+    setLaserOffCmd,
   } = useSerialStore();
 
   const { machines, setActiveMachineId, updateMachine, addMachine, addMachines, deleteMachine } =
@@ -76,6 +81,17 @@ export default function App() {
   const [uploadedGCode, setUploadedGCode] = useState<GeneratedData | null>(null);
   const [editedGCode, setEditedGCode] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
+
+  // Register the machine-specific laser-off command with the serial store so
+  // lasers are shut down correctly on disconnect / abort / error even if the
+  // React tree is gone. Runs whenever the machine's laserOff setting changes.
+  useEffect(() => {
+    setLaserOffCmd(activeMachine?.laserOff ?? 'M5');
+  }, [activeMachine?.laserOff, setLaserOffCmd]);
+
+  // Encapsulate homing confirmation logic in a dedicated hook
+  const { requireHomingConfirm, onHome } = useUnhomedJogGuard();
 
   // Deriving results using useMemo instead of useEffect+useState to avoid cascading renders
   const generatedResults = useMemo<GeneratedData | null>(() => {
@@ -156,62 +172,38 @@ export default function App() {
     connect(activeMachine?.baudRate);
   }, [connect, activeMachine]);
 
-  const clampToBed = useCallback(
-    (machine: MachineProfile, x: number, y: number): { x: number; y: number } => {
-      if (machine.bedShape === 'circular') {
-        const r = machine.bedWidth / 2;
-        const dist = Math.sqrt(x * x + y * y);
-        if (dist > r) {
-          return {
-            x: (x / dist) * r,
-            y: (y / dist) * r,
-          };
-        }
-        return { x, y };
-      }
-
-      return {
-        x: Math.max(0, Math.min(machine.bedWidth, x)),
-        y: Math.max(0, Math.min(machine.bedHeight, y)),
-      };
-    },
-    []
-  );
-
-  const buildJogCommand = useCallback(
-    (x: number, y: number, machine: MachineProfile): string => {
-      const nx = Math.round(x * 100) / 100;
-      const ny = Math.round(y * 100) / 100;
-      const feed = machine.travelSpeed || 4000;
-      return `G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${feed}`;
-    },
-    []
-  );
-
   const handleJog = useCallback(
-    (x: number, y: number) => {
+    async (x: number, y: number) => {
       if (!isConnected || !activeMachine) return;
+      if (!(await requireHomingConfirm())) return;
 
+      const pos = getFreshCurrentPos();
       const { x: clampedX, y: clampedY } = clampToBed(activeMachine, x, y);
-      const targetX = currentPos.x + Math.round((clampedX - currentPos.x) * 100) / 100;
-      const targetY = currentPos.y + Math.round((clampedY - currentPos.y) * 100) / 100;
 
-      send(buildJogCommand(targetX, targetY, activeMachine));
+      const dx = Math.round((clampedX - pos.x) * 100) / 100;
+      const dy = Math.round((clampedY - pos.y) * 100) / 100;
+
+      const targetX = pos.x + dx;
+      const targetY = pos.y + dy;
+
+      send(buildJogCommand(activeMachine, targetX, targetY));
     },
-    [isConnected, send, currentPos, activeMachine, clampToBed, buildJogCommand]
+    [isConnected, requireHomingConfirm, send, activeMachine]
   );
 
   const handleJogRelative = useCallback(
-    (dx: number, dy: number) => {
+    async (dx: number, dy: number) => {
       if (!isConnected || !activeMachine) return;
+      if (!(await requireHomingConfirm())) return;
 
-      const targetX = currentPos.x + dx;
-      const targetY = currentPos.y + dy;
+      const pos = getFreshCurrentPos();
+      const targetX = pos.x + dx;
+      const targetY = pos.y + dy;
       const { x: clampedX, y: clampedY } = clampToBed(activeMachine, targetX, targetY);
 
-      send(buildJogCommand(clampedX, clampedY, activeMachine));
+      send(buildJogCommand(activeMachine, clampedX, clampedY));
     },
-    [isConnected, send, currentPos, activeMachine, clampToBed, buildJogCommand]
+    [isConnected, requireHomingConfirm, send, activeMachine]
   );
 
   const configPanel = (
@@ -351,6 +343,8 @@ export default function App() {
       gcode={effectiveResults?.gcode}
       activeMachine={activeMachine}
       onJogRelative={handleJogRelative}
+      isHomed={isHomed}
+      onHome={onHome}
     />
   );
 
@@ -448,6 +442,7 @@ export default function App() {
         isPrinting={isPrinting}
         progress={progress}
         movementMode={movementMode}
+        isHomed={isHomed}
         onConnect={handleConnect}
         onDisconnect={disconnect}
       />
@@ -455,6 +450,8 @@ export default function App() {
       <OnboardingTooltip />
 
       {showDictionary && <GCodeDictionary onClose={() => setShowDictionary(false)} />}
+
+      {ConfirmModalComponent}
 
       {isVercel && <VercelAnalytics />}
     </div>

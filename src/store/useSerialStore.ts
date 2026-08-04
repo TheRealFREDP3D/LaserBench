@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { SerialMessage } from '../types';
+import { sanitizeGCodeLine } from '../lib/gcodeGenerator';
 
 // ─── Public store interface ───────────────────────────────────────────────────
 
@@ -12,12 +13,18 @@ export interface SerialState {
   activePathIndex: number;
   currentPos: { x: number; y: number; z: number };
   movementMode: 'G90' | 'G91';
+  isHomed: boolean;
+  homingPending: boolean;
   connect: (baudRate?: number) => Promise<void>;
   disconnect: () => Promise<void>;
   send: (command: string, silent?: boolean, skipFlowControl?: boolean) => Promise<void>;
   printGCode: (gcode: string) => Promise<void>;
   abortPrint: () => void;
   clearMessages: () => void;
+  /** Registers the command to turn the laser off for the active machine so
+   *  the store can shut the laser down on disconnect / abort / errors without
+   *  depending on React. Pass an empty string to fall back to 'M5'. */
+  setLaserOffCmd: (cmd: string) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -48,6 +55,7 @@ class SerialConnection {
   keepReading = true;
   abortingPrint = false;
   printing = false;
+  homingPending = false;
 
   // Flow-control buffer (slot-based, mirrors GRBL's rx buffer model)
   bufferSlots = BUFFER_SIZE;
@@ -56,6 +64,10 @@ class SerialConnection {
 
   // Rate-limiting for manual commands
   lastSendTime = 0;
+
+  // Command used to guarantee the laser is shut off. Set by the UI layer via
+  // setLaserOffCmd (from the active machine profile); defaults to universal M5.
+  laserOffCmd = 'M5';
 
   // Message list kept here so clearMessages can wipe both the Zustand state
   // and the internal copy atomically.
@@ -84,7 +96,7 @@ class SerialConnection {
     if (resolve) {
       resolve();
     } else if (this.bufferResolves.length === 0) {
-      this.bufferSlots++;
+      this.bufferSlots = Math.min(this.bufferSlots + 1, BUFFER_SIZE);
     }
   }
 
@@ -112,6 +124,7 @@ class SerialConnection {
     // Resolve all pending waiters so they unblock immediately
     for (const resolve of this.bufferResolves) resolve();
     this.bufferResolves = [];
+    this.homingPending = false;
   }
 
   // ── Messaging ───────────────────────────────────────────────────────────────
@@ -121,6 +134,23 @@ class SerialConnection {
     const prev = this.messages;
     this.messages = prev.length >= MAX_MESSAGES ? [...prev.slice(1), msg] : [...prev, msg];
     this.setState({ messages: this.messages });
+  }
+
+  /**
+   * Best-effort laser shut-off written directly to the serial writer,
+   * bypassing flow control and state guards. Used from disconnect / abort /
+   * error teardown paths where failing to send `send()` must not prevent the
+   * laser from being turned off. Swallows all errors.
+   */
+  fireLaserOff() {
+    const cmd = this.laserOffCmd || 'M5';
+    if (!this.writer) return;
+    this.writer
+      .write(cmd + '\n')
+      .then(() => this.pushMessage('sent', cmd))
+      .catch(() => {
+        /* port may already be gone — nothing more we can do */
+      });
   }
 
   // ── Read loop ───────────────────────────────────────────────────────────────
@@ -148,8 +178,36 @@ class SerialConnection {
 
             this.pushMessage('received', trimmed);
 
+            // Parse GRBL status reports: <State|MPos:x,y,z|...> or <State|WPos:x,y,z|...>
+            const grblStatusMatch = trimmed.match(
+              /^<(\w+)\|([MW])Pos:([-\d.]+),([-\d.]+),([-\d.]+)/i
+            );
+            if (grblStatusMatch) {
+              const x = parseFloat(grblStatusMatch[3]);
+              const y = parseFloat(grblStatusMatch[4]);
+              const z = parseFloat(grblStatusMatch[5]);
+              if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+                this.setState({ currentPos: { x, y, z } });
+              }
+            }
+
+            // Parse Marlin M114 response: X:0.00 Y:0.00 Z:0.00 E:0.00 Count X:0 Y:0 Z:0
+            const marlinPosMatch = trimmed.match(/X:([-\d.]+)\s+Y:([-\d.]+)\s+Z:([-\d.]+)/i);
+            if (marlinPosMatch && !grblStatusMatch) {
+              const x = parseFloat(marlinPosMatch[1]);
+              const y = parseFloat(marlinPosMatch[2]);
+              const z = parseFloat(marlinPosMatch[3]);
+              if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+                this.setState({ currentPos: { x, y, z } });
+              }
+            }
+
             if (trimmed.toLowerCase().startsWith('ok')) {
               this.releaseSlot();
+              if (this.homingPending) {
+                this.homingPending = false;
+                this.setState({ isHomed: true, homingPending: false });
+              }
             } else if (
               this.printing &&
               (trimmed.toLowerCase().startsWith('error') ||
@@ -159,6 +217,8 @@ class SerialConnection {
               this.pushMessage('received', `Firmware rejected command: ${trimmed}`);
               this.abortingPrint = true;
               this.resetFlowControl();
+              this.homingPending = false;
+              this.setState({ isHomed: false, homingPending: false });
             }
           }
         }
@@ -167,10 +227,16 @@ class SerialConnection {
       console.error('Serial read error:', error);
       this.keepReading = false;
       this.printing = false;
+      // Safety: the job may have been interrupted mid-burn — make sure the
+      // laser is off before reporting the connection as lost.
+      this.fireLaserOff();
+      this.homingPending = false;
       this.setState({
         isConnected: false,
         connectionState: 'offline',
         isPrinting: false,
+        isHomed: false,
+        homingPending: false,
       });
       this.pushMessage('received', 'Connection lost: ' + (error as Error).message);
       this.resetFlowControl();
@@ -203,6 +269,8 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     activePathIndex: -1,
     currentPos: { x: 0, y: 0, z: 0 },
     movementMode: 'G90' as const,
+    isHomed: false,
+    homingPending: false,
 
     // ── connect ────────────────────────────────────────────────────────────
     connect: async (baudRate?: number) => {
@@ -224,10 +292,18 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         }
         conn.writer = encoder.writable.getWriter();
 
-        set({ isConnected: true, movementMode: 'G90' });
+        set({ isConnected: true, movementMode: 'G90', isHomed: false, homingPending: false });
         conn.keepReading = true;
         conn.startReadLoop();
         conn.pushMessage('sent', '--- Connected to printer ---');
+        // Ask the firmware for its current position so jog math starts from a
+        // known location instead of assuming the origin (0,0,0).
+        // Use waitForSlot to maintain flow control consistency.
+        await conn.waitForSlot();
+        conn.writer
+          .write('M114\n')
+          .then(() => conn.pushMessage('sent', 'M114'))
+          .catch(() => {});
       } catch (error) {
         console.error('Failed to connect:', error);
         if (conn.port) {
@@ -246,6 +322,8 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     // ── disconnect ─────────────────────────────────────────────────────────
     disconnect: async () => {
       conn.keepReading = false;
+      // Safety: never leave the laser on when we sever the link.
+      conn.fireLaserOff();
       try {
         if (conn.reader) await conn.reader.cancel();
         if (conn.writer) await conn.writer.close();
@@ -256,7 +334,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         console.error('Error during disconnect:', error);
       } finally {
         conn.port = null;
-        set({ isConnected: false, connectionState: 'offline' });
+        set({ isConnected: false, connectionState: 'offline', isHomed: false, homingPending: false });
         conn.resetFlowControl();
         conn.pushMessage('sent', '--- Disconnected ---');
       }
@@ -282,6 +360,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       const upper = command.toUpperCase();
       if (/\bG90\b/.test(upper)) set({ movementMode: 'G90' });
       if (/\bG91\b/.test(upper)) set({ movementMode: 'G91' });
+      if (/\bG28\b/.test(upper)) set({ homingPending: true });
       if (!silent) {
         conn.pushMessage('sent', command);
       }
@@ -291,7 +370,10 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     abortPrint: () => {
       if (!get().isPrinting) return;
       conn.abortingPrint = true;
+      // Safety: kill the laser immediately — do not wait for buffered moves.
+      conn.fireLaserOff();
       conn.resetFlowControl();
+      set({ homingPending: false });
       conn.pushMessage('sent', '--- Print Aborted by User ---');
     },
 
@@ -318,10 +400,18 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         let unacknowledged = 0;
 
         let pathCounter = -1;
+        let inRelativeMode = false;
         for (let i = 0; i < totalLines; i++) {
           const line = lines[i].toUpperCase();
-          // Each G0 (except the initial setup moves) typically corresponds to a new PathSegment starting
-          if (line.startsWith('G0') && !line.includes('Z')) {
+          // Track when we switch to relative mode (G91) — pattern moves start here
+          if (line.startsWith('G91')) {
+            inRelativeMode = true;
+          } else if (line.startsWith('G90')) {
+            inRelativeMode = false;
+          }
+          // Each G0 in relative mode starts a new PathSegment.
+          // G0 lines before G91 are absolute positioning moves and are skipped.
+          if (inRelativeMode && line.startsWith('G0') && !line.includes('Z')) {
             pathCounter++;
             set({ activePathIndex: pathCounter });
           }
@@ -365,7 +455,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         conn.pushMessage('received', 'Print error: ' + (error as Error).message);
       } finally {
         conn.resetFlowControl();
-        set({ isPrinting: false, activePathIndex: -1 });
+        set({ isPrinting: false, activePathIndex: -1, homingPending: false, isHomed: false });
         conn.printing = false;
         conn.abortingPrint = false;
       }
@@ -375,6 +465,14 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     clearMessages: () => {
       conn.messages = [];
       set({ messages: [] });
+    },
+
+    // ── setLaserOffCmd ─────────────────────────────────────────────────────
+    setLaserOffCmd: (cmd: string) => {
+      // Clamp to a single safe G-code line: strip embedded newlines / control
+      // chars / comments so a crafted profile can't inject extra commands via
+      // the safety-off path. Fall back to universal M5 if nothing survives.
+      conn.laserOffCmd = sanitizeGCodeLine(cmd ?? '') || 'M5';
     },
   };
 });

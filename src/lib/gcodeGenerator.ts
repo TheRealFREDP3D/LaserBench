@@ -37,7 +37,7 @@ const SMALL_LABEL_SPACING_SCALE = 0.7;
 const LABEL_OFFSET_MM = 2;
 const TITLE_OFFSET_MM = 5;
 
-function sanitizeGCodeLine(line: string): string {
+export function sanitizeGCodeLine(line: string): string {
   let cleaned = '';
   for (let i = 0; i < line.length; i++) {
     const code = line.charCodeAt(i);
@@ -154,7 +154,7 @@ function generateMatrix(ctx: PatternContext) {
         powerSteps > 1 ? powerMin + (powerMax - powerMin) * (p / (powerSteps - 1)) : powerMin;
       const py = startY + p * (blockSize + gap);
 
-      const stepover = rasterStepover;
+      const stepover = rasterStepover * patternScale;
       const lines = Math.ceil(blockSize / stepover);
       const rasterPoints: [number, number][] = [];
       for (let i = 0; i <= lines; i++) {
@@ -520,7 +520,7 @@ export function generatePatternPaths(
   const zMax = config.zMax ?? 5;
   const zSteps = config.zSteps ?? 5;
   const kerfValues = config.kerfValues ?? [0.1, 0.15, 0.2, 0.25];
-  const rasterStepover = Math.max(0.01, config.rasterStepover ?? 0.2);
+  const rasterStepover = config.rasterStepover ?? 0.2;
   const pos = config.patternPosition ?? { x: 0, y: 0 };
 
   const textSize = Math.max(2, config.textSize ?? blockSize * 0.4);
@@ -690,7 +690,7 @@ export function generatePatternPaths(
   const endHasHome = (machine.endGCode ?? '').toUpperCase().includes('G28');
   if (!startHasHome && !endHasHome) {
     gcodeLines.push('G28');
-    gcodeLines.splice(gcodeLines.length - 1, 0, 'G90', `G0 Z${machine.zSecure.toFixed(3)} F${machine.travelSpeed}`);
+    gcodeLines.push('G90');
   }
   gcodeLines.push('M9');
   if (machine.endGCode) gcodeLines.push(sanitizeGCodeBlock(machine.endGCode));

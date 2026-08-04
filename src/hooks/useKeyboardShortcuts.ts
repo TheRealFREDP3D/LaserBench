@@ -116,6 +116,27 @@ export function useKeyboardShortcuts({
     [onStopFire]
   );
 
+  // Safety: if the window loses focus or the tab is hidden while the user is
+  // holding the fire key, the matching keyup never arrives — force a stop so
+  // the laser cannot burn unattended.
+  useEffect(() => {
+    const stopIfFiring = () => {
+      if (fireActiveRef.current) {
+        fireActiveRef.current = false;
+        onStopFire?.();
+      }
+    };
+    const onVisibility = () => {
+      if (document.hidden) stopIfFiring();
+    };
+    window.addEventListener('blur', stopIfFiring);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('blur', stopIfFiring);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [onStopFire]);
+
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);

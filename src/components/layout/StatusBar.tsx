@@ -1,4 +1,4 @@
-import { Wifi, WifiOff, Cpu, Layers, Clock, Activity, Move } from 'lucide-react';
+import { Wifi, WifiOff, Cpu, Layers, Clock, Activity, Move, Home } from 'lucide-react';
 
 interface StatusBarProps {
   isConnected: boolean;
@@ -9,6 +9,7 @@ interface StatusBarProps {
   isPrinting: boolean;
   progress: number;
   movementMode: 'G90' | 'G91';
+  isHomed: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
 }
@@ -22,6 +23,7 @@ const StatusBar = ({
   isPrinting,
   progress,
   movementMode,
+  isHomed,
   onConnect,
   onDisconnect,
 }: StatusBarProps) => {
@@ -61,6 +63,19 @@ const StatusBar = ({
               }`}
             >
               {movementMode === 'G91' ? 'Incremental' : 'Absolute'}
+            </span>
+          </div>
+        )}
+
+        {isConnected && (
+          <div className="flex items-center gap-1.5 text-neutral-500">
+            <Home className="w-3.5 h-3.5 text-neutral-600" />
+            <span
+              className={`px-1.5 py-0.5 rounded text-[8px] font-mono ${
+                isHomed ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-neutral-500'
+              }`}
+            >
+              {isHomed ? 'Homed' : 'Not Homed'}
             </span>
           </div>
         )}
