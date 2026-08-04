@@ -37,7 +37,7 @@ const SMALL_LABEL_SPACING_SCALE = 0.7;
 const LABEL_OFFSET_MM = 2;
 const TITLE_OFFSET_MM = 5;
 
-function sanitizeGCodeLine(line: string): string {
+export function sanitizeGCodeLine(line: string): string {
   let cleaned = '';
   for (let i = 0; i < line.length; i++) {
     const code = line.charCodeAt(i);

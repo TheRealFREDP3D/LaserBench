@@ -26,6 +26,7 @@ import SVGVisualizer from './components/SVGVisualizer';
 import GCodeOutput from './components/GCodeOutput';
 import { PrinterConsole } from './components/PrinterConsole';
 import { useSerialStore } from './store/useSerialStore';
+import { useConfirmModal, ConfirmSupersededError } from './hooks/useConfirmModal';
 import WorkflowStepper from './components/layout/WorkflowStepper';
 import StatusBar from './components/layout/StatusBar';
 import OnboardingTooltip from './components/OnboardingTooltip';
@@ -54,6 +55,7 @@ export default function App() {
     printGCode,
     abortPrint,
     clearMessages,
+    setLaserOffCmd,
   } = useSerialStore();
 
   const { machines, setActiveMachineId, updateMachine, addMachine, addMachines, deleteMachine } =
@@ -77,6 +79,39 @@ export default function App() {
   const [uploadedGCode, setUploadedGCode] = useState<GeneratedData | null>(null);
   const [editedGCode, setEditedGCode] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { confirm, ConfirmModalComponent } = useConfirmModal();
+
+  // Register the machine-specific laser-off command with the serial store so
+  // lasers are shut down correctly on disconnect / abort / error even if the
+  // React tree is gone. Runs whenever the machine's laserOff setting changes.
+  useEffect(() => {
+    setLaserOffCmd(activeMachine?.laserOff ?? 'M5');
+  }, [activeMachine?.laserOff, setLaserOffCmd]);
+
+  // Bypass for the "jog without homing" guard once the user explicitly accepts
+  // the risk. Stored in a ref so confirming never recreates the jog callbacks.
+  const jogOverrideRef = useRef(false);
+  const onHome = useCallback(() => {
+    jogOverrideRef.current = false;
+  }, []);
+
+  // Enforce homing before jogging. On the first unhomed jog the user is shown
+  // an explicit ConfirmModal; accepting arms a session-scoped bypass that
+  // onHome revokes. Returns true when the caller may proceed.
+  const requireHomingConfirm = useCallback(async (): Promise<boolean> => {
+    if (isHomed || jogOverrideRef.current) return true;
+    let accepted = false;
+    try {
+      accepted = await confirm(
+        'The machine has not been homed — its coordinates are unknown. Tech demo mode: jogging anyway may drive an axis into the hard stops. Jog without homing?'
+      );
+    } catch (e) {
+      if (!(e instanceof ConfirmSupersededError)) throw e;
+    }
+    if (!accepted) return false;
+    jogOverrideRef.current = true;
+    return true;
+  }, [isHomed, confirm]);
 
   // Deriving results using useMemo instead of useEffect+useState to avoid cascading renders
   const generatedResults = useMemo<GeneratedData | null>(() => {
@@ -158,8 +193,12 @@ export default function App() {
   }, [connect, activeMachine]);
 
   const handleJog = useCallback(
-    (x: number, y: number) => {
+    async (x: number, y: number) => {
       if (!isConnected || !activeMachine) return;
+      if (!(await requireHomingConfirm())) return;
+      // Re-read fresh position: the modal may have sat open for a while and
+      // the closure value captured above could be stale.
+      const pos = useSerialStore.getState().currentPos;
       // Clamp to bed bounds
       let clampedX = x;
       let clampedY = y;
@@ -174,20 +213,24 @@ export default function App() {
         clampedX = Math.max(0, Math.min(activeMachine.bedWidth, x));
         clampedY = Math.max(0, Math.min(activeMachine.bedHeight, y));
       }
-      const dx = Math.round((clampedX - currentPos.x) * 100) / 100;
-      const dy = Math.round((clampedY - currentPos.y) * 100) / 100;
-      const nx = currentPos.x + dx;
-      const ny = currentPos.y + dy;
+      const dx = Math.round((clampedX - pos.x) * 100) / 100;
+      const dy = Math.round((clampedY - pos.y) * 100) / 100;
+      const nx = pos.x + dx;
+      const ny = pos.y + dy;
       send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine.travelSpeed || 4000}`);
     },
-    [isConnected, send, currentPos, activeMachine]
+    [isConnected, requireHomingConfirm, send, activeMachine]
   );
 
   const handleJogRelative = useCallback(
-    (dx: number, dy: number) => {
+    async (dx: number, dy: number) => {
       if (!isConnected || !activeMachine) return;
-      const targetX = currentPos.x + dx;
-      const targetY = currentPos.y + dy;
+      if (!(await requireHomingConfirm())) return;
+      // Re-read fresh position: the modal may have sat open for a while and
+      // the relative offset must apply to where the head actually is now.
+      const pos = useSerialStore.getState().currentPos;
+      const targetX = pos.x + dx;
+      const targetY = pos.y + dy;
       // Clamp to bed bounds
       let clampedX = targetX;
       let clampedY = targetY;
@@ -206,7 +249,7 @@ export default function App() {
       const ny = Math.round(clampedY * 100) / 100;
       send(`G0 X${nx.toFixed(2)} Y${ny.toFixed(2)} F${activeMachine.travelSpeed || 4000}`);
     },
-    [isConnected, send, activeMachine, currentPos]
+    [isConnected, requireHomingConfirm, send, activeMachine]
   );
 
   const configPanel = (
@@ -346,6 +389,8 @@ export default function App() {
       gcode={effectiveResults?.gcode}
       activeMachine={activeMachine}
       onJogRelative={handleJogRelative}
+      isHomed={isHomed}
+      onHome={onHome}
     />
   );
 
@@ -451,6 +496,8 @@ export default function App() {
       <OnboardingTooltip />
 
       {showDictionary && <GCodeDictionary onClose={() => setShowDictionary(false)} />}
+
+      {ConfirmModalComponent}
 
       {isVercel && <VercelAnalytics />}
     </div>

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { SerialMessage } from '../types';
+import { sanitizeGCodeLine } from '../lib/gcodeGenerator';
 
 // ─── Public store interface ───────────────────────────────────────────────────
 
@@ -19,6 +20,10 @@ export interface SerialState {
   printGCode: (gcode: string) => Promise<void>;
   abortPrint: () => void;
   clearMessages: () => void;
+  /** Registers the command to turn the laser off for the active machine so
+   *  the store can shut the laser down on disconnect / abort / errors without
+   *  depending on React. Pass an empty string to fall back to 'M5'. */
+  setLaserOffCmd: (cmd: string) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -57,6 +62,10 @@ class SerialConnection {
 
   // Rate-limiting for manual commands
   lastSendTime = 0;
+
+  // Command used to guarantee the laser is shut off. Set by the UI layer via
+  // setLaserOffCmd (from the active machine profile); defaults to universal M5.
+  laserOffCmd = 'M5';
 
   // Message list kept here so clearMessages can wipe both the Zustand state
   // and the internal copy atomically.
@@ -124,6 +133,23 @@ class SerialConnection {
     this.setState({ messages: this.messages });
   }
 
+  /**
+   * Best-effort laser shut-off written directly to the serial writer,
+   * bypassing flow control and state guards. Used from disconnect / abort /
+   * error teardown paths where failing to send `send()` must not prevent the
+   * laser from being turned off. Swallows all errors.
+   */
+  fireLaserOff() {
+    const cmd = this.laserOffCmd || 'M5';
+    if (!this.writer) return;
+    this.writer
+      .write(cmd + '\n')
+      .then(() => this.pushMessage('sent', cmd))
+      .catch(() => {
+        /* port may already be gone — nothing more we can do */
+      });
+  }
+
   // ── Read loop ───────────────────────────────────────────────────────────────
 
   async startReadLoop() {
@@ -150,7 +176,9 @@ class SerialConnection {
             this.pushMessage('received', trimmed);
 
             // Parse GRBL status reports: <State|MPos:x,y,z|...> or <State|WPos:x,y,z|...>
-            const grblStatusMatch = trimmed.match(/^<(\w+)\|([MW])Pos:([-\d.]+),([-\d.]+),([-\d.]+)/i);
+            const grblStatusMatch = trimmed.match(
+              /^<(\w+)\|([MW])Pos:([-\d.]+),([-\d.]+),([-\d.]+)/i
+            );
             if (grblStatusMatch) {
               const x = parseFloat(grblStatusMatch[3]);
               const y = parseFloat(grblStatusMatch[4]);
@@ -190,6 +218,9 @@ class SerialConnection {
       console.error('Serial read error:', error);
       this.keepReading = false;
       this.printing = false;
+      // Safety: the job may have been interrupted mid-burn — make sure the
+      // laser is off before reporting the connection as lost.
+      this.fireLaserOff();
       this.setState({
         isConnected: false,
         connectionState: 'offline',
@@ -252,6 +283,12 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         conn.keepReading = true;
         conn.startReadLoop();
         conn.pushMessage('sent', '--- Connected to printer ---');
+        // Ask the firmware for its current position so jog math starts from a
+        // known location instead of assuming the origin (0,0,0).
+        conn.writer
+          .write('M114\n')
+          .then(() => conn.pushMessage('sent', 'M114'))
+          .catch(() => {});
       } catch (error) {
         console.error('Failed to connect:', error);
         if (conn.port) {
@@ -270,6 +307,8 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     // ── disconnect ─────────────────────────────────────────────────────────
     disconnect: async () => {
       conn.keepReading = false;
+      // Safety: never leave the laser on when we sever the link.
+      conn.fireLaserOff();
       try {
         if (conn.reader) await conn.reader.cancel();
         if (conn.writer) await conn.writer.close();
@@ -316,6 +355,8 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     abortPrint: () => {
       if (!get().isPrinting) return;
       conn.abortingPrint = true;
+      // Safety: kill the laser immediately — do not wait for buffered moves.
+      conn.fireLaserOff();
       conn.resetFlowControl();
       conn.pushMessage('sent', '--- Print Aborted by User ---');
     },
@@ -408,6 +449,14 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     clearMessages: () => {
       conn.messages = [];
       set({ messages: [] });
+    },
+
+    // ── setLaserOffCmd ─────────────────────────────────────────────────────
+    setLaserOffCmd: (cmd: string) => {
+      // Clamp to a single safe G-code line: strip embedded newlines / control
+      // chars / comments so a crafted profile can't inject extra commands via
+      // the safety-off path. Fall back to universal M5 if nothing survives.
+      conn.laserOffCmd = sanitizeGCodeLine(cmd ?? '') || 'M5';
     },
   };
 });

@@ -1,17 +1,22 @@
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
 import { FireControls } from './console/FireControls';
 import { SerialLog } from './console/SerialLog';
 import { validateGCode } from '../lib/gcodeDatabase';
+import { sanitizeGCodeLine } from '../lib/gcodeGenerator';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+
+/** Max continuous FIRE duration before the laser is force-stopped (dead-man). */
+const MAX_FIRE_MS = 60_000;
 
 interface PrinterConsoleProps {
   isConnected: boolean;
   messages: SerialMessage[];
   isPrinting: boolean;
   progress: number;
+  isHomed: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
   onSend: (command: string) => Promise<void>;
@@ -21,6 +26,7 @@ interface PrinterConsoleProps {
   gcode?: string;
   activeMachine: MachineProfile | null;
   onJogRelative: (dx: number, dy: number) => void;
+  onHome?: () => void;
 }
 
 const PrinterConsoleComponent = memo(function PrinterConsole({
@@ -28,6 +34,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   messages,
   isPrinting,
   progress,
+  isHomed,
   onConnect,
   onDisconnect,
   onSend,
@@ -37,6 +44,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   gcode,
   activeMachine,
   onJogRelative,
+  onHome,
 }: PrinterConsoleProps) {
   const [showHomingWarning, setShowHomingWarning] = useState(false);
   const [showSafeZPrompt, setShowSafeZPrompt] = useState(false);
@@ -47,6 +55,48 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
     level: 'warn' | 'block';
   } | null>(null);
 
+  // Dead-man timer that force-stops the laser if FIRE is held too long.
+  const fireTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Canonical laser-off command for the active machine (safety paths use this
+  // directly instead of a hardcoded M5). Sanitized to a single line so a
+  // crafted profile can't inject extra commands through the release path.
+  const laserOffCmd = (activeMachine && sanitizeGCodeLine(activeMachine.laserOff)) || 'M5';
+
+  const handleStopFire = useCallback(() => {
+    if (fireTimerRef.current) {
+      clearTimeout(fireTimerRef.current);
+      fireTimerRef.current = null;
+    }
+    onSend(laserOffCmd).catch(() => {});
+  }, [onSend, laserOffCmd]);
+
+  const stopFireRef = useRef(handleStopFire);
+  stopFireRef.current = handleStopFire;
+
+  const handleFire = useCallback(() => {
+    const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
+    const cmd = activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
+    onSend(cmd).catch(() => {});
+    if (fireTimerRef.current) clearTimeout(fireTimerRef.current);
+    // Dead-man cutoff: the laser can never stay on longer than MAX_FIRE_MS.
+    fireTimerRef.current = setTimeout(() => {
+      fireTimerRef.current = null;
+      stopFireRef.current();
+    }, MAX_FIRE_MS);
+  }, [activeMachine, onSend]);
+
+  // Cancel the dead-man timer on unmount so a pending fire can't outlive the UI.
+  useEffect(() => {
+    return () => {
+      if (fireTimerRef.current) clearTimeout(fireTimerRef.current);
+    };
+  }, []);
+
+  // X/Y jogging is owned by App (onJogRelative), which enforces homing with a
+  // single confirm-gate for every entry point (buttons, keyboard, canvas) —
+  // do not gate it here too. Z jogging and homing stay ungated (they're how
+  // you get to a known position in the first place).
   const jog = useCallback(
     async (axis: string, dist: number) => {
       try {
@@ -68,21 +118,12 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   );
 
   const handleHome = useCallback(async () => {
+    onHome?.();
     await onSend('G28');
     if (activeMachine?.zSecure !== undefined) {
       setShowSafeZPrompt(true);
     }
-  }, [onSend, activeMachine]);
-
-  const handleFire = useCallback(() => {
-    const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
-    const cmd = activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
-    onSend(cmd);
-  }, [activeMachine, onSend]);
-
-  const handleStopFire = useCallback(() => {
-    onSend(activeMachine?.laserOff ?? 'M5');
-  }, [activeMachine, onSend]);
+  }, [onSend, activeMachine, onHome]);
 
   const handleMoveToSafeZ = useCallback(async () => {
     setShowSafeZPrompt(false);
@@ -336,7 +377,8 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
                   onPrint && gcode
                     ? () => {
                         if (!isConnected) return;
-                        setShowHomingWarning(true);
+                        if (isHomed) handleRunJob();
+                        else setShowHomingWarning(true);
                       }
                     : undefined
                 }

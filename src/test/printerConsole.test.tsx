@@ -26,6 +26,7 @@ const defaultProps = {
   messages: [],
   isPrinting: false,
   progress: 0,
+  isHomed: true,
   onConnect: vi.fn(),
   onDisconnect: vi.fn(),
   onSend: vi.fn(),
@@ -159,5 +160,36 @@ describe('PrinterConsole', () => {
       gcode: 'G28\nM3 S500',
     });
     expect(screen.getByText('Run Job')).toBeInTheDocument();
+  });
+
+  it('sends machine laserOff command when FIRE is released', () => {
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    renderConsole({ isConnected: true, onSend });
+    fireEvent.pointerDown(screen.getByText('FIRE'));
+    fireEvent.pointerUp(screen.getByText('FIRE'));
+    expect(onSend).toHaveBeenCalledWith('M5');
+  });
+
+  it('runs the job directly when homed (no warning shown)', () => {
+    const onPrint = vi.fn();
+    renderConsole({ isConnected: true, isHomed: true, onPrint, gcode: 'G28\nM3 S500' });
+    fireEvent.click(screen.getByText('Run Job'));
+    expect(onPrint).toHaveBeenCalled();
+    expect(screen.queryByText(/should be homed/)).not.toBeInTheDocument();
+  });
+
+  it('shows the homing warning and does not run when not homed', () => {
+    const onPrint = vi.fn();
+    renderConsole({ isConnected: true, isHomed: false, onPrint, gcode: 'G28\nM3 S500' });
+    fireEvent.click(screen.getByText('Run Job'));
+    expect(onPrint).not.toHaveBeenCalled();
+    expect(screen.getByText(/should be homed/)).toBeInTheDocument();
+  });
+
+  it('forwards XY jog keys to App (homing policy is enforced upstream)', () => {
+    const onJogRelative = vi.fn();
+    renderConsole({ isConnected: true, isHomed: false, onJogRelative });
+    fireEvent.keyDown(document, { key: 'ArrowUp' });
+    expect(onJogRelative).toHaveBeenCalledWith(0, 10);
   });
 });

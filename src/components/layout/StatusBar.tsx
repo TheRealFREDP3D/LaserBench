@@ -72,9 +72,7 @@ const StatusBar = ({
             <Home className="w-3.5 h-3.5 text-neutral-600" />
             <span
               className={`px-1.5 py-0.5 rounded text-[8px] font-mono ${
-                isHomed
-                  ? 'bg-green-500/10 text-green-400'
-                  : 'bg-white/5 text-neutral-500'
+                isHomed ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-neutral-500'
               }`}
             >
               {isHomed ? 'Homed' : 'Not Homed'}
