@@ -440,7 +440,7 @@ const SVGVisualizer = ({ svgPaths, paths, machine, onJog, isPrinting }: SVGVisua
           </g>
 
           <g
-            transform={`translate(${p.patternPosition.x}, ${-p.patternPosition.y})`}
+            transform={`translate(${p.patternPosition.x}, ${p.patternPosition.y})`}
             style={{ cursor: isDraggingOrigin ? 'grabbing' : 'grab' }}
           >
             <circle r="10" fill="transparent" />
@@ -462,13 +462,13 @@ const SVGVisualizer = ({ svgPaths, paths, machine, onJog, isPrinting }: SVGVisua
               fill="red"
               className="animate-ping"
               style={{
-                transform: `translate(${p.patternPosition.x}px, ${-p.patternPosition.y}px)`,
+                transform: `translate(${p.patternPosition.x}px, ${p.patternPosition.y}px)`,
               }}
             />
           )}
 
           {hasSimData && simIndex > 0 && simIndex < totalSimPoints && (
-            <g transform={`translate(${simPoints[simIndex].x}, ${-simPoints[simIndex].y})`}>
+            <g transform={`translate(${simPoints[simIndex].x}, ${simPoints[simIndex].y})`}>
               {simPoints[simIndex].isLaserOn && (
                 <circle
                   r="5"
