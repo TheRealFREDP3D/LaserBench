@@ -150,4 +150,24 @@ describe('useKeyboardShortcuts', () => {
     fireEvent.keyUp(document, { key: 'f' });
     expect(h.onStopFire).not.toHaveBeenCalled();
   });
+
+  it('stops fire when the window loses focus mid-press', () => {
+    const h = makeHandlers();
+    render(<ShortcutTestComponent {...h} />);
+    fireEvent.keyDown(document, { key: 'f' });
+    expect(h.onFire).toHaveBeenCalledTimes(1);
+    fireEvent(window, new Event('blur'));
+    expect(h.onStopFire).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops fire when the tab becomes hidden mid-press', () => {
+    const h = makeHandlers();
+    render(<ShortcutTestComponent {...h} />);
+    fireEvent.keyDown(document, { key: 'f' });
+    expect(h.onFire).toHaveBeenCalledTimes(1);
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    expect(h.onStopFire).toHaveBeenCalledTimes(1);
+  });
 });

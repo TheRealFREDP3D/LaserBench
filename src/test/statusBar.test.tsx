@@ -11,6 +11,7 @@ const defaultProps = {
   isPrinting: false,
   progress: 0,
   movementMode: 'G90' as const,
+  isHomed: false,
   onConnect: vi.fn(),
   onDisconnect: vi.fn(),
 };
