@@ -23,3 +23,5 @@ pnpm-workspace.yaml
 /.smart-env
 /.vault-intelligence
 /.vscode
+/.github/skills
+/.github/workflows
