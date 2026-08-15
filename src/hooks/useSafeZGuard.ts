@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { MachineProfile } from '../types';
 import { useSerialStore } from '../store/useSerialStore';
 
@@ -17,15 +17,17 @@ export function useSafeZGuard(activeMachine: MachineProfile | null) {
   // Reset the "already raised" flag whenever the machine changes, so a fresh
   // machine selection always re-evaluates.
   const lastMachineId = useRef<string | undefined>(undefined);
-  if (activeMachine?.id !== lastMachineId.current) {
-    lastMachineId.current = activeMachine?.id;
-    raisedRef.current = false;
-  }
+  useEffect(() => {
+    if (activeMachine?.id !== lastMachineId.current) {
+      lastMachineId.current = activeMachine?.id;
+      raisedRef.current = false;
+    }
+  }, [activeMachine?.id]);
 
   const requireSafeZ = useCallback(async (): Promise<void> => {
     if (!activeMachine) return;
 
-    const { currentPos, send, isConnected } = useSerialStore.getState();
+    const { currentPos, send, isConnected, movementMode } = useSerialStore.getState();
 
     // Nothing to do if not connected or Z is already at / above safe height.
     if (!isConnected) return;
@@ -40,6 +42,8 @@ export function useSafeZGuard(activeMachine: MachineProfile | null) {
     await send(
       `G0 Z${activeMachine.zSecure.toFixed(3)} F${activeMachine.travelSpeed || 4000}`
     );
+    // Restore the previous movement mode (G90 or G91)
+    await send(movementMode);
   }, [activeMachine]);
 
   // Expose a reset so callers can force re-evaluation after disconnect / home.

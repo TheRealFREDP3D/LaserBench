@@ -292,6 +292,12 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         conn.pushMessage('received', 'Error: Web Serial API is not supported in this browser.');
         return;
       }
+      // Check capabilities BEFORE opening the port to avoid resource leak
+      if (!conn.capabilities) {
+        conn.pushMessage('received', 'Error: Select a supported firmware profile before connecting');
+        set({ connectionState: 'offline' });
+        return;
+      }
       const resolvedBaud = Math.floor(Number(baudRate || 250000)) || 250000;
       try {
         set({ connectionState: 'connecting' });
@@ -313,7 +319,6 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         conn.pushMessage('sent', '--- Connected to printer ---');
         // Query position using the selected firmware capability. Never guess
         // the machine position from the origin after connecting.
-        if (!conn.capabilities) throw new Error('Select a supported firmware profile before connecting');
         await conn.writeUrgent(conn.capabilities.positionQuery);
       } catch (error) {
         console.error('Failed to connect:', error);

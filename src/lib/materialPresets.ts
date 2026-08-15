@@ -168,7 +168,7 @@ export const INITIAL_MACHINES: MachineProfile[] = [
     laserOn: 'M106 S{power}',
     laserOff: 'M107',
     pwmMax: 255,
-    zSecure: 0,
+    zSecure: 5,
     zFocused: 0,
     travelSpeed: 6000,
     bedShape: 'circular',

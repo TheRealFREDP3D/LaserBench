@@ -96,7 +96,8 @@ export default function App() {
     const safety = activeMachine ? validateMachineSafetyProfile(activeMachine) : null;
     const capabilities = safety?.valid && activeMachine ? getFirmwareCapabilities(activeMachine.firmware) : null;
     setFirmwareCapabilities(capabilities);
-    setLaserOffCmd(safety?.valid ? activeMachine?.laserOff ?? '' : '');
+    // Fall back to universal M5 if profile is invalid or missing - never leave laserOffCmd empty
+    setLaserOffCmd(safety?.valid ? activeMachine?.laserOff ?? 'M5' : 'M5');
   }, [activeMachine, setFirmwareCapabilities, setLaserOffCmd]);
 
   // Encapsulate homing confirmation logic in a dedicated hook
