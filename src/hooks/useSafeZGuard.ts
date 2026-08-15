@@ -29,6 +29,8 @@ export function useSafeZGuard(activeMachine: MachineProfile | null) {
     // second one; then re-check Z afterward via the normal call path.
     if (raiseInFlightRef.current) {
       await raiseInFlightRef.current;
+      // Re-check since the ref might have been cleared while we awaited
+      if (raiseInFlightRef.current) return;
     }
 
     const { currentPos, send, isConnected, movementMode } = useSerialStore.getState();
@@ -51,8 +53,8 @@ export function useSafeZGuard(activeMachine: MachineProfile | null) {
       const estimatedSeconds = (zDistance / travelSpeed) * 60 * 1.5;
       const delayMs = Math.max(100, Math.min(estimatedSeconds * 1000, 5000)); // Clamp between 100ms and 5s
       await new Promise(resolve => setTimeout(resolve, delayMs));
-      // Restore the previous movement mode (G90 or G91)
-      await send(movementMode);
+      // Restore the previous movement mode (G90 or G91), with fallback to G90
+      await send(movementMode || 'G90');
     })();
 
     raiseInFlightRef.current = raise;

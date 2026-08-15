@@ -38,6 +38,7 @@ const BUFFER_SIZE = 8;
 const MIN_SEND_INTERVAL_MS = 10;
 const SLOT_TIMEOUT_MS = 10_000;
 const MAX_MESSAGES = 500;
+const DISCONNECT_CLEANUP_DELAY_MS = 50;
 
 // ─── SerialConnection class ───────────────────────────────────────────────────
 //
@@ -106,6 +107,12 @@ class SerialConnection {
     if (this.pendingUrgentAcks > 0) {
       this.pendingUrgentAcks--;
       return;
+    }
+    // Log warning if we're swallowing an ack when pendingUrgentAcks is already 0
+    // This indicates a desynchronization between urgent commands and responses
+    if (this.pendingUrgentAcks < 0) {
+      console.warn('pendingUrgentAcks desynchronized, resetting to 0');
+      this.pendingUrgentAcks = 0;
     }
     const resolve = this.bufferResolves.shift();
     const timer = this.bufferTimeouts.shift();
@@ -196,7 +203,7 @@ class SerialConnection {
     if (!port?.readable) return;
 
     const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable).catch(() => {});
+    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable as WritableStream<Uint8Array>).catch(() => {});
     this.reader = textDecoder.readable.getReader();
 
     let lineBuffer = '';
@@ -344,6 +351,13 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         await conn.writeUrgent(conn.capabilities.positionQuery);
       } catch (error) {
         console.error('Failed to connect:', error);
+        // Clean up encoder and writer if they were created before the error
+        try {
+          if (conn.writer) await conn.writer.close();
+        } catch {
+          /* ignore */
+        }
+        conn.writer = null;
         if (conn.port) {
           try {
             await conn.port.close();
@@ -367,7 +381,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         if (conn.reader) await conn.reader.cancel();
         if (conn.writer) await conn.writer.close();
         // Small delay to let the read loop exit cleanly before closing port
-        await new Promise((r) => setTimeout(r, 50));
+        await new Promise((r) => setTimeout(r, DISCONNECT_CLEANUP_DELAY_MS));
         if (conn.port) await conn.port.close();
       } catch (error) {
         console.error('Error during disconnect:', error);
@@ -442,8 +456,9 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         if (conn.capabilities) {
           await conn.writeUrgent(conn.capabilities.emergencyStop);
         }
-      } catch {
+      } catch (err) {
         conn.pushMessage('received', 'E-STOP urgent write failed; inspect physical safety controls immediately');
+        throw err;
       } finally {
         await conn.fireLaserOff();
         conn.pushMessage('sent', '--- E-STOP: output locked until reconnect ---');
@@ -564,6 +579,11 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         conn.laserOffCmd = '';
         conn.safetyLocked = true;
         set({ isHomed: false, homingPending: false });
+        // Force disconnect if clearing capabilities while connected to prevent
+        // operating with an invalid machine profile
+        if (get().isConnected) {
+          void get().disconnect();
+        }
       } else if (!get().isConnected) {
         conn.safetyLocked = false;
       }

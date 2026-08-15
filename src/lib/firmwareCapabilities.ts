@@ -69,7 +69,7 @@ export function validateMachineSafetyCommands(
       ? new RegExp(`^M(?:3|4) ${powerWord}$`)
       : new RegExp(`^M3 ${powerWord}$`);
 
-  if (!onPattern.test(on.replace('{POWER}', '{POWER}'))) {
+  if (!onPattern.test(on)) {
     return { valid: false, reason: `laserOn is incompatible with ${laserMode}` };
   }
 
