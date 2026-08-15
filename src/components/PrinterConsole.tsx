@@ -20,6 +20,8 @@ interface PrinterConsoleProps {
   onSend: (command: string) => Promise<void>;
   onClear: () => void;
   onAbortPrint: () => void;
+  onEmergencyStop: () => void | Promise<void>;
+  onLaserOff: () => Promise<void>;
   onPrint?: (gcode: string) => void;
   gcode?: string;
   activeMachine: MachineProfile | null;
@@ -38,6 +40,8 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   onSend,
   onClear,
   onAbortPrint,
+  onEmergencyStop,
+  onLaserOff,
   onPrint,
   gcode,
   activeMachine,
@@ -54,7 +58,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   } | null>(null);
 
   // Extract dead-man FIRE logic into a dedicated hook
-  const { fire: handleFire, stopFire: handleStopFire } = useDeadManFire(activeMachine, onSend);
+  const { fire: handleFire, stopFire: handleStopFire } = useDeadManFire(activeMachine, onSend, onLaserOff);
 
   // X/Y jogging is owned by App (onJogRelative), which enforces homing with a
   // single confirm-gate for every entry point (buttons, keyboard, canvas) —
@@ -81,16 +85,15 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   );
 
   const handleHome = useCallback(async () => {
-    onHome?.();
-    await onSend('G28');
+    await onHome?.();
     if (activeMachine?.zSecure !== undefined) {
       setShowSafeZPrompt(true);
     }
   }, [onSend, activeMachine, onHome]);
 
   const handleEStop = useCallback(() => {
-    if (isConnected) onSend('M112');
-  }, [isConnected, onSend]);
+    if (isConnected) void onEmergencyStop();
+  }, [isConnected, onEmergencyStop]);
 
   const handleRunJob = useCallback(() => {
     if (onPrint && gcode) {

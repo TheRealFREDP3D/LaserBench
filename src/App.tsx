@@ -26,6 +26,7 @@ import SVGVisualizer from './components/SVGVisualizer';
 import GCodeOutput from './components/GCodeOutput';
 import { PrinterConsole } from './components/PrinterConsole';
 import { useSerialStore } from './store/useSerialStore';
+import { getFirmwareCapabilities, validateMachineSafetyProfile } from './lib/firmwareCapabilities';
 import { useConfirmModal } from './hooks/useConfirmModal';
 import WorkflowStepper from './components/layout/WorkflowStepper';
 import StatusBar from './components/layout/StatusBar';
@@ -37,6 +38,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Settings, Terminal, Upload, Book } from 'lucide-react';
 import { clampToBed, buildJogCommand, getFreshCurrentPos } from './helpers/jog';
 import { useUnhomedJogGuard } from './hooks/useUnhomedJogGuard';
+import { useSafeZGuard } from './hooks/useSafeZGuard';
 
 const isVercel = import.meta.env.VERCEL === '1';
 
@@ -56,7 +58,11 @@ export default function App() {
     send,
     printGCode,
     abortPrint,
+    emergencyStop,
+    home,
+    laserOff,
     clearMessages,
+    setFirmwareCapabilities,
     setLaserOffCmd,
   } = useSerialStore();
 
@@ -87,11 +93,16 @@ export default function App() {
   // lasers are shut down correctly on disconnect / abort / error even if the
   // React tree is gone. Runs whenever the machine's laserOff setting changes.
   useEffect(() => {
-    setLaserOffCmd(activeMachine?.laserOff ?? 'M5');
-  }, [activeMachine?.laserOff, setLaserOffCmd]);
+    const safety = activeMachine ? validateMachineSafetyProfile(activeMachine) : null;
+    const capabilities = safety?.valid && activeMachine ? getFirmwareCapabilities(activeMachine.firmware) : null;
+    setFirmwareCapabilities(capabilities);
+    setLaserOffCmd(safety?.valid ? activeMachine?.laserOff ?? '' : '');
+  }, [activeMachine, setFirmwareCapabilities, setLaserOffCmd]);
 
   // Encapsulate homing confirmation logic in a dedicated hook
-  const { requireHomingConfirm, onHome } = useUnhomedJogGuard();
+  const { requireHomingConfirm, onHome: resetHomingOverride } = useUnhomedJogGuard();
+  // Ensure Z is raised to safe height before any XY jog
+  const { requireSafeZ, resetSafeZFlag } = useSafeZGuard(activeMachine);
 
   // Deriving results using useMemo instead of useEffect+useState to avoid cascading renders
   const generatedResults = useMemo<GeneratedData | null>(() => {
@@ -176,6 +187,7 @@ export default function App() {
     async (x: number, y: number) => {
       if (!isConnected || !activeMachine) return;
       if (!(await requireHomingConfirm())) return;
+      await requireSafeZ();
 
       const pos = getFreshCurrentPos();
       const { x: clampedX, y: clampedY } = clampToBed(activeMachine, x, y);
@@ -188,13 +200,14 @@ export default function App() {
 
       send(buildJogCommand(activeMachine, targetX, targetY));
     },
-    [isConnected, requireHomingConfirm, send, activeMachine]
+    [isConnected, requireHomingConfirm, requireSafeZ, send, activeMachine]
   );
 
   const handleJogRelative = useCallback(
     async (dx: number, dy: number) => {
       if (!isConnected || !activeMachine) return;
       if (!(await requireHomingConfirm())) return;
+      await requireSafeZ();
 
       const pos = getFreshCurrentPos();
       const targetX = pos.x + dx;
@@ -203,7 +216,7 @@ export default function App() {
 
       send(buildJogCommand(activeMachine, clampedX, clampedY));
     },
-    [isConnected, requireHomingConfirm, send, activeMachine]
+    [isConnected, requireHomingConfirm, requireSafeZ, send, activeMachine]
   );
 
   const configPanel = (
@@ -339,12 +352,18 @@ export default function App() {
       onSend={send}
       onClear={clearMessages}
       onAbortPrint={abortPrint}
-      onPrint={handlePrint}
+      onEmergencyStop={emergencyStop}
+      onLaserOff={laserOff}
+      onPrint={printGCode}
       gcode={effectiveResults?.gcode}
       activeMachine={activeMachine}
       onJogRelative={handleJogRelative}
       isHomed={isHomed}
-      onHome={onHome}
+      onHome={async () => {
+        resetHomingOverride();
+        resetSafeZFlag();
+        await home();
+      }}
     />
   );
 
@@ -362,7 +381,11 @@ export default function App() {
               isPrinting={isPrinting}
             />
             <div className="absolute bottom-4 right-4 z-10 pointer-events-none opacity-80 hover:opacity-100 transition-opacity">
-              <MachineFrontView machine={activeMachine} currentPos={currentPos} />
+              <MachineFrontView
+                machine={activeMachine}
+                currentPos={currentPos}
+                materialThickness={activeMaterial.thickness}
+              />
             </div>
           </>
         ) : (
@@ -448,6 +471,49 @@ export default function App() {
       />
 
       <OnboardingTooltip />
+
+      {/* Safe Z enforcement overlay — blocks all interaction until zSecure > 0 */}
+      {activeMachine && activeMachine.zSecure === 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="max-w-sm w-full mx-4 bg-[#111] border border-amber-500/50 rounded-2xl p-6 shadow-2xl shadow-amber-500/10">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center animate-pulse">
+                <span className="text-amber-400 text-sm font-bold">!</span>
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-amber-400 uppercase tracking-wider mb-1">
+                  Safe Z Height Required
+                </h2>
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  The <span className="text-amber-400 font-bold">Z Secure</span> value for{' '}
+                  <span className="text-white font-semibold">"{activeMachine.name}"</span> is set
+                  to <span className="font-mono text-amber-400">0 mm</span>.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-neutral-500 leading-relaxed mb-5 pl-11">
+              This is the height the laser head travels to between moves to avoid
+              collisions with clamps, material edges, and fixtures. A value of{' '}
+              <span className="font-mono">0</span> means the head will travel at bed
+              level — which can damage your material, your machine, or both.
+            </p>
+
+            <p className="text-[10px] text-amber-500/80 mb-5 pl-11 font-semibold uppercase tracking-wider">
+              Set a value greater than 0 to continue.
+            </p>
+
+            <div className="pl-11">
+              <button
+                onClick={() => ui.setStep('machine')}
+                className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider rounded-lg transition-colors"
+              >
+                Go to Machine Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDictionary && <GCodeDictionary onClose={() => setShowDictionary(false)} />}
 

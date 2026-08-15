@@ -1,24 +1,21 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { sanitizeGCodeLine } from '../lib/gcodeGenerator';
 import { MachineProfile } from '../types';
 
 const MAX_FIRE_MS = 60_000;
 
 export function useDeadManFire(
   activeMachine: MachineProfile | null,
-  onSend: (cmd: string) => Promise<void>
+  onSend: (cmd: string) => Promise<void>,
+  onLaserOff: () => Promise<void>
 ) {
   const fireTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const laserOffCmd =
-    (activeMachine && sanitizeGCodeLine(activeMachine.laserOff)) || 'M5';
-
   const stopFire = useCallback(() => {
     if (fireTimerRef.current) {
       clearTimeout(fireTimerRef.current);
       fireTimerRef.current = null;
     }
-    onSend(laserOffCmd).catch(() => {});
-  }, [onSend, laserOffCmd]);
+    onLaserOff().catch(() => {});
+  }, [onLaserOff]);
 
   const stopFireRef = useRef(stopFire);
   stopFireRef.current = stopFire;
@@ -27,7 +24,7 @@ export function useDeadManFire(
     const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
     const cmd =
       activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
-    onSend(cmd).catch(() => {});
+    Promise.resolve(onSend(cmd)).catch(() => {});
     if (fireTimerRef.current) clearTimeout(fireTimerRef.current);
     fireTimerRef.current = setTimeout(() => {
       fireTimerRef.current = null;

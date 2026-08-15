@@ -370,8 +370,8 @@ function generateFocusLadder(ctx: PatternContext) {
     textLetterSpacing,
     material,
   } = ctx;
-  const engravePower = material.engrave.power;
-  const engraveSpeed = material.engrave.speed;
+  const engravePower = material.engrave?.power ?? 50;
+  const engraveSpeed = material.engrave?.speed ?? 1000;
   const lineLen = FOCUS_LADDER_LINE_LENGTH_MM * patternScale;
   const lineGap = FOCUS_LADDER_LINE_GAP_MM * patternScale;
   const totalH = zSteps * lineGap;
@@ -457,8 +457,8 @@ function generateKerfTest(ctx: PatternContext, nominal: number) {
     ];
     addSegment(
       pts,
-      material.cut.power,
-      material.cut.speed,
+      material.cut?.power ?? 1000,
+      material.cut?.speed ?? 200,
       machine.zFocused + material.thickness,
       true
     );
@@ -561,9 +561,11 @@ export function generatePatternPaths(
     pathGroups.push({ points: movedPoints, power, speed, z, isLaserOn, postSegmentGCode });
   }
 
-  // Use engrave settings for labels — cut power/speed would over-burn fine text
-  const labelPower = Math.round(material.engrave.power);
-  const labelSpeed = material.engrave.speed;
+  // Use engrave settings for labels — cut power/speed would over-burn fine text.
+  // Guard against malformed stored profiles where engrave may be undefined.
+  const engrave = material.engrave ?? { power: 50, speed: 1000 };
+  const labelPower = Math.round(engrave.power || 50);
+  const labelSpeed = engrave.speed || 1000;
 
   const ctx: PatternContext = {
     machine,

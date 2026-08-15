@@ -32,6 +32,8 @@ const defaultProps = {
   onSend: vi.fn(),
   onClear: vi.fn(),
   onAbortPrint: vi.fn(),
+  onEmergencyStop: vi.fn(),
+  onLaserOff: vi.fn().mockResolvedValue(undefined),
   onJogRelative: vi.fn(),
   activeMachine: mockMachine,
   onHome: vi.fn(),
@@ -93,11 +95,11 @@ describe('PrinterConsole', () => {
     expect(screen.getByText('⬇ AUTO')).toBeInTheDocument();
   });
 
-  it('calls onSend with M112 when E-STOP clicked', () => {
-    const onSend = vi.fn();
-    renderConsole({ isConnected: true, onSend });
+  it('calls the firmware-aware emergency-stop callback when E-STOP clicked', () => {
+    const onEmergencyStop = vi.fn();
+    renderConsole({ isConnected: true, onEmergencyStop });
     fireEvent.click(screen.getByText('E-STOP'));
-    expect(onSend).toHaveBeenCalledWith('M112');
+    expect(onEmergencyStop).toHaveBeenCalled();
   });
 
   it('disables controls when not connected', () => {
@@ -163,12 +165,12 @@ describe('PrinterConsole', () => {
     expect(screen.getByText('Run Job')).toBeInTheDocument();
   });
 
-  it('sends machine laserOff command when FIRE is released', () => {
-    const onSend = vi.fn().mockResolvedValue(undefined);
-    renderConsole({ isConnected: true, onSend });
+  it('calls the validated laser-off callback when FIRE is released', () => {
+    const onLaserOff = vi.fn().mockResolvedValue(undefined);
+    renderConsole({ isConnected: true, onLaserOff });
     fireEvent.pointerDown(screen.getByText('FIRE'));
     fireEvent.pointerUp(screen.getByText('FIRE'));
-    expect(onSend).toHaveBeenCalledWith('M5');
+    expect(onLaserOff).toHaveBeenCalled();
   });
 
   it('runs the job directly when homed (no warning shown)', () => {
@@ -212,8 +214,8 @@ describe('PrinterConsole', () => {
     // onHome callback should be called
     expect(onHome).toHaveBeenCalled();
 
-    // Homing command should be sent
-    expect(onSend).toHaveBeenCalledWith('G28');
+    // The console delegates homing; it must not construct a generic G28 command.
+    expect(onSend).not.toHaveBeenCalledWith('G28');
 
     // Wait for async state update
     await vi.waitFor(() => {
@@ -282,8 +284,7 @@ describe('PrinterConsole', () => {
     // Prompt should be dismissed
     expect(screen.queryByText(/Move to safe Z position/i)).not.toBeInTheDocument();
 
-    // No additional movement commands beyond homing should be sent
-    const sendCommands = onSend.mock.calls.map(args => args[0]);
-    expect(sendCommands.filter(cmd => cmd !== 'G28')).toHaveLength(0);
+    // Skipping the safe-Z move must leave the serial command stream untouched.
+    expect(onSend).not.toHaveBeenCalled();
   });
 });

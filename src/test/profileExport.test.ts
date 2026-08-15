@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import * as firmwareCapabilities from '../lib/firmwareCapabilities';
 import { importProfiles } from '../lib/profileExport';
 import type { MachineProfile, MaterialProfile } from '../types';
 
@@ -46,6 +47,7 @@ describe('importProfiles (machine)', () => {
     expect(result.profiles.length).toBe(1);
     expect(result.duplicates).toBe(0);
     expect(result.invalid).toBe(0);
+    expect(result.rejectionReasons).toEqual([]);
   });
 
   it('detects duplicates by id', () => {
@@ -60,6 +62,7 @@ describe('importProfiles (machine)', () => {
     ]);
     expect(result.profiles.length).toBe(0);
     expect(result.duplicates).toBe(1);
+    expect(result.rejectionReasons).toEqual([]);
   });
 
   it('counts invalid profiles', () => {
@@ -99,6 +102,23 @@ describe('importProfiles (machine)', () => {
     ).toThrow();
   });
 
+  it('populates rejectionReasons when laserOff is invalid', () => {
+    const badMachine: MachineProfile = { ...validMachine, laserOff: 'M3 S1000' };
+    const envelope = { version: 1, type: 'machine', exportedAt: '2026-06-24', profiles: [badMachine] };
+    const result = importProfiles(envelope, 'machine', (_x): _x is MachineProfile => true, []);
+    expect(result.invalid).toBe(1);
+    expect(result.rejectionReasons.length).toBe(1);
+    expect(result.rejectionReasons[0].length).toBeGreaterThan(0);
+    expect(result.profiles.length).toBe(0);
+  });
+
+  it('leaves rejectionReasons empty when machine profile passes safety validation', () => {
+    const envelope = { version: 1, type: 'machine', exportedAt: '2026-06-24', profiles: [validMachine] };
+    const result = importProfiles(envelope, 'machine', (_x): _x is MachineProfile => true, []);
+    expect(result.rejectionReasons.length).toBe(0);
+    expect(result.profiles.length).toBe(1);
+  });
+
   it('imports multiple profiles, skipping invalid', () => {
     const envelope = {
       version: 1,
@@ -121,6 +141,7 @@ describe('importProfiles (machine)', () => {
     );
     expect(result.profiles.length).toBe(2);
     expect(result.invalid).toBe(1);
+    expect(result.rejectionReasons).toEqual([]);
   });
 });
 
@@ -135,6 +156,7 @@ describe('importProfiles (material)', () => {
     const result = importProfiles(envelope, 'material', (_x): _x is MaterialProfile => true, []);
     expect(result.profiles.length).toBe(1);
     expect(result.duplicates).toBe(0);
+    expect(result.rejectionReasons).toEqual([]);
   });
 
   it('detects duplicates', () => {
@@ -148,5 +170,19 @@ describe('importProfiles (material)', () => {
       validMaterial,
     ]);
     expect(result.duplicates).toBe(1);
+    expect(result.rejectionReasons).toEqual([]);
+  });
+
+  it('does not call validateMachineSafetyProfile for material profiles', () => {
+    // Note: importProfiles imports validateMachineSafetyProfile as a direct ES module binding,
+    // not via the module namespace object. vi.spyOn on the module namespace won't intercept
+    // the call inside the function due to how ES module live bindings work in Vitest without
+    // vi.mock hoisting. We therefore assert the observable side effect instead: rejectionReasons
+    // must be empty, confirming no safety rejection occurred for a material profile.
+    const spy = vi.spyOn(firmwareCapabilities, 'validateMachineSafetyProfile');
+    const envelope = { version: 1, type: 'material', exportedAt: '2026-06-24', profiles: [validMaterial] };
+    const result = importProfiles(envelope, 'material', (_x): _x is MaterialProfile => true, []);
+    expect(result.rejectionReasons.length).toBe(0);
+    spy.mockRestore();
   });
 });

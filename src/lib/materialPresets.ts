@@ -1,4 +1,5 @@
-import { MachineProfile, MaterialProfile } from '../types';
+import { MachineProfile, MaterialCategory, MaterialProfile, PatternType } from '../types';
+import { validateMachineSafetyProfile } from './firmwareCapabilities';
 
 const VALID_FIRMWARES = ['marlin', 'grbl'] as const;
 const VALID_LASER_MODES = ['M3_M5', 'M106_M107', 'M3_M4_M5'] as const;
@@ -63,6 +64,9 @@ export function isValidMachineProfile(m: unknown): m is MachineProfile {
       obj.acceleration <= 0)
   )
     return false;
+  const safety = validateMachineSafetyProfile(obj as unknown as MachineProfile);
+  if (!safety.valid) return false;
+
   if (obj.startGCode !== undefined && typeof obj.startGCode !== 'string') return false;
   if (obj.endGCode !== undefined && typeof obj.endGCode !== 'string') return false;
   if (obj.isDelta !== undefined && typeof obj.isDelta !== 'boolean') return false;

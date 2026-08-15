@@ -89,10 +89,39 @@ describe('isValidMachineProfile', () => {
     expect(isValidMachineProfile({ ...validMachine, laserMode: 'invalid' })).toBe(false);
   });
 
-  it('accepts all valid laser modes', () => {
+  it('accepts all valid laser modes with matching safety commands', () => {
     expect(isValidMachineProfile({ ...validMachine, laserMode: 'M3_M5' })).toBe(true);
-    expect(isValidMachineProfile({ ...validMachine, laserMode: 'M106_M107' })).toBe(true);
-    expect(isValidMachineProfile({ ...validMachine, laserMode: 'M3_M4_M5' })).toBe(true);
+    expect(
+      isValidMachineProfile({
+        ...validMachine,
+        firmware: 'marlin',
+        laserMode: 'M106_M107',
+        laserOn: 'M106 S{power}',
+        laserOff: 'M107',
+      })
+    ).toBe(true);
+    expect(
+      isValidMachineProfile({
+        ...validMachine,
+        laserMode: 'M3_M4_M5',
+        laserOn: 'M4 S{power}',
+      })
+    ).toBe(true);
+  });
+
+  it('rejects M106/M107 mode on GRBL', () => {
+    expect(
+      isValidMachineProfile({
+        ...validMachine,
+        laserMode: 'M106_M107',
+        laserOn: 'M106 S{power}',
+        laserOff: 'M107',
+      })
+    ).toBe(false);
+  });
+
+  it('rejects a laser-on command in the laser-off field', () => {
+    expect(isValidMachineProfile({ ...validMachine, laserOff: 'M3 S1000' })).toBe(false);
   });
 
   it('rejects invalid bedShape', () => {

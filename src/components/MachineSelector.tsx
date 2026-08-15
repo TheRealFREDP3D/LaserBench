@@ -98,6 +98,9 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
       if (result.profiles.length > 0) parts.push(`${result.profiles.length} imported`);
       if (result.duplicates > 0) parts.push(`${result.duplicates} skipped (duplicates)`);
       if (result.invalid > 0) parts.push(`${result.invalid} invalid`);
+      if (result.rejectionReasons.length > 0) {
+        parts.push(`rejected: ${result.rejectionReasons.slice(0, 3).join('; ')}`);
+      }
       await confirm(parts.length > 0 ? parts.join(', ') : 'No new profiles found');
     } catch (err) {
       await confirm(`Import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -118,9 +121,14 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
       const result = await importProfilesFromClipboard('machine', isValidMachineProfile, machines);
       if (result.profiles.length > 0) {
         onCreateBatch(result.profiles);
-        await confirm(`${result.profiles.length} profile(s) imported`);
+        const reasonNote = result.rejectionReasons.length > 0
+          ? ` (rejected: ${result.rejectionReasons.slice(0, 3).join('; ')})`
+          : '';
+        await confirm(`${result.profiles.length} profile(s) imported${reasonNote}`);
       } else if (result.duplicates > 0) {
         await confirm('Profile already exists');
+      } else if (result.rejectionReasons.length > 0) {
+        await confirm(`No valid profile found. Reason: ${result.rejectionReasons[0]}`);
       } else {
         await confirm('No valid machine profile found on clipboard');
       }
@@ -326,6 +334,7 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
               value={activeMachine.zSecure}
               onChange={(v) => handleFieldChange('zSecure', v)}
               unit="mm"
+              danger={activeMachine.zSecure === 0}
             />
             <ParameterField
               label="Z Focused"
