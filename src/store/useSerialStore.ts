@@ -68,6 +68,10 @@ class SerialConnection {
   bufferSlots = BUFFER_SIZE;
   bufferResolves: (() => void)[] = [];
   bufferTimeouts: ReturnType<typeof setTimeout>[] = [];
+  // Count of 'ok' responses expected from writeUrgent() line commands that
+  // never consumed a flow-control slot; releaseSlot() must swallow these
+  // instead of granting an unearned slot back to the buffer.
+  pendingUrgentAcks = 0;
 
   // Rate-limiting for manual commands
   lastSendTime = 0;
@@ -97,6 +101,12 @@ class SerialConnection {
   }
 
   releaseSlot() {
+    // An 'ok' that answers an urgent (non-slot-consuming) line write must not
+    // grant a slot back — no slot was ever taken for it. Swallow it here.
+    if (this.pendingUrgentAcks > 0) {
+      this.pendingUrgentAcks--;
+      return;
+    }
     const resolve = this.bufferResolves.shift();
     const timer = this.bufferTimeouts.shift();
     if (timer) clearTimeout(timer);
@@ -128,6 +138,7 @@ class SerialConnection {
   resetFlowControl() {
     this.clearPendingTimeouts();
     this.bufferSlots = BUFFER_SIZE;
+    this.pendingUrgentAcks = 0;
     // Resolve all pending waiters so they unblock immediately
     for (const resolve of this.bufferResolves) resolve();
     this.bufferResolves = [];
@@ -164,6 +175,16 @@ class SerialConnection {
   async writeUrgent(command: { kind: 'realtime' | 'line'; payload: string; label: string }) {
     if (!this.writer) throw new Error('Not connected to printer');
     const payload = command.kind === 'line' ? command.payload + '\n' : command.payload;
+    // 'line' commands (e.g. Marlin M114, $H) provoke an 'ok' response from the
+    // firmware just like a normal queued send, but writeUrgent bypasses
+    // waitForSlot() entirely — it never consumes a flow-control slot. The read
+    // loop can't tell an urgent 'ok' apart from a normal one, so without this
+    // counter it would call releaseSlot() and *grant* a slot that was never
+    // spent, letting more than BUFFER_SIZE commands queue up over time.
+    // Track how many 'ok's we expect to swallow so releaseSlot() can skip them.
+    if (command.kind === 'line') {
+      this.pendingUrgentAcks++;
+    }
     await this.writer.write(payload);
     this.pushMessage('sent', command.label);
   }

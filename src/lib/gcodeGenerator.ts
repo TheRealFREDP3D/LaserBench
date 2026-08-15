@@ -563,9 +563,12 @@ export function generatePatternPaths(
 
   // Use engrave settings for labels — cut power/speed would over-burn fine text.
   // Guard against malformed stored profiles where engrave may be undefined.
+  // Use ?? (not ||) so an explicit 0 from the user's profile is honored
+  // instead of being silently replaced by the default — || treats 0 as falsy
+  // and would burn labels the user intentionally set to zero power/speed.
   const engrave = material.engrave ?? { power: 50, speed: 1000 };
-  const labelPower = Math.round(engrave.power || 50);
-  const labelSpeed = engrave.speed || 1000;
+  const labelPower = Math.round(engrave.power ?? 50);
+  const labelSpeed = engrave.speed ?? 1000;
 
   const ctx: PatternContext = {
     machine,

@@ -218,6 +218,60 @@ describe('gcodeGenerator', () => {
     });
   });
 
+  describe('label power/speed defaults', () => {
+    // Regression test for a bug where `engrave.power || 50` / `engrave.speed || 1000`
+    // silently replaced an explicit 0 with the default, because `||` treats 0 as
+    // falsy. Labels must honor a deliberately-zeroed engrave setting.
+    it('honors an explicit engrave power of 0 for pattern labels instead of defaulting to 50', () => {
+      const zeroPowerMaterial: MaterialProfile = {
+        ...mockMaterial,
+        engrave: { power: 0, speed: 500 },
+      };
+      const res = generatePatternPaths('matrix', mockMachine, zeroPowerMaterial, {
+        powerMin: 100,
+        powerMax: 500,
+        powerSteps: 2,
+      });
+      // mockMachine.laserOn is 'M3 S{power}' — a label burned at the default (50)
+      // would appear as a standalone 'M3 S50' line; honoring the explicit 0
+      // should never emit that (word-boundary match so 'M3 S500' doesn't false-match).
+      expect(res.gcode).not.toMatch(/\bM3 S50\b/);
+      // And it should emit the honored zero-power label command.
+      expect(res.gcode).toMatch(/\bM3 S0\b/);
+    });
+
+    it('honors an explicit engrave speed of 0 for pattern labels instead of defaulting to 1000', () => {
+      const zeroSpeedMaterial: MaterialProfile = {
+        ...mockMaterial,
+        engrave: { power: 200, speed: 0 },
+      };
+      const res = generatePatternPaths('matrix', mockMachine, zeroSpeedMaterial, {
+        powerMin: 100,
+        powerMax: 500,
+        powerSteps: 2,
+      });
+      // Every G1 feed change in the gcode should come from an actual speed
+      // used in this pattern (0 for labels, or the raster speed) — never the
+      // stale default of 1000 that '||' would have silently substituted.
+      const feedRates = [...res.gcode.matchAll(/G1 F(\d+(?:\.\d+)?)/g)].map((m) => Number(m[1]));
+      expect(feedRates).not.toContain(1000);
+    });
+
+    it('still falls back to defaults when engrave is entirely missing', () => {
+      const missingEngraveMaterial: MaterialProfile = {
+        ...mockMaterial,
+        engrave: undefined as unknown as MaterialProfile['engrave'],
+      };
+      expect(() =>
+        generatePatternPaths('matrix', mockMachine, missingEngraveMaterial, {
+          powerMin: 100,
+          powerMax: 500,
+          powerSteps: 2,
+        })
+      ).not.toThrow();
+    });
+  });
+
   describe('SVG output', () => {
     it('generates SVG path elements with valid d attribute', () => {
       const res = generatePatternPaths('power_ramp', mockMachine, mockMaterial, {});
