@@ -26,8 +26,8 @@ import SVGVisualizer from './components/SVGVisualizer';
 import GCodeOutput from './components/GCodeOutput';
 import { PrinterConsole } from './components/PrinterConsole';
 import { useSerialStore } from './store/useSerialStore';
-import { getFirmwareCapabilities, validateMachineSafetyProfile } from './lib/firmwareCapabilities';
 import { useConfirmModal } from './hooks/useConfirmModal';
+import { useMachineSafety } from './hooks/useMachineSafety';
 import WorkflowStepper from './components/layout/WorkflowStepper';
 import StatusBar from './components/layout/StatusBar';
 import OnboardingTooltip from './components/OnboardingTooltip';
@@ -89,16 +89,8 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { confirm, ConfirmModalComponent } = useConfirmModal();
 
-  // Register the machine-specific laser-off command with the serial store so
-  // lasers are shut down correctly on disconnect / abort / error even if the
-  // React tree is gone. Runs whenever the machine's laserOff setting changes.
-  useEffect(() => {
-    const safety = activeMachine ? validateMachineSafetyProfile(activeMachine) : null;
-    const capabilities = safety?.valid && activeMachine ? getFirmwareCapabilities(activeMachine.firmware) : null;
-    setFirmwareCapabilities(capabilities);
-    // Fall back to universal M5 if profile is invalid or missing - never leave laserOffCmd empty
-    setLaserOffCmd(safety?.valid ? activeMachine?.laserOff ?? 'M5' : 'M5');
-  }, [activeMachine, setFirmwareCapabilities, setLaserOffCmd]);
+  // Wire machine safety profile validation to the serial store
+  useMachineSafety(activeMachine);
 
   // Encapsulate homing confirmation logic in a dedicated hook
   const { requireHomingConfirm, onHome: resetHomingOverride } = useUnhomedJogGuard();

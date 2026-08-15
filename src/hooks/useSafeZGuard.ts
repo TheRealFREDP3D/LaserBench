@@ -27,10 +27,10 @@ export function useSafeZGuard(activeMachine: MachineProfile | null) {
 
     // If a raise is already underway, wait for it instead of starting a
     // second one; then re-check Z afterward via the normal call path.
-    if (raiseInFlightRef.current) {
+    if (raiseInFlightRef.current !== null) {
       await raiseInFlightRef.current;
       // Re-check since the ref might have been cleared while we awaited
-      if (raiseInFlightRef.current) return;
+      if (raiseInFlightRef.current !== null) return;
     }
 
     const { currentPos, send, isConnected, movementMode } = useSerialStore.getState();
@@ -43,7 +43,9 @@ export function useSafeZGuard(activeMachine: MachineProfile | null) {
     const raise = (async () => {
       // Switch to absolute mode, raise Z, then restore the previous movement mode.
       await send('G90');
-      const zDistance = activeMachine.zSecure - currentPos.z;
+      // Re-read currentPos.z right before calculation to avoid stale closure
+      const freshPos = useSerialStore.getState().currentPos;
+      const zDistance = activeMachine.zSecure - freshPos.z;
       await send(
         `G0 Z${activeMachine.zSecure.toFixed(3)} F${activeMachine.travelSpeed || 4000}`
       );
@@ -60,6 +62,16 @@ export function useSafeZGuard(activeMachine: MachineProfile | null) {
     raiseInFlightRef.current = raise;
     try {
       await raise;
+    } catch (error) {
+      // If any send fails, attempt to restore the movement mode to avoid
+      // leaving the machine in an inconsistent state. Swallow errors from
+      // the restoration attempt since the original error is more important.
+      try {
+        await send(movementMode || 'G90');
+      } catch {
+        // Ignore restoration error - original error will propagate
+      }
+      throw error;
     } finally {
       // Always clear, whether the raise succeeded or threw — a failed raise
       // must not permanently block future safety raises.

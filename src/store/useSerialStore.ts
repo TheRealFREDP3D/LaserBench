@@ -166,6 +166,11 @@ class SerialConnection {
    * bypassing flow control and state guards. Used from disconnect / abort /
    * error teardown paths where failing to send `send()` must not prevent the
    * laser from being turned off. Swallows all errors.
+   *
+   * Guaranteed fallback: if laserOffCmd is empty (e.g., when capabilities is
+   * null due to an invalid machine profile, or when the command failed validation),
+   * this function always falls back to the universal M5 command to ensure the
+   * laser is shut off even with an invalid profile.
    */
   async fireLaserOff(): Promise<void> {
     // Always fall back to universal M5 if laserOffCmd is empty or invalid
@@ -432,6 +437,9 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       try {
         await conn.writeUrgent({ kind: 'line', payload: conn.capabilities.homeCommand, label: `Home (${conn.capabilities.firmware})` });
       } catch (error) {
+        // If the write failed, the firmware never received the homing command.
+        // Reset homingPending to indicate no homing is in progress, but keep
+        // isHomed false since homing did not complete successfully.
         conn.homingPending = false;
         set({ homingPending: false });
         throw error;
@@ -455,6 +463,21 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       try {
         if (conn.capabilities) {
           await conn.writeUrgent(conn.capabilities.emergencyStop);
+        } else {
+          // Fallback: if capabilities is null (invalid profile), try both GRBL and Marlin
+          // emergency stop commands. One will be ignored by the firmware, the other should work.
+          // This is a safety measure to ensure the machine stops even with an invalid profile.
+          try {
+            await conn.writeUrgent({ kind: 'realtime', payload: '\x18', label: 'Fallback GRBL reset (Ctrl-X)' });
+          } catch {
+            // Ignore GRBL fallback failure, try Marlin next
+          }
+          try {
+            await conn.writeUrgent({ kind: 'line', payload: 'M112', label: 'Fallback Marlin emergency stop (M112)' });
+          } catch {
+            // Ignore Marlin fallback failure
+          }
+          conn.pushMessage('sent', '--- E-STOP: used fallback commands (invalid firmware profile) ---');
         }
       } catch (err) {
         conn.pushMessage('received', 'E-STOP urgent write failed; inspect physical safety controls immediately');
@@ -569,7 +592,8 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     // ── setLaserOffCmd ─────────────────────────────────────────────────────
     setLaserOffCmd: (cmd: string) => {
       const normalized = sanitizeGCodeLine(cmd ?? '').toUpperCase();
-      conn.laserOffCmd = conn.capabilities?.laserOffCommands.includes(normalized) ? normalized : '';
+      const supportedOffs = conn.capabilities?.laserOffCommands ?? [];
+      conn.laserOffCmd = supportedOffs.includes(normalized) ? normalized : '';
     },
 
     // ── setFirmwareCapabilities ───────────────────────────────────────────

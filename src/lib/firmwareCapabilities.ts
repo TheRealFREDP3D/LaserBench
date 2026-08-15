@@ -1,13 +1,15 @@
 import { FirmwareType, LaserControlMode, MachineProfile } from '../types';
 
-export type UrgentCommand =
-  | { kind: 'realtime'; payload: string; label: string }
-  | { kind: 'line'; payload: string; label: string };
+export interface UrgentCommand {
+  kind: 'realtime' | 'line';
+  payload: string;
+  label: string;
+}
 
 export interface FirmwareCapabilities {
   firmware: FirmwareType;
   homeCommand: string;
-  positionQuery: { kind: 'realtime' | 'line'; payload: string; label: string };
+  positionQuery: UrgentCommand;
   emergencyStop: UrgentCommand;
   laserOffCommands: readonly string[];
 }
@@ -51,23 +53,28 @@ export function validateMachineSafetyCommands(
   const off = normalizeSingleLine(laserOff);
   const capabilities = getFirmwareCapabilities(firmware);
 
-  const allowedOff = laserMode === 'M106_M107' ? ['M107'] : ['M5'];
-  // Check: (a) the requested off command is in the mode allowlist, AND
-  //        (b) the firmware actually supports at least one command from that mode allowlist.
-  // Condition (b) rejects cross-firmware modes (e.g. GRBL with M106_M107).
-  const offIsAllowed =
-    allowedOff.includes(off) &&
-    capabilities.laserOffCommands.some((cmd) => allowedOff.includes(cmd));
+  const modeOff = laserMode === 'M106_M107' ? ['M107'] : ['M5'];
+
+  // Only commands supported by this firmware for the selected mode
+  const supportedModeOff = capabilities.laserOffCommands.filter((cmd) =>
+    modeOff.includes(cmd),
+  );
+
+  const offIsAllowed = supportedModeOff.includes(off);
+
   if (!offIsAllowed) {
-    return { valid: false, reason: `laserOff must be one of: ${allowedOff.join(', ')}` };
+    return {
+      valid: false,
+      reason: `laserOff must be one of: ${modeOff.join(', ')}`,
+    };
   }
 
-  const powerWord = 'S\\{POWER\\}';
-  const onPattern = laserMode === 'M106_M107'
-    ? new RegExp(`^M106(?: P\\d+)? ${powerWord}$`)
-    : laserMode === 'M3_M4_M5'
-      ? new RegExp(`^M(?:3|4) ${powerWord}$`)
-      : new RegExp(`^M3 ${powerWord}$`);
+  const onPattern =
+    laserMode === 'M106_M107'
+      ? /^M106(?: P\d+)? S\{POWER\}$/
+      : laserMode === 'M3_M4_M5'
+        ? /^M(?:3|4) S\{POWER\}$/
+        : /^M3 S\{POWER\}$/;
 
   if (!onPattern.test(on)) {
     return { valid: false, reason: `laserOn is incompatible with ${laserMode}` };
@@ -76,6 +83,13 @@ export function validateMachineSafetyCommands(
   return { valid: true, laserOn: on.replace('{POWER}', '{power}'), laserOff: off };
 }
 
-export function validateMachineSafetyProfile(machine: MachineProfile): { valid: true } | { valid: false; reason: string } {
-  return validateMachineSafetyCommands(machine.firmware, machine.laserMode, machine.laserOn, machine.laserOff);
+export function validateMachineSafetyProfile(
+  machine: MachineProfile,
+): { valid: true; laserOn: string; laserOff: string } | { valid: false; reason: string } {
+  return validateMachineSafetyCommands(
+    machine.firmware,
+    machine.laserMode,
+    machine.laserOn,
+    machine.laserOff,
+  );
 }
