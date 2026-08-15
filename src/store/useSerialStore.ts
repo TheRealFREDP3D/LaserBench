@@ -150,8 +150,9 @@ class SerialConnection {
    * laser from being turned off. Swallows all errors.
    */
   async fireLaserOff(): Promise<void> {
-    const cmd = this.laserOffCmd;
-    if (!this.writer || !cmd) return;
+    // Always fall back to universal M5 if laserOffCmd is empty or invalid
+    const cmd = this.laserOffCmd || 'M5';
+    if (!this.writer) return;
     try {
       await this.writer.write(cmd + '\n');
       this.pushMessage('sent', cmd);

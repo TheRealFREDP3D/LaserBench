@@ -4,7 +4,6 @@ import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
 import { FireControls } from './console/FireControls';
 import { SerialLog } from './console/SerialLog';
-import { SafeZPrompt } from './console/SafeZPrompt';
 import { validateGCode } from '../lib/gcodeDatabase';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useDeadManFire } from '../hooks/useDeadManFire';
@@ -49,7 +48,6 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   onHome,
 }: PrinterConsoleProps) {
   const [showHomingWarning, setShowHomingWarning] = useState(false);
-  const [showSafeZPrompt, setShowSafeZPrompt] = useState(false);
   const [jogStep, setJogStep] = useState(10);
   const [pendingWarning, setPendingWarning] = useState<{
     command: string;
@@ -86,10 +84,9 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
 
   const handleHome = useCallback(async () => {
     await onHome?.();
-    if (activeMachine?.zSecure !== undefined) {
-      setShowSafeZPrompt(true);
-    }
-  }, [onSend, activeMachine, onHome]);
+    // Safe-Z prompt is no longer needed since useSafeZGuard automatically raises Z before jogs
+    // The prompt was a manual option, but the new flow handles this automatically
+  }, [onHome]);
 
   const handleEStop = useCallback(() => {
     if (isConnected) void onEmergencyStop();
@@ -247,15 +244,6 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
               </button>
             </div>
           </div>
-        )}
-
-        {showSafeZPrompt && (
-          <SafeZPrompt
-            activeMachine={activeMachine}
-            isPrinting={isPrinting}
-            onSend={onSend}
-            onDismiss={() => setShowSafeZPrompt(false)}
-          />
         )}
 
         {pendingWarning && (

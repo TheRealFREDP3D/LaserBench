@@ -39,9 +39,16 @@ export function useSafeZGuard(activeMachine: MachineProfile | null) {
 
     // Switch to absolute mode, raise Z, then restore the previous movement mode.
     await send('G90');
+    const zDistance = activeMachine.zSecure - currentPos.z;
     await send(
       `G0 Z${activeMachine.zSecure.toFixed(3)} F${activeMachine.travelSpeed || 4000}`
     );
+    // Wait for the Z move to complete before allowing the jog to proceed.
+    // Calculate estimated time based on distance and speed, add 50% buffer for acceleration.
+    const travelSpeed = activeMachine.travelSpeed || 4000; // mm/min
+    const estimatedSeconds = (zDistance / travelSpeed) * 60 * 1.5;
+    const delayMs = Math.max(100, Math.min(estimatedSeconds * 1000, 5000)); // Clamp between 100ms and 5s
+    await new Promise(resolve => setTimeout(resolve, delayMs));
     // Restore the previous movement mode (G90 or G91)
     await send(movementMode);
   }, [activeMachine]);
