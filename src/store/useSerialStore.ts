@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { SerialMessage } from '../types';
 import { sanitizeGCodeLine } from '../lib/gcodeGenerator';
+import { FirmwareCapabilities } from '../lib/firmwareCapabilities';
 
 // ─── Public store interface ───────────────────────────────────────────────────
 
@@ -18,6 +19,9 @@ export interface SerialState {
   connect: (baudRate?: number) => Promise<void>;
   disconnect: () => Promise<void>;
   send: (command: string, silent?: boolean, skipFlowControl?: boolean) => Promise<void>;
+  home: () => Promise<void>;
+  emergencyStop: () => Promise<void>;
+  laserOff: () => Promise<void>;
   printGCode: (gcode: string) => Promise<void>;
   abortPrint: () => void;
   clearMessages: () => void;
@@ -25,6 +29,7 @@ export interface SerialState {
    *  the store can shut the laser down on disconnect / abort / errors without
    *  depending on React. Pass an empty string to fall back to 'M5'. */
   setLaserOffCmd: (cmd: string) => void;
+  setFirmwareCapabilities: (capabilities: FirmwareCapabilities | null) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -33,6 +38,7 @@ const BUFFER_SIZE = 8;
 const MIN_SEND_INTERVAL_MS = 10;
 const SLOT_TIMEOUT_MS = 10_000;
 const MAX_MESSAGES = 500;
+const DISCONNECT_CLEANUP_DELAY_MS = 50;
 
 // ─── SerialConnection class ───────────────────────────────────────────────────
 //
@@ -56,11 +62,17 @@ class SerialConnection {
   abortingPrint = false;
   printing = false;
   homingPending = false;
+  safetyLocked = false;
+  capabilities: FirmwareCapabilities | null = null;
 
   // Flow-control buffer (slot-based, mirrors GRBL's rx buffer model)
   bufferSlots = BUFFER_SIZE;
   bufferResolves: (() => void)[] = [];
   bufferTimeouts: ReturnType<typeof setTimeout>[] = [];
+  // Count of 'ok' responses expected from writeUrgent() line commands that
+  // never consumed a flow-control slot; releaseSlot() must swallow these
+  // instead of granting an unearned slot back to the buffer.
+  pendingUrgentAcks = 0;
 
   // Rate-limiting for manual commands
   lastSendTime = 0;
@@ -90,6 +102,12 @@ class SerialConnection {
   }
 
   releaseSlot() {
+    // An 'ok' that answers an urgent (non-slot-consuming) line write must not
+    // grant a slot back — no slot was ever taken for it. Swallow it here.
+    if (this.pendingUrgentAcks > 0) {
+      this.pendingUrgentAcks--;
+      return;
+    }
     const resolve = this.bufferResolves.shift();
     const timer = this.bufferTimeouts.shift();
     if (timer) clearTimeout(timer);
@@ -121,6 +139,7 @@ class SerialConnection {
   resetFlowControl() {
     this.clearPendingTimeouts();
     this.bufferSlots = BUFFER_SIZE;
+    this.pendingUrgentAcks = 0;
     // Resolve all pending waiters so they unblock immediately
     for (const resolve of this.bufferResolves) resolve();
     this.bufferResolves = [];
@@ -141,16 +160,39 @@ class SerialConnection {
    * bypassing flow control and state guards. Used from disconnect / abort /
    * error teardown paths where failing to send `send()` must not prevent the
    * laser from being turned off. Swallows all errors.
+   *
+   * Guaranteed fallback: if laserOffCmd is empty (e.g., when capabilities is
+   * null due to an invalid machine profile, or when the command failed validation),
+   * this function always falls back to the universal M5 command to ensure the
+   * laser is shut off even with an invalid profile.
    */
-  fireLaserOff() {
+  async fireLaserOff(): Promise<void> {
+    // Always fall back to universal M5 if laserOffCmd is empty or invalid
     const cmd = this.laserOffCmd || 'M5';
     if (!this.writer) return;
-    this.writer
-      .write(cmd + '\n')
-      .then(() => this.pushMessage('sent', cmd))
-      .catch(() => {
-        /* port may already be gone — nothing more we can do */
-      });
+    try {
+      await this.writer.write(cmd + '\n');
+      this.pushMessage('sent', cmd);
+    } catch {
+      /* port may already be gone — nothing more we can do */
+    }
+  }
+
+  async writeUrgent(command: { kind: 'realtime' | 'line'; payload: string; label: string }) {
+    if (!this.writer) throw new Error('Not connected to printer');
+    const payload = command.kind === 'line' ? command.payload + '\n' : command.payload;
+    // 'line' commands (e.g. Marlin M114, $H) provoke an 'ok' response from the
+    // firmware just like a normal queued send, but writeUrgent bypasses
+    // waitForSlot() entirely — it never consumes a flow-control slot. The read
+    // loop can't tell an urgent 'ok' apart from a normal one, so without this
+    // counter it would call releaseSlot() and *grant* a slot that was never
+    // spent, letting more than BUFFER_SIZE commands queue up over time.
+    // Track how many 'ok's we expect to swallow so releaseSlot() can skip them.
+    if (command.kind === 'line') {
+      this.pendingUrgentAcks++;
+    }
+    await this.writer.write(payload);
+    this.pushMessage('sent', command.label);
   }
 
   // ── Read loop ───────────────────────────────────────────────────────────────
@@ -160,7 +202,7 @@ class SerialConnection {
     if (!port?.readable) return;
 
     const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable).catch(() => {});
+    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable as WritableStream<Uint8Array>).catch(() => {});
     this.reader = textDecoder.readable.getReader();
 
     let lineBuffer = '';
@@ -229,7 +271,7 @@ class SerialConnection {
       this.printing = false;
       // Safety: the job may have been interrupted mid-burn — make sure the
       // laser is off before reporting the connection as lost.
-      this.fireLaserOff();
+      void this.fireLaserOff();
       this.homingPending = false;
       this.setState({
         isConnected: false,
@@ -278,6 +320,12 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         conn.pushMessage('received', 'Error: Web Serial API is not supported in this browser.');
         return;
       }
+      // Check capabilities BEFORE opening the port to avoid resource leak
+      if (!conn.capabilities) {
+        conn.pushMessage('received', 'Error: Select a supported firmware profile before connecting');
+        set({ connectionState: 'offline' });
+        return;
+      }
       const resolvedBaud = Math.floor(Number(baudRate || 250000)) || 250000;
       try {
         set({ connectionState: 'connecting' });
@@ -292,20 +340,23 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         }
         conn.writer = encoder.writable.getWriter();
 
+        conn.safetyLocked = false;
         set({ isConnected: true, movementMode: 'G90', isHomed: false, homingPending: false });
         conn.keepReading = true;
         conn.startReadLoop();
         conn.pushMessage('sent', '--- Connected to printer ---');
-        // Ask the firmware for its current position so jog math starts from a
-        // known location instead of assuming the origin (0,0,0).
-        // Use waitForSlot to maintain flow control consistency.
-        await conn.waitForSlot();
-        conn.writer
-          .write('M114\n')
-          .then(() => conn.pushMessage('sent', 'M114'))
-          .catch(() => {});
+        // Query position using the selected firmware capability. Never guess
+        // the machine position from the origin after connecting.
+        await conn.writeUrgent(conn.capabilities.positionQuery);
       } catch (error) {
         console.error('Failed to connect:', error);
+        // Clean up encoder and writer if they were created before the error
+        try {
+          if (conn.writer) await conn.writer.close();
+        } catch {
+          /* ignore */
+        }
+        conn.writer = null;
         if (conn.port) {
           try {
             await conn.port.close();
@@ -315,20 +366,21 @@ export const useSerialStore = create<SerialState>()((set, get) => {
           conn.port = null;
         }
         conn.pushMessage('received', 'Error: ' + (error as Error).message);
-        set({ connectionState: 'offline' });
+        set({ isConnected: false, connectionState: 'offline', isHomed: false, homingPending: false });
       }
     },
 
     // ── disconnect ─────────────────────────────────────────────────────────
     disconnect: async () => {
       conn.keepReading = false;
+      conn.safetyLocked = true;
       // Safety: never leave the laser on when we sever the link.
-      conn.fireLaserOff();
+      await conn.fireLaserOff();
       try {
         if (conn.reader) await conn.reader.cancel();
         if (conn.writer) await conn.writer.close();
         // Small delay to let the read loop exit cleanly before closing port
-        await new Promise((r) => setTimeout(r, 50));
+        await new Promise((r) => setTimeout(r, DISCONNECT_CLEANUP_DELAY_MS));
         if (conn.port) await conn.port.close();
       } catch (error) {
         console.error('Error during disconnect:', error);
@@ -344,6 +396,9 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     send: async (command: string, silent = false, skipFlowControl = false) => {
       if (!conn.writer || !get().isConnected) {
         throw new Error('Not connected to printer');
+      }
+      if (conn.safetyLocked) {
+        throw new Error('Serial output is locked after an emergency stop; reconnect before sending commands');
       }
       if (!silent) {
         const now = Date.now();
@@ -366,15 +421,76 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       }
     },
 
+    // ── home ────────────────────────────────────────────────────────────────
+    home: async () => {
+      if (!conn.capabilities) throw new Error('Select a supported firmware profile before homing');
+      if (!get().isConnected || !conn.writer) throw new Error('Not connected to printer');
+      if (conn.safetyLocked) throw new Error('Reconnect before homing after an emergency stop');
+      conn.homingPending = true;
+      set({ isHomed: false, homingPending: true });
+      try {
+        await conn.writeUrgent({ kind: 'line', payload: conn.capabilities.homeCommand, label: `Home (${conn.capabilities.firmware})` });
+      } catch (error) {
+        // If the write failed, the firmware never received the homing command.
+        // Reset homingPending to indicate no homing is in progress, but keep
+        // isHomed false since homing did not complete successfully.
+        conn.homingPending = false;
+        set({ homingPending: false });
+        throw error;
+      }
+    },
+
+    // ── emergencyStop ──────────────────────────────────────────────────────
+    emergencyStop: async () => {
+      conn.abortingPrint = true;
+      conn.printing = false;
+      conn.safetyLocked = true;
+      conn.homingPending = false;
+      conn.resetFlowControl();
+      set({ isPrinting: false, isHomed: false, homingPending: false, activePathIndex: -1 });
+
+      if (!conn.writer || !get().isConnected) {
+        conn.pushMessage('sent', '--- E-STOP: output locked; no serial writer ---');
+        return;
+      }
+
+      try {
+        if (conn.capabilities) {
+          await conn.writeUrgent(conn.capabilities.emergencyStop);
+        } else {
+          // Fallback: if capabilities is null (invalid profile), try both GRBL and Marlin
+          // emergency stop commands. One will be ignored by the firmware, the other should work.
+          // This is a safety measure to ensure the machine stops even with an invalid profile.
+          try {
+            await conn.writeUrgent({ kind: 'realtime', payload: '\x18', label: 'Fallback GRBL reset (Ctrl-X)' });
+          } catch {
+            // Ignore GRBL fallback failure, try Marlin next
+          }
+          try {
+            await conn.writeUrgent({ kind: 'line', payload: 'M112', label: 'Fallback Marlin emergency stop (M112)' });
+          } catch {
+            // Ignore Marlin fallback failure
+          }
+          conn.pushMessage('sent', '--- E-STOP: used fallback commands (invalid firmware profile) ---');
+        }
+      } catch (err) {
+        conn.pushMessage('received', 'E-STOP urgent write failed; inspect physical safety controls immediately');
+        throw err;
+      } finally {
+        await conn.fireLaserOff();
+        conn.pushMessage('sent', '--- E-STOP: output locked until reconnect ---');
+      }
+    },
+
+    // ── laserOff ────────────────────────────────────────────────────────────
+    laserOff: async () => {
+      await conn.fireLaserOff();
+    },
+
     // ── abortPrint ─────────────────────────────────────────────────────────
     abortPrint: () => {
       if (!get().isPrinting) return;
-      conn.abortingPrint = true;
-      // Safety: kill the laser immediately — do not wait for buffered moves.
-      conn.fireLaserOff();
-      conn.resetFlowControl();
-      set({ homingPending: false });
-      conn.pushMessage('sent', '--- Print Aborted by User ---');
+      void get().emergencyStop();
     },
 
     // ── printGCode ─────────────────────────────────────────────────────────
@@ -469,10 +585,25 @@ export const useSerialStore = create<SerialState>()((set, get) => {
 
     // ── setLaserOffCmd ─────────────────────────────────────────────────────
     setLaserOffCmd: (cmd: string) => {
-      // Clamp to a single safe G-code line: strip embedded newlines / control
-      // chars / comments so a crafted profile can't inject extra commands via
-      // the safety-off path. Fall back to universal M5 if nothing survives.
-      conn.laserOffCmd = sanitizeGCodeLine(cmd ?? '') || 'M5';
+      const normalized = sanitizeGCodeLine(cmd ?? '').toUpperCase();
+      conn.laserOffCmd = conn.capabilities?.laserOffCommands.includes(normalized) ? normalized : '';
+    },
+
+    // ── setFirmwareCapabilities ───────────────────────────────────────────
+    setFirmwareCapabilities: (capabilities: FirmwareCapabilities | null) => {
+      conn.capabilities = capabilities;
+      if (!capabilities) {
+        conn.laserOffCmd = '';
+        conn.safetyLocked = true;
+        set({ isHomed: false, homingPending: false });
+        // Force disconnect if clearing capabilities while connected to prevent
+        // operating with an invalid machine profile
+        if (get().isConnected) {
+          void get().disconnect();
+        }
+      } else if (!get().isConnected) {
+        conn.safetyLocked = false;
+      }
     },
   };
 });

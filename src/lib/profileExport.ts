@@ -6,6 +6,7 @@ import {
   isValidMaterialProfile,
 } from './materialPresets';
 import { triggerDownload } from './downloadGCode';
+import { validateMachineSafetyProfile } from './firmwareCapabilities';
 
 export type ProfileType = 'machine' | 'material';
 
@@ -69,6 +70,7 @@ export interface ImportResult<T> {
   profiles: T[];
   duplicates: number;
   invalid: number;
+  rejectionReasons: string[];
 }
 
 export function parseImportFile(file: File): Promise<unknown> {
@@ -103,12 +105,20 @@ export function importProfiles<T extends MachineProfile | MaterialProfile>(
   }
 
   const existingIds = new Set(existing.map((p) => p.id));
-  const result: ImportResult<T> = { profiles: [], duplicates: 0, invalid: 0 };
+  const result: ImportResult<T> = { profiles: [], duplicates: 0, invalid: 0, rejectionReasons: [] };
 
   for (const item of data.profiles) {
     if (!validate(item)) {
       result.invalid++;
       continue;
+    }
+    if (type === 'machine') {
+      const safetyCheck = validateMachineSafetyProfile(item as MachineProfile);
+      if (!safetyCheck.valid) {
+        result.invalid++;
+        result.rejectionReasons.push(safetyCheck.reason);
+        continue;
+      }
     }
     if (existingIds.has(item.id)) {
       result.duplicates++;

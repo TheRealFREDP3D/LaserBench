@@ -4,7 +4,6 @@ import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
 import { FireControls } from './console/FireControls';
 import { SerialLog } from './console/SerialLog';
-import { SafeZPrompt } from './console/SafeZPrompt';
 import { validateGCode } from '../lib/gcodeDatabase';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useDeadManFire } from '../hooks/useDeadManFire';
@@ -20,6 +19,8 @@ interface PrinterConsoleProps {
   onSend: (command: string) => Promise<void>;
   onClear: () => void;
   onAbortPrint: () => void;
+  onEmergencyStop: () => void | Promise<void>;
+  onLaserOff: () => Promise<void>;
   onPrint?: (gcode: string) => void;
   gcode?: string;
   activeMachine: MachineProfile | null;
@@ -38,6 +39,8 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   onSend,
   onClear,
   onAbortPrint,
+  onEmergencyStop,
+  onLaserOff,
   onPrint,
   gcode,
   activeMachine,
@@ -45,7 +48,6 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   onHome,
 }: PrinterConsoleProps) {
   const [showHomingWarning, setShowHomingWarning] = useState(false);
-  const [showSafeZPrompt, setShowSafeZPrompt] = useState(false);
   const [jogStep, setJogStep] = useState(10);
   const [pendingWarning, setPendingWarning] = useState<{
     command: string;
@@ -54,7 +56,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   } | null>(null);
 
   // Extract dead-man FIRE logic into a dedicated hook
-  const { fire: handleFire, stopFire: handleStopFire } = useDeadManFire(activeMachine, onSend);
+  const { fire: handleFire, stopFire: handleStopFire } = useDeadManFire(activeMachine, onSend, onLaserOff);
 
   // X/Y jogging is owned by App (onJogRelative), which enforces homing with a
   // single confirm-gate for every entry point (buttons, keyboard, canvas) —
@@ -81,16 +83,14 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   );
 
   const handleHome = useCallback(async () => {
-    onHome?.();
-    await onSend('G28');
-    if (activeMachine?.zSecure !== undefined) {
-      setShowSafeZPrompt(true);
-    }
-  }, [onSend, activeMachine, onHome]);
+    await onHome?.();
+    // Safe-Z prompt is no longer needed since useSafeZGuard automatically raises Z before jogs
+    // The prompt was a manual option, but the new flow handles this automatically
+  }, [onHome]);
 
   const handleEStop = useCallback(() => {
-    if (isConnected) onSend('M112');
-  }, [isConnected, onSend]);
+    if (isConnected) void onEmergencyStop();
+  }, [isConnected, onEmergencyStop]);
 
   const handleRunJob = useCallback(() => {
     if (onPrint && gcode) {
@@ -244,15 +244,6 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
               </button>
             </div>
           </div>
-        )}
-
-        {showSafeZPrompt && (
-          <SafeZPrompt
-            activeMachine={activeMachine}
-            isPrinting={isPrinting}
-            onSend={onSend}
-            onDismiss={() => setShowSafeZPrompt(false)}
-          />
         )}
 
         {pendingWarning && (

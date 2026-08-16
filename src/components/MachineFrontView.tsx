@@ -5,6 +5,7 @@ import { DeltaKinematics } from '../lib/deltaKinematics';
 interface MachineFrontViewProps {
   machine: MachineProfile;
   currentPos: { x: number; y: number; z: number };
+  materialThickness?: number;
   width?: number;
   height?: number;
 }
@@ -12,6 +13,7 @@ interface MachineFrontViewProps {
 function MachineFrontView({
   machine,
   currentPos,
+  materialThickness,
   width = 300,
   height = 200,
 }: MachineFrontViewProps) {
@@ -74,6 +76,42 @@ function MachineFrontView({
         <text x="5" y={scaleZ(0) - 5} fill="#444" fontSize="8" fontWeight="bold">
           BED (Z=0)
         </text>
+
+        {/* Material thickness block */}
+        {materialThickness != null && materialThickness > 0 && (
+          <g>
+            <rect
+              x={0}
+              y={scaleZ(materialThickness)}
+              width={width}
+              height={scaleZ(0) - scaleZ(materialThickness)}
+              fill="#d97706"
+              opacity="0.12"
+            />
+            {/* Top edge of material */}
+            <line
+              x1="0"
+              y1={scaleZ(materialThickness)}
+              x2={width}
+              y2={scaleZ(materialThickness)}
+              stroke="#d97706"
+              strokeWidth="1"
+              strokeDasharray="3 2"
+              opacity="0.7"
+            />
+            {/* Label on the left with a bracket */}
+            <text
+              x="5"
+              y={scaleZ(materialThickness / 2)}
+              fill="#d97706"
+              fontSize="8"
+              dominantBaseline="middle"
+              opacity="0.9"
+            >
+              MAT: {materialThickness}mm
+            </text>
+          </g>
+        )}
 
         {/* Focused Z */}
         <line

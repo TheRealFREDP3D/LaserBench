@@ -32,6 +32,8 @@ const defaultProps = {
   onSend: vi.fn(),
   onClear: vi.fn(),
   onAbortPrint: vi.fn(),
+  onEmergencyStop: vi.fn(),
+  onLaserOff: vi.fn().mockResolvedValue(undefined),
   onJogRelative: vi.fn(),
   activeMachine: mockMachine,
   onHome: vi.fn(),
@@ -93,11 +95,11 @@ describe('PrinterConsole', () => {
     expect(screen.getByText('⬇ AUTO')).toBeInTheDocument();
   });
 
-  it('calls onSend with M112 when E-STOP clicked', () => {
-    const onSend = vi.fn();
-    renderConsole({ isConnected: true, onSend });
+  it('calls the firmware-aware emergency-stop callback when E-STOP clicked', () => {
+    const onEmergencyStop = vi.fn();
+    renderConsole({ isConnected: true, onEmergencyStop });
     fireEvent.click(screen.getByText('E-STOP'));
-    expect(onSend).toHaveBeenCalledWith('M112');
+    expect(onEmergencyStop).toHaveBeenCalled();
   });
 
   it('disables controls when not connected', () => {
@@ -163,12 +165,12 @@ describe('PrinterConsole', () => {
     expect(screen.getByText('Run Job')).toBeInTheDocument();
   });
 
-  it('sends machine laserOff command when FIRE is released', () => {
-    const onSend = vi.fn().mockResolvedValue(undefined);
-    renderConsole({ isConnected: true, onSend });
+  it('calls the validated laser-off callback when FIRE is released', () => {
+    const onLaserOff = vi.fn().mockResolvedValue(undefined);
+    renderConsole({ isConnected: true, onLaserOff });
     fireEvent.pointerDown(screen.getByText('FIRE'));
     fireEvent.pointerUp(screen.getByText('FIRE'));
-    expect(onSend).toHaveBeenCalledWith('M5');
+    expect(onLaserOff).toHaveBeenCalled();
   });
 
   it('runs the job directly when homed (no warning shown)', () => {
@@ -192,98 +194,5 @@ describe('PrinterConsole', () => {
     renderConsole({ isConnected: true, isHomed: false, onJogRelative });
     fireEvent.keyDown(document, { key: 'ArrowUp' });
     expect(onJogRelative).toHaveBeenCalledWith(0, 10);
-  });
-
-  it('shows Safe Z prompt after homing when zSecure is configured', async () => {
-    const onSend = vi.fn().mockResolvedValue(undefined);
-    const onHome = vi.fn();
-
-    renderConsole({
-      isConnected: true,
-      isHomed: false,
-      onSend,
-      onHome,
-      activeMachine: mockMachine, // Use the mockMachine which has zSecure: 5
-    });
-
-    // Trigger homing via the Home button
-    fireEvent.click(screen.getByTitle('Home (H)'));
-
-    // onHome callback should be called
-    expect(onHome).toHaveBeenCalled();
-
-    // Homing command should be sent
-    expect(onSend).toHaveBeenCalledWith('G28');
-
-    // Wait for async state update
-    await vi.waitFor(() => {
-      expect(screen.getByText(/Move to safe Z position/i)).toBeInTheDocument();
-    });
-  });
-
-  it('moves to Safe Z when chosen from the prompt', async () => {
-    const onSend = vi.fn().mockResolvedValue(undefined);
-    const onHome = vi.fn();
-
-    renderConsole({
-      isConnected: true,
-      isHomed: false,
-      onSend,
-      onHome,
-      activeMachine: mockMachine, // Use the mockMachine which has zSecure: 5
-    });
-
-    // Trigger homing via the Home button
-    fireEvent.click(screen.getByTitle('Home (H)'));
-
-    // Wait for async state update
-    await vi.waitFor(() => {
-      expect(screen.getByText(/Move to safe Z position/i)).toBeInTheDocument();
-    });
-
-    // Click the Move to Safe Z button (not the text span)
-    const moveButtons = screen.getAllByText(/Move to Safe Z/i);
-    const button = moveButtons.find(el => el.tagName === 'BUTTON');
-    expect(button).toBeDefined();
-    if (button) {
-      fireEvent.click(button);
-    }
-
-    // Wait for the async calls to complete
-    await vi.waitFor(() => {
-      const calls = onSend.mock.calls.map(args => args[0]);
-      expect(calls).toContain('G90');
-      expect(calls).toContain('G0 Z5 F4000');
-    });
-  });
-
-  it('skips Safe Z move when Skip is chosen from the prompt', async () => {
-    const onSend = vi.fn().mockResolvedValue(undefined);
-    const onHome = vi.fn();
-
-    renderConsole({
-      isConnected: true,
-      isHomed: false,
-      onSend,
-      onHome,
-      activeMachine: mockMachine, // Use the mockMachine which has zSecure: 5
-    });
-
-    // Trigger homing via the Home button
-    fireEvent.click(screen.getByTitle('Home (H)'));
-
-    // Wait for async state update
-    await vi.waitFor(() => {
-      expect(screen.getByText(/Move to safe Z position/i)).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText(/Skip/i));
-
-    // Prompt should be dismissed
-    expect(screen.queryByText(/Move to safe Z position/i)).not.toBeInTheDocument();
-
-    // No additional movement commands beyond homing should be sent
-    const sendCommands = onSend.mock.calls.map(args => args[0]);
-    expect(sendCommands.filter(cmd => cmd !== 'G28')).toHaveLength(0);
   });
 });

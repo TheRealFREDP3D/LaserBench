@@ -11,6 +11,8 @@ interface ParameterFieldProps {
   onChange: (val: number) => void;
   unit?: string;
   isLight?: boolean;
+  /** When true, highlights the row in amber to signal a required/unsafe value */
+  danger?: boolean;
 }
 
 export const ParameterField: React.FC<ParameterFieldProps> = ({
@@ -23,6 +25,7 @@ export const ParameterField: React.FC<ParameterFieldProps> = ({
   onChange,
   unit,
   isLight,
+  danger,
 }) => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -41,10 +44,18 @@ export const ParameterField: React.FC<ParameterFieldProps> = ({
   }, []);
 
   return (
-    <div className="grid grid-cols-[1fr_2fr_80px] items-center gap-4 py-2 border-b border-white/5 last:border-0">
+    <div
+      className={`grid grid-cols-[1fr_2fr_80px] items-center gap-4 py-2 border-b last:border-0 ${
+        danger
+          ? 'border-amber-500/40 bg-amber-500/5 rounded px-2 -mx-2 animate-pulse'
+          : 'border-white/5'
+      }`}
+    >
       <label
         htmlFor={id}
-        className={`text-[10px] uppercase tracking-wider font-bold ${isLight ? 'text-zinc-600' : 'text-neutral-400'}`}
+        className={`text-[10px] uppercase tracking-wider font-bold ${
+          danger ? 'text-amber-400' : isLight ? 'text-zinc-600' : 'text-neutral-400'
+        }`}
       >
         {label}
       </label>
@@ -73,7 +84,9 @@ export const ParameterField: React.FC<ParameterFieldProps> = ({
             if (e.key === 'Enter') handleNumberChange((e.target as HTMLInputElement).value);
           }}
           className={`w-16 elegant-input text-right px-2 py-1 rounded font-mono text-xs ${
-            isLight
+            danger
+              ? 'bg-amber-950/40 border-amber-500/50 text-amber-400 shadow-inner'
+              : isLight
               ? 'bg-zinc-50 border-zinc-200 text-zinc-900'
               : 'bg-[#0A0A0A] border-white/10 text-red-500 shadow-inner'
           }`}
