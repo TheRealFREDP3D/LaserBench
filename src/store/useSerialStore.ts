@@ -108,12 +108,6 @@ class SerialConnection {
       this.pendingUrgentAcks--;
       return;
     }
-    // Log warning if we're swallowing an ack when pendingUrgentAcks is already 0
-    // This indicates a desynchronization between urgent commands and responses
-    if (this.pendingUrgentAcks < 0) {
-      console.warn('pendingUrgentAcks desynchronized, resetting to 0');
-      this.pendingUrgentAcks = 0;
-    }
     const resolve = this.bufferResolves.shift();
     const timer = this.bufferTimeouts.shift();
     if (timer) clearTimeout(timer);
@@ -592,8 +586,7 @@ export const useSerialStore = create<SerialState>()((set, get) => {
     // ── setLaserOffCmd ─────────────────────────────────────────────────────
     setLaserOffCmd: (cmd: string) => {
       const normalized = sanitizeGCodeLine(cmd ?? '').toUpperCase();
-      const supportedOffs = conn.capabilities?.laserOffCommands ?? [];
-      conn.laserOffCmd = supportedOffs.includes(normalized) ? normalized : '';
+      conn.laserOffCmd = conn.capabilities?.laserOffCommands.includes(normalized) ? normalized : '';
     },
 
     // ── setFirmwareCapabilities ───────────────────────────────────────────
