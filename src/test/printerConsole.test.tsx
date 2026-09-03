@@ -170,7 +170,47 @@ describe('PrinterConsole', () => {
     renderConsole({ isConnected: true, onLaserOff });
     fireEvent.pointerDown(screen.getByText('FIRE'));
     fireEvent.pointerUp(screen.getByText('FIRE'));
-    expect(onLaserOff).toHaveBeenCalled();
+    // Safe-Z gate resolves as a microtask; flush it before asserting.
+    return vi.waitFor(() => expect(onLaserOff).toHaveBeenCalled());
+  });
+
+  it('gates FIRE behind the safe-Z callback', async () => {
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    const onRequireSafeZ = vi.fn().mockResolvedValue(undefined);
+    renderConsole({ isConnected: true, onSend, onRequireSafeZ });
+    fireEvent.pointerDown(screen.getByText('FIRE'));
+    // The laser-on command must not be sent until the safe-Z gate resolves.
+    expect(onSend).not.toHaveBeenCalledWith(expect.stringMatching(/^M3 S/));
+    await vi.waitFor(() =>
+      expect(onSend).toHaveBeenCalledWith(expect.stringMatching(/^M3 S/))
+    );
+    expect(onRequireSafeZ).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels the gated FIRE when released before safe-Z completes', async () => {
+    let resolveSafeZ: () => void = () => {};
+    const onRequireSafeZ = vi.fn(
+      () => new Promise<void>((r) => { resolveSafeZ = r; })
+    );
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    renderConsole({ isConnected: true, onSend, onRequireSafeZ });
+    fireEvent.pointerDown(screen.getByText('FIRE'));
+    fireEvent.pointerUp(screen.getByText('FIRE'));
+    resolveSafeZ();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onSend).not.toHaveBeenCalledWith(expect.stringMatching(/^M3 S/));
+  });
+
+  it('does not fire when the safe-Z raise fails', async () => {
+    const onRequireSafeZ = vi.fn().mockRejectedValue(new Error('Not connected'));
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    renderConsole({ isConnected: true, onSend, onRequireSafeZ });
+    fireEvent.pointerDown(screen.getByText('FIRE'));
+    await vi.waitFor(() => expect(onRequireSafeZ).toHaveBeenCalled());
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onSend).not.toHaveBeenCalledWith(expect.stringMatching(/^M3 S/));
   });
 
   it('runs the job directly when homed (no warning shown)', () => {

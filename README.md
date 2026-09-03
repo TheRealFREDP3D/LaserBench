@@ -67,10 +67,10 @@ The FLSUN Kossel preset ships with delta kinematics enabled and sensible default
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+Esc` | Emergency Stop (E-STOP) |
-| `Esc` | Abort print |
+| `Ctrl+Esc` | Emergency Stop (E-STOP) — locks serial output until you reconnect |
+| `Esc` | Abort print (issues a full E-STOP; reconnect required to send again) |
 | `H` | Home machine |
-| `F` (hold) | Fire laser at 30% power |
+| `F` (hold) | Fire laser at 30% power — raises Z to the safe height first; release cancels |
 | `←` / `→` | Jog X ±10mm |
 | `↑` / `↓` | Jog Y ±10mm |
 | `C` | Connect/disconnect serial |
@@ -104,8 +104,8 @@ Open `http://localhost:3000` in Chrome or Edge.
 ## Manual Controls (Serial Connected)
 
 - **Jog XY / Z**: move the laser head in 10mm / 5mm increments
-- **Fire (30%)**: hold to pulse laser at 30% power for focus alignment
-- **E-STOP**: sends `M112` — immediate hardware halt
+- **Fire (30%)**: hold to pulse laser at 30% power for focus alignment — the head is automatically raised to the machine's safe Z height before firing; releasing during the raise cancels the shot
+- **E-STOP**: sends `M112` — immediate hardware halt and laser shutdown; serial output stays locked until you reconnect
 - **Manual Command**: type any G/M code and send directly
 
 ## Building for Production
@@ -122,13 +122,21 @@ Output goes to `dist/`.
 pnpm run test
 ```
 
-198 tests across 19 files covering G-code generation, parsing, time estimation, material validation, and component rendering.
+329 tests across 24 files covering G-code generation, parsing, time estimation, material validation, and component rendering.
 
 ## Docker
+
+The image is a multi-stage build: Node compiles the Vite bundle, then nginx serves it.
 
 ```bash
 docker build -t laserbench .
 docker run -p 3000:80 laserbench
+```
+
+Or with Compose:
+
+```bash
+docker compose up
 ```
 
 ## Browser Compatibility

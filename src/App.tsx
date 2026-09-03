@@ -351,6 +351,7 @@ export default function App() {
       gcode={effectiveResults?.gcode}
       activeMachine={activeMachine}
       onJogRelative={handleJogRelative}
+      onRequireSafeZ={requireSafeZ}
       isHomed={isHomed}
       onHome={async () => {
         resetHomingOverride();

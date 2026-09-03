@@ -458,18 +458,21 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         if (conn.capabilities) {
           await conn.writeUrgent(conn.capabilities.emergencyStop);
         } else {
-          // Fallback: if capabilities is null (invalid profile), try both GRBL and Marlin
-          // emergency stop commands. One will be ignored by the firmware, the other should work.
+          // Fallback: if capabilities is null (invalid profile), try both Marlin and
+          // GRBL emergency stop commands. One will be ignored by the firmware, the other should work.
           // This is a safety measure to ensure the machine stops even with an invalid profile.
-          try {
-            await conn.writeUrgent({ kind: 'realtime', payload: '\x18', label: 'Fallback GRBL reset (Ctrl-X)' });
-          } catch {
-            // Ignore GRBL fallback failure, try Marlin next
-          }
+          // M112 goes first: it is an immediate halt on Marlin-class firmware, while
+          // the GRBL Ctrl-X reset takes effect over a longer handshake — sending the
+          // reset first would leave the laser powered during it.
           try {
             await conn.writeUrgent({ kind: 'line', payload: 'M112', label: 'Fallback Marlin emergency stop (M112)' });
           } catch {
-            // Ignore Marlin fallback failure
+            // Ignore Marlin fallback failure, try GRBL next
+          }
+          try {
+            await conn.writeUrgent({ kind: 'realtime', payload: '\x18', label: 'Fallback GRBL reset (Ctrl-X)' });
+          } catch {
+            // Ignore GRBL fallback failure
           }
           conn.pushMessage('sent', '--- E-STOP: used fallback commands (invalid firmware profile) ---');
         }

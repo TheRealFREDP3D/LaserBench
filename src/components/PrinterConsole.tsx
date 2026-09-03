@@ -1,4 +1,4 @@
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, useRef, memo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
@@ -26,6 +26,10 @@ interface PrinterConsoleProps {
   activeMachine: MachineProfile | null;
   onJogRelative: (dx: number, dy: number) => void;
   onHome?: () => void;
+  /** Safety gate invoked before the dead-man FIRE fires the laser. Resolves
+   *  once the head is at/above the machine's safe Z height; rejects if the
+   *  raise fails (connection lost mid-raise). Optional for tests. */
+  onRequireSafeZ?: () => Promise<void>;
 }
 
 const PrinterConsoleComponent = memo(function PrinterConsole({
@@ -46,6 +50,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   activeMachine,
   onJogRelative,
   onHome,
+  onRequireSafeZ,
 }: PrinterConsoleProps) {
   const [showHomingWarning, setShowHomingWarning] = useState(false);
   const [jogStep, setJogStep] = useState(10);
@@ -57,6 +62,32 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
 
   // Extract dead-man FIRE logic into a dedicated hook
   const { fire: handleFire, stopFire: handleStopFire } = useDeadManFire(activeMachine, onSend, onLaserOff);
+
+  // Dead-man gate: if the user releases FIRE (or the window loses focus)
+  // while the Safe-Z raise is still in flight, cancel the shot instead of
+  // executing it on release. The laser never fires below safe Z.
+  const fireReleaseRef = useRef(0);
+
+  const handleFireGated = useCallback(() => {
+    fireReleaseRef.current += 1;
+    const releaseToken = fireReleaseRef.current;
+    const safeZ = onRequireSafeZ ? onRequireSafeZ() : Promise.resolve();
+    safeZ
+      .then(() => {
+        // Only fire if the press is still active (no stop between press and now).
+        if (fireReleaseRef.current === releaseToken) {
+          handleFire();
+        }
+      })
+      .catch(() => {
+        // Safe-Z raise failed (e.g. connection dropped) — do not fire.
+      });
+  }, [onRequireSafeZ, handleFire]);
+
+  const handleStopFireGated = useCallback(() => {
+    fireReleaseRef.current += 1; // invalidate any in-flight gated fire
+    handleStopFire();
+  }, [handleStopFire]);
 
   // X/Y jogging is owned by App (onJogRelative), which enforces homing with a
   // single confirm-gate for every entry point (buttons, keyboard, canvas) —
@@ -137,8 +168,8 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   }, [isPrinting, onAbortPrint]);
 
   const handleFireKey = useCallback(() => {
-    if (isConnected && !isPrinting) handleFire();
-  }, [isConnected, isPrinting, handleFire]);
+    if (isConnected && !isPrinting) handleFireGated();
+  }, [isConnected, isPrinting, handleFireGated]);
 
   // Collapsed: no extra logic needed beyond calling handleStopFire directly
   const handleHomeKey = useCallback(() => {
@@ -164,7 +195,7 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   useKeyboardShortcuts({
     onEStop: handleEStop,
     onFire: handleFireKey,
-    onStopFire: handleStopFire,
+    onStopFire: handleStopFireGated,
     onHome: handleHomeKey,
     onJogUp: handleJogUp,
     onJogDown: handleJogDown,
@@ -299,8 +330,8 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
             onJogStepChange={setJogStep}
             rightSlot={
               <FireControls
-                onFire={handleFire}
-                onStopFire={handleStopFire}
+                onFire={handleFireGated}
+                onStopFire={handleStopFireGated}
                 onEStop={handleEStop}
                 onRunJob={
                   onPrint && gcode

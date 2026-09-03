@@ -6,6 +6,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.9.0] — 2026-08-31
+
+### Fixed
+- **Pattern position double-application (P0)** — the first relative travel move after `G91` was measured from the machine origin instead of the pattern position, driving the head twice the intended offset and burning outside the previewed area. The delta chain now starts at the header's absolute park position (`src/lib/gcodeGenerator.ts`)
+- **Travel moves inherited the last cutting feed (P0)** — every rapid move now carries an explicit `F<travelSpeed>`, so firmware that honors modal feed on `G0` can no longer crawl between pattern segments
+- **E-STOP fallback ordering (P0)** — with an invalid firmware profile, `M112` (Marlin immediate halt) is now sent before the GRBL `Ctrl-X` board reset, so the laser is not left powered during the reset handshake on mixed/unknown firmware
+- **Dead-man FIRE bypassed the Safe-Z guard (P0)** — the FIRE button and `F` key now raise the head to the machine's safe Z height before pulsing the laser; releasing during the raise cancels the shot, and a failed raise (e.g. connection lost) never fires
+
+### Changed
+- **Dockerfile rewritten as multi-stage build** — Node 22 alpine compiles the Vite bundle (`pnpm install --frozen-lockfile` + `pnpm run build`), then `nginx:alpine` serves `dist/`. The old image could never run: it shipped no build step, moved `node_modules` outside the app dir, and called a nonexistent `pnpm start` script
+- **nginx.conf hardened** — security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`), gzip for text assets, `no-cache` on `index.html` and the webmanifest, immutable caching restricted to hashed `/assets/`
+- **Compose files consolidated** — `compose.yaml` now maps `3000:80` against the nginx image; deleted the duplicate `docker-compose.yml` and the broken `compose.debug.yaml` (which targeted a nonexistent `index.js`)
+- **`.dockerignore` expanded** — excludes `doc/`, `attachments/`, dev tooling state, and Docker files themselves from the build context
+- **`pnpm-workspace.yaml`** — removed the stale `@google/genai` entry containing an invalid placeholder value
+- **`clean` script** — replaced `rm -rf dist` (broken on Windows) with a cross-platform `node -e` equivalent
+
+### Added
+- Regression tests for the pattern-position and travel-feed G-code fixes, and PrinterConsole coverage for the Safe-Z gated FIRE behavior (press/release/failure paths)
+
+---
+
 ## [0.8.2] — 2026-07-05
 
 ### Fixed
