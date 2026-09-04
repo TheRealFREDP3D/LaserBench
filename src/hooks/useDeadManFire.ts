@@ -18,7 +18,9 @@ export function useDeadManFire(
   }, [onLaserOff]);
 
   const stopFireRef = useRef(stopFire);
-  stopFireRef.current = stopFire;
+  useEffect(() => {
+    stopFireRef.current = stopFire;
+  }, [stopFire]);
 
   const fire = useCallback(() => {
     const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
@@ -35,6 +37,8 @@ export function useDeadManFire(
   useEffect(
     () => () => {
       if (fireTimerRef.current) clearTimeout(fireTimerRef.current);
+      // Best-effort stop laser on unmount if firing may have already begun
+      stopFireRef.current();
     },
     []
   );

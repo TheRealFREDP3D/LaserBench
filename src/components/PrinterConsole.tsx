@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, memo } from 'react';
+import { useState, useCallback, useRef, memo, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { MachineProfile, SerialMessage } from '../types';
 import { JogControls } from './console/JogControls';
@@ -87,6 +87,14 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   const handleStopFireGated = useCallback(() => {
     fireReleaseRef.current += 1; // invalidate any in-flight gated fire
     handleStopFire();
+  }, [handleStopFire]);
+
+  // Cleanup: invalidate pending FIRE tokens on unmount and best-effort stop laser
+  useEffect(() => {
+    return () => {
+      fireReleaseRef.current += 1; // invalidate any in-flight gated fire
+      handleStopFire(); // best-effort stop laser if firing may have already begun
+    };
   }, [handleStopFire]);
 
   // X/Y jogging is owned by App (onJogRelative), which enforces homing with a

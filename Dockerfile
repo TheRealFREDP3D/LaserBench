@@ -7,7 +7,7 @@ RUN corepack enable
 WORKDIR /app
 
 # Install dependencies with a reproducible lockfile
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Build the production bundle
