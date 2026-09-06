@@ -18,12 +18,13 @@ export function useDeadManFire(
   }, [onLaserOff]);
 
   const stopFireRef = useRef(stopFire);
-  stopFireRef.current = stopFire;
+  useEffect(() => {
+    stopFireRef.current = stopFire;
+  }, [stopFire]);
 
   const fire = useCallback(() => {
     const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
-    const cmd =
-      activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
+    const cmd = activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
     Promise.resolve(onSend(cmd)).catch(() => {});
     if (fireTimerRef.current) clearTimeout(fireTimerRef.current);
     fireTimerRef.current = setTimeout(() => {
@@ -35,6 +36,8 @@ export function useDeadManFire(
   useEffect(
     () => () => {
       if (fireTimerRef.current) clearTimeout(fireTimerRef.current);
+      // Best-effort stop laser on unmount if firing may have already begun
+      stopFireRef.current();
     },
     []
   );

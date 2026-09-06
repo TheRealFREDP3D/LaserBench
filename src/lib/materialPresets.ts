@@ -1,4 +1,4 @@
-import { MachineProfile, MaterialCategory, MaterialProfile, PatternType } from '../types';
+import { MachineProfile, MaterialProfile } from '../types';
 import { validateMachineSafetyProfile } from './firmwareCapabilities';
 
 const VALID_FIRMWARES = ['marlin', 'grbl'] as const;

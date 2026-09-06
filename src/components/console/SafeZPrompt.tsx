@@ -8,19 +8,12 @@ interface SafeZPromptProps {
   onDismiss: () => void;
 }
 
-export function SafeZPrompt({
-  activeMachine,
-  isPrinting,
-  onSend,
-  onDismiss,
-}: SafeZPromptProps) {
+export function SafeZPrompt({ activeMachine, isPrinting, onSend, onDismiss }: SafeZPromptProps) {
   const handleMoveToSafeZ = useCallback(async () => {
     onDismiss();
     if (activeMachine?.zSecure !== undefined) {
       await onSend('G90');
-      await onSend(
-        `G0 Z${activeMachine.zSecure} F${activeMachine.travelSpeed || 4000}`
-      );
+      await onSend(`G0 Z${activeMachine.zSecure} F${activeMachine.travelSpeed || 4000}`);
     }
   }, [activeMachine, onSend, onDismiss]);
 

@@ -18,6 +18,6 @@ export function useMachineSafety(activeMachine: MachineProfile | null) {
 
     setFirmwareCapabilities(capabilities);
     // Fall back to universal M5 if profile is invalid or missing - never leave laserOffCmd empty
-    setLaserOffCmd(safety?.valid ? activeMachine?.laserOff ?? 'M5' : 'M5');
+    setLaserOffCmd(safety?.valid ? (activeMachine?.laserOff ?? 'M5') : 'M5');
   }, [activeMachine, setFirmwareCapabilities, setLaserOffCmd]);
 }

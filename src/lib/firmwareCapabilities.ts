@@ -56,9 +56,7 @@ export function validateMachineSafetyCommands(
   const modeOff = laserMode === 'M106_M107' ? ['M107'] : ['M5'];
 
   // Only commands supported by this firmware for the selected mode
-  const supportedModeOff = capabilities.laserOffCommands.filter((cmd) =>
-    modeOff.includes(cmd),
-  );
+  const supportedModeOff = capabilities.laserOffCommands.filter((cmd) => modeOff.includes(cmd));
 
   const offIsAllowed = supportedModeOff.includes(off);
 
@@ -84,12 +82,12 @@ export function validateMachineSafetyCommands(
 }
 
 export function validateMachineSafetyProfile(
-  machine: MachineProfile,
+  machine: MachineProfile
 ): { valid: true; laserOn: string; laserOff: string } | { valid: false; reason: string } {
   return validateMachineSafetyCommands(
     machine.firmware,
     machine.laserMode,
     machine.laserOn,
-    machine.laserOff,
+    machine.laserOff
   );
 }

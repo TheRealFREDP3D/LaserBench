@@ -202,7 +202,9 @@ class SerialConnection {
     if (!port?.readable) return;
 
     const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable as WritableStream<Uint8Array>).catch(() => {});
+    const readableStreamClosed = port.readable
+      .pipeTo(textDecoder.writable as WritableStream<Uint8Array>)
+      .catch(() => {});
     this.reader = textDecoder.readable.getReader();
 
     let lineBuffer = '';
@@ -322,7 +324,10 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       }
       // Check capabilities BEFORE opening the port to avoid resource leak
       if (!conn.capabilities) {
-        conn.pushMessage('received', 'Error: Select a supported firmware profile before connecting');
+        conn.pushMessage(
+          'received',
+          'Error: Select a supported firmware profile before connecting'
+        );
         set({ connectionState: 'offline' });
         return;
       }
@@ -366,7 +371,12 @@ export const useSerialStore = create<SerialState>()((set, get) => {
           conn.port = null;
         }
         conn.pushMessage('received', 'Error: ' + (error as Error).message);
-        set({ isConnected: false, connectionState: 'offline', isHomed: false, homingPending: false });
+        set({
+          isConnected: false,
+          connectionState: 'offline',
+          isHomed: false,
+          homingPending: false,
+        });
       }
     },
 
@@ -386,7 +396,12 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         console.error('Error during disconnect:', error);
       } finally {
         conn.port = null;
-        set({ isConnected: false, connectionState: 'offline', isHomed: false, homingPending: false });
+        set({
+          isConnected: false,
+          connectionState: 'offline',
+          isHomed: false,
+          homingPending: false,
+        });
         conn.resetFlowControl();
         conn.pushMessage('sent', '--- Disconnected ---');
       }
@@ -398,7 +413,9 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         throw new Error('Not connected to printer');
       }
       if (conn.safetyLocked) {
-        throw new Error('Serial output is locked after an emergency stop; reconnect before sending commands');
+        throw new Error(
+          'Serial output is locked after an emergency stop; reconnect before sending commands'
+        );
       }
       if (!silent) {
         const now = Date.now();
@@ -429,7 +446,11 @@ export const useSerialStore = create<SerialState>()((set, get) => {
       conn.homingPending = true;
       set({ isHomed: false, homingPending: true });
       try {
-        await conn.writeUrgent({ kind: 'line', payload: conn.capabilities.homeCommand, label: `Home (${conn.capabilities.firmware})` });
+        await conn.writeUrgent({
+          kind: 'line',
+          payload: conn.capabilities.homeCommand,
+          label: `Home (${conn.capabilities.firmware})`,
+        });
       } catch (error) {
         // If the write failed, the firmware never received the homing command.
         // Reset homingPending to indicate no homing is in progress, but keep
@@ -458,23 +479,40 @@ export const useSerialStore = create<SerialState>()((set, get) => {
         if (conn.capabilities) {
           await conn.writeUrgent(conn.capabilities.emergencyStop);
         } else {
-          // Fallback: if capabilities is null (invalid profile), try both GRBL and Marlin
-          // emergency stop commands. One will be ignored by the firmware, the other should work.
+          // Fallback: if capabilities is null (invalid profile), try both Marlin and
+          // GRBL emergency stop commands. One will be ignored by the firmware, the other should work.
           // This is a safety measure to ensure the machine stops even with an invalid profile.
+          // M112 goes first: it is an immediate halt on Marlin-class firmware, while
+          // the GRBL Ctrl-X reset takes effect over a longer handshake — sending the
+          // reset first would leave the laser powered during it.
           try {
-            await conn.writeUrgent({ kind: 'realtime', payload: '\x18', label: 'Fallback GRBL reset (Ctrl-X)' });
+            await conn.writeUrgent({
+              kind: 'line',
+              payload: 'M112',
+              label: 'Fallback Marlin emergency stop (M112)',
+            });
           } catch {
-            // Ignore GRBL fallback failure, try Marlin next
+            // Ignore Marlin fallback failure, try GRBL next
           }
           try {
-            await conn.writeUrgent({ kind: 'line', payload: 'M112', label: 'Fallback Marlin emergency stop (M112)' });
+            await conn.writeUrgent({
+              kind: 'realtime',
+              payload: '\x18',
+              label: 'Fallback GRBL reset (Ctrl-X)',
+            });
           } catch {
-            // Ignore Marlin fallback failure
+            // Ignore GRBL fallback failure
           }
-          conn.pushMessage('sent', '--- E-STOP: used fallback commands (invalid firmware profile) ---');
+          conn.pushMessage(
+            'sent',
+            '--- E-STOP: used fallback commands (invalid firmware profile) ---'
+          );
         }
       } catch (err) {
-        conn.pushMessage('received', 'E-STOP urgent write failed; inspect physical safety controls immediately');
+        conn.pushMessage(
+          'received',
+          'E-STOP urgent write failed; inspect physical safety controls immediately'
+        );
         throw err;
       } finally {
         await conn.fireLaserOff();
