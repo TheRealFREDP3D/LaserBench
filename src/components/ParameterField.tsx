@@ -87,8 +87,8 @@ export const ParameterField: React.FC<ParameterFieldProps> = ({
             danger
               ? 'bg-amber-950/40 border-amber-500/50 text-amber-400 shadow-inner'
               : isLight
-              ? 'bg-zinc-50 border-zinc-200 text-zinc-900'
-              : 'bg-[#0A0A0A] border-white/10 text-red-500 shadow-inner'
+                ? 'bg-zinc-50 border-zinc-200 text-zinc-900'
+                : 'bg-[#0A0A0A] border-white/10 text-red-500 shadow-inner'
           }`}
         />
         {unit && <span className="text-[9px] text-neutral-500 font-mono w-4">{unit}</span>}

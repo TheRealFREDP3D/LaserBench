@@ -181,16 +181,17 @@ describe('PrinterConsole', () => {
     fireEvent.pointerDown(screen.getByText('FIRE'));
     // The laser-on command must not be sent until the safe-Z gate resolves.
     expect(onSend).not.toHaveBeenCalledWith(expect.stringMatching(/^M3 S/));
-    await vi.waitFor(() =>
-      expect(onSend).toHaveBeenCalledWith(expect.stringMatching(/^M3 S/))
-    );
+    await vi.waitFor(() => expect(onSend).toHaveBeenCalledWith(expect.stringMatching(/^M3 S/)));
     expect(onRequireSafeZ).toHaveBeenCalledTimes(1);
   });
 
   it('cancels the gated FIRE when released before safe-Z completes', async () => {
     let resolveSafeZ: () => void = () => {};
     const onRequireSafeZ = vi.fn(
-      () => new Promise<void>((r) => { resolveSafeZ = r; })
+      () =>
+        new Promise<void>((r) => {
+          resolveSafeZ = r;
+        })
     );
     const onSend = vi.fn().mockResolvedValue(undefined);
     renderConsole({ isConnected: true, onSend, onRequireSafeZ });

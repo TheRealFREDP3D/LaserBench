@@ -24,8 +24,7 @@ export function useDeadManFire(
 
   const fire = useCallback(() => {
     const power = Math.round((activeMachine?.pwmMax ?? 255) * 0.3);
-    const cmd =
-      activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
+    const cmd = activeMachine?.laserOn.replace('{power}', power.toString()) ?? `M3 S${power}`;
     Promise.resolve(onSend(cmd)).catch(() => {});
     if (fireTimerRef.current) clearTimeout(fireTimerRef.current);
     fireTimerRef.current = setTimeout(() => {

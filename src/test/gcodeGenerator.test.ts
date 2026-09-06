@@ -359,9 +359,7 @@ describe('gcodeGenerator', () => {
         powerSteps: 2,
         speedSteps: 2,
       });
-      const rapidMoves = res.gcode
-        .split('\n')
-        .filter((l) => l.startsWith('G0 ') || l === 'G0');
+      const rapidMoves = res.gcode.split('\n').filter((l) => l.startsWith('G0 ') || l === 'G0');
       expect(rapidMoves.length).toBeGreaterThan(0);
       for (const move of rapidMoves) {
         expect(move).toContain(`F${mockMachine.travelSpeed}`);

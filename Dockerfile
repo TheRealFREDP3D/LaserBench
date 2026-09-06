@@ -1,13 +1,17 @@
 # ── Build stage: compile the Vite bundle ─────────────────────────────────────
-FROM node:22-alpine AS build
+FROM node:24.20.0-alpine AS build
 
-# pnpm is bundled via corepack (ships with Node 22)
-RUN corepack enable
+# pnpm via corepack, pinned to packageManager in package.json.
+# COREPACK_ENABLE_DOWNLOAD_PROMPT=0: skip corepack's interactive
+# "download pnpm@11.25.0?" prompt, which hangs non-interactive builds.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable && corepack prepare pnpm@11.25.0 --activate
 
 WORKDIR /app
 
 # Install dependencies with a reproducible lockfile
-COPY package.json pnpm-lock.yaml ./
+# (pnpm-workspace.yaml carries the build-approval list — required for non-interactive installs)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Build the production bundle
@@ -15,7 +19,7 @@ COPY . .
 RUN pnpm run build
 
 # ── Runtime stage: static hosting via nginx ──────────────────────────────────
-FROM nginx:alpine
+FROM nginx:1.31.5-alpine
 
 # SPA routing + hashed-asset caching
 COPY nginx.conf /etc/nginx/conf.d/default.conf

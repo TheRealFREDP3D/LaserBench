@@ -48,41 +48,41 @@ export function useSafeZGuard(activeMachine: MachineProfile | null) {
       // Re-read currentPos.z right before calculation to avoid stale closure
       const freshPos = useSerialStore.getState().currentPos;
       const zDistance = activeMachine.zSecure - freshPos.z;
-      await send(
-        `G0 Z${activeMachine.zSecure.toFixed(3)} F${activeMachine.travelSpeed || 4000}`
-      );
-      
+      await send(`G0 Z${activeMachine.zSecure.toFixed(3)} F${activeMachine.travelSpeed || 4000}`);
+
       // Wait for the Z move to complete by polling the actual position from firmware.
       // Calculate estimated time based on distance and speed, add 200% buffer for acceleration
       // and any delays. Do NOT cap this timeout - let it take as long as needed.
       const travelSpeed = activeMachine.travelSpeed || 4000; // mm/min
       const estimatedSeconds = (zDistance / travelSpeed) * 60 * 3; // 3x buffer for safety
       const timeoutMs = Math.max(estimatedSeconds * 1000, 1000); // At least 1 second
-      
+
       const startTime = Date.now();
       const pollInterval = 50; // Check every 50ms
-      
+
       while (true) {
         // Check if connection was lost
         const state = useSerialStore.getState();
         if (!state.isConnected) {
           throw new Error('Connection lost during Z raise');
         }
-        
+
         // Check if we've reached the safe Z height
         if (state.currentPos.z >= activeMachine.zSecure) {
           break; // Success - Z is at or above safe height
         }
-        
+
         // Check for timeout
         if (Date.now() - startTime > timeoutMs) {
-          throw new Error(`Timeout waiting for Z to reach safe height (${activeMachine.zSecure}mm). Current Z: ${state.currentPos.z}mm`);
+          throw new Error(
+            `Timeout waiting for Z to reach safe height (${activeMachine.zSecure}mm). Current Z: ${state.currentPos.z}mm`
+          );
         }
-        
+
         // Wait before next poll
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
       }
-      
+
       // Restore the previous movement mode (G90 or G91), with fallback to G90
       await send(movementMode || 'G90');
     })();

@@ -56,14 +56,12 @@ export default function App() {
     connect,
     disconnect,
     send,
-    printGCode,
     abortPrint,
     emergencyStop,
     home,
     laserOff,
+    printGCode,
     clearMessages,
-    setFirmwareCapabilities,
-    setLaserOffCmd,
   } = useSerialStore();
 
   const { machines, setActiveMachineId, updateMachine, addMachine, addMachines, deleteMachine } =
@@ -87,7 +85,7 @@ export default function App() {
   const [uploadedGCode, setUploadedGCode] = useState<GeneratedData | null>(null);
   const [editedGCode, setEditedGCode] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { confirm, ConfirmModalComponent } = useConfirmModal();
+  const { ConfirmModalComponent } = useConfirmModal();
 
   // Wire machine safety profile validation to the serial store
   useMachineSafety(activeMachine);
@@ -139,10 +137,6 @@ export default function App() {
     if (!effectiveResults || !activeMachine) return null;
     return formatEstimatedTime(estimateToolpathTime(effectiveResults.paths, activeMachine));
   }, [effectiveResults, activeMachine]);
-
-  const handlePrint = useCallback(() => {
-    if (effectiveResults) printGCode(effectiveResults.gcode);
-  }, [effectiveResults, printGCode]);
 
   const handleFileUpload = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
@@ -480,17 +474,17 @@ export default function App() {
                 </h2>
                 <p className="text-xs text-neutral-400 leading-relaxed">
                   The <span className="text-amber-400 font-bold">Z Secure</span> value for{' '}
-                  <span className="text-white font-semibold">"{activeMachine.name}"</span> is set
-                  to <span className="font-mono text-amber-400">0 mm</span>.
+                  <span className="text-white font-semibold">"{activeMachine.name}"</span> is set to{' '}
+                  <span className="font-mono text-amber-400">0 mm</span>.
                 </p>
               </div>
             </div>
 
             <p className="text-xs text-neutral-500 leading-relaxed mb-5 pl-11">
-              This is the height the laser head travels to between moves to avoid
-              collisions with clamps, material edges, and fixtures. A value of{' '}
-              <span className="font-mono">0</span> means the head will travel at bed
-              level — which can damage your material, your machine, or both.
+              This is the height the laser head travels to between moves to avoid collisions with
+              clamps, material edges, and fixtures. A value of <span className="font-mono">0</span>{' '}
+              means the head will travel at bed level — which can damage your material, your
+              machine, or both.
             </p>
 
             <p className="text-[10px] text-amber-500/80 mb-5 pl-11 font-semibold uppercase tracking-wider">

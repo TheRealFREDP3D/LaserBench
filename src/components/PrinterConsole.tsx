@@ -61,7 +61,11 @@ const PrinterConsoleComponent = memo(function PrinterConsole({
   } | null>(null);
 
   // Extract dead-man FIRE logic into a dedicated hook
-  const { fire: handleFire, stopFire: handleStopFire } = useDeadManFire(activeMachine, onSend, onLaserOff);
+  const { fire: handleFire, stopFire: handleStopFire } = useDeadManFire(
+    activeMachine,
+    onSend,
+    onLaserOff
+  );
 
   // Dead-man gate: if the user releases FIRE (or the window loses focus)
   // while the Safe-Z raise is still in flight, cancel the shot instead of

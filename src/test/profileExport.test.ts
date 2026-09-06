@@ -104,7 +104,12 @@ describe('importProfiles (machine)', () => {
 
   it('populates rejectionReasons when laserOff is invalid', () => {
     const badMachine: MachineProfile = { ...validMachine, laserOff: 'M3 S1000' };
-    const envelope = { version: 1, type: 'machine', exportedAt: '2026-06-24', profiles: [badMachine] };
+    const envelope = {
+      version: 1,
+      type: 'machine',
+      exportedAt: '2026-06-24',
+      profiles: [badMachine],
+    };
     const result = importProfiles(envelope, 'machine', (_x): _x is MachineProfile => true, []);
     expect(result.invalid).toBe(1);
     expect(result.rejectionReasons.length).toBe(1);
@@ -113,7 +118,12 @@ describe('importProfiles (machine)', () => {
   });
 
   it('leaves rejectionReasons empty when machine profile passes safety validation', () => {
-    const envelope = { version: 1, type: 'machine', exportedAt: '2026-06-24', profiles: [validMachine] };
+    const envelope = {
+      version: 1,
+      type: 'machine',
+      exportedAt: '2026-06-24',
+      profiles: [validMachine],
+    };
     const result = importProfiles(envelope, 'machine', (_x): _x is MachineProfile => true, []);
     expect(result.rejectionReasons.length).toBe(0);
     expect(result.profiles.length).toBe(1);
@@ -180,7 +190,12 @@ describe('importProfiles (material)', () => {
     // vi.mock hoisting. We therefore assert the observable side effect instead: rejectionReasons
     // must be empty, confirming no safety rejection occurred for a material profile.
     const spy = vi.spyOn(firmwareCapabilities, 'validateMachineSafetyProfile');
-    const envelope = { version: 1, type: 'material', exportedAt: '2026-06-24', profiles: [validMaterial] };
+    const envelope = {
+      version: 1,
+      type: 'material',
+      exportedAt: '2026-06-24',
+      profiles: [validMaterial],
+    };
     const result = importProfiles(envelope, 'material', (_x): _x is MaterialProfile => true, []);
     expect(result.rejectionReasons.length).toBe(0);
     spy.mockRestore();
