@@ -643,8 +643,12 @@ export function generatePatternPaths(
 
   let currentZ = machine.zSecure;
   let currentFeed = 0;
-  let prevX = 0;
-  let prevY = 0;
+  // The header above already moved to (pos.x, pos.y) absolutely before G91,
+  // so the first relative travel move must be measured from there — starting
+  // at (0,0) would double-apply the pattern position and drive the head
+  // outside the previewed area.
+  let prevX = pos.x;
+  let prevY = pos.y;
   pathGroups.forEach((g: PathSegment) => {
     const p0 = g.points[0];
     const zChanged = g.z !== currentZ;
@@ -654,8 +658,11 @@ export function generatePatternPaths(
 
     gcodeLines.push(laserOffCmd);
 
+    // Always emit an explicit travel feed on rapid moves: some firmware honors
+    // the modal F for G0, which would otherwise inherit the last cutting feed
+    // and make inter-segment travels burn-speed slow.
     gcodeLines.push(
-      `G0 X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${deltaZ0.toFixed(3)}` : ''}`
+      `G0 F${machine.travelSpeed} X${deltaX0.toFixed(3)} Y${deltaY0.toFixed(3)}${zChanged ? ` Z${deltaZ0.toFixed(3)}` : ''}`
     );
     prevX = p0[0];
     prevY = p0[1];

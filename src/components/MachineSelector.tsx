@@ -121,9 +121,10 @@ const MachineSelector: React.FC<MachineSelectorProps> = ({
       const result = await importProfilesFromClipboard('machine', isValidMachineProfile, machines);
       if (result.profiles.length > 0) {
         onCreateBatch(result.profiles);
-        const reasonNote = result.rejectionReasons.length > 0
-          ? ` (rejected: ${result.rejectionReasons.slice(0, 3).join('; ')})`
-          : '';
+        const reasonNote =
+          result.rejectionReasons.length > 0
+            ? ` (rejected: ${result.rejectionReasons.slice(0, 3).join('; ')})`
+            : '';
         await confirm(`${result.profiles.length} profile(s) imported${reasonNote}`);
       } else if (result.duplicates > 0) {
         await confirm('Profile already exists');

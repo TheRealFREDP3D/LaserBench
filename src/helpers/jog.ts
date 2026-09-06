@@ -24,11 +24,7 @@ export function clampToBed(
   };
 }
 
-export function buildJogCommand(
-  machine: MachineProfile,
-  targetX: number,
-  targetY: number
-): string {
+export function buildJogCommand(machine: MachineProfile, targetX: number, targetY: number): string {
   const nx = Math.round(targetX * 100) / 100;
   const ny = Math.round(targetY * 100) / 100;
   const feed = machine.travelSpeed || 4000;

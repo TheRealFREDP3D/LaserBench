@@ -312,6 +312,59 @@ describe('gcodeGenerator', () => {
       expect(withOffsetFirst[0]).toBe(noOffsetFirst[0] + offset.x);
       expect(withOffsetFirst[1]).toBe(noOffsetFirst[1] + offset.y);
     });
+
+    // Regression (P0): the header moves to (pos.x, pos.y) absolutely before
+    // switching to G91, so the first relative travel move must be measured
+    // from the pattern position — not from the machine origin. Starting the
+    // delta chain at (0,0) double-applied the offset and burned outside the
+    // previewed location.
+    it('measures the first relative move from the pattern position, not the origin', () => {
+      const pos = { x: 50, y: 40 };
+      const res = generatePatternPaths('matrix', mockMachine, mockMaterial, {
+        patternPosition: pos,
+        powerSteps: 2,
+        speedSteps: 2,
+      });
+      const lines = res.gcode.split('\n');
+      const g91Idx = lines.indexOf('G91');
+      expect(g91Idx).toBeGreaterThan(-1);
+      // Header must still park at the pattern position absolutely.
+      expect(lines[g91Idx - 1]).toBe(
+        `G0 F${mockMachine.travelSpeed} X${pos.x.toFixed(3)} Y${pos.y.toFixed(3)} Z${mockMachine.zSecure.toFixed(3)}`
+      );
+      // First travel after G91 is the delta from pattern position to the
+      // first path point — sum with the point itself must equal the position.
+      const travel = lines
+        .slice(g91Idx + 1)
+        .find((l) => l.startsWith('G0 ') && !l.includes(`X${pos.x.toFixed(3)}`));
+      expect(travel).toBeDefined();
+      const mx = travel!.match(/X(-?[\d.]+)/);
+      const my = travel!.match(/Y(-?[\d.]+)/);
+      const first = res.paths[0].points[0];
+      // delta + position must land exactly on the first path point.
+      expect(Number(mx![1]) + pos.x).toBeCloseTo(first[0], 3);
+      expect(Number(my![1]) + pos.y).toBeCloseTo(first[1], 3);
+      // And it must NOT be the absolute (double-applied) coordinates.
+      expect(Number(mx![1])).not.toBeCloseTo(first[0], 3);
+    });
+
+    // Regression (P0): rapid moves must carry an explicit travel feed so
+    // firmware honoring modal F for G0 cannot inherit the last cutting feed.
+    it('emits an explicit travel feed on every rapid move', () => {
+      const res = generatePatternPaths('matrix', mockMachine, mockMaterial, {
+        powerMin: 100,
+        powerMax: 500,
+        speedMin: 100, // cutting feed far below travel speed
+        speedMax: 200,
+        powerSteps: 2,
+        speedSteps: 2,
+      });
+      const rapidMoves = res.gcode.split('\n').filter((l) => l.startsWith('G0 ') || l === 'G0');
+      expect(rapidMoves.length).toBeGreaterThan(0);
+      for (const move of rapidMoves) {
+        expect(move).toContain(`F${mockMachine.travelSpeed}`);
+      }
+    });
   });
 
   describe('delta machine', () => {
